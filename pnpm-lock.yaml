@@ -8,13 +8,19 @@ importers:
 
   .:
     dependencies:
+      debug:
+        specifier: ^4.4.0
+        version: 4.4.0
       follow-redirects:
         specifier: ^1.15.9
-        version: 1.15.9
+        version: 1.15.9(debug@4.4.0)
       requires-port:
         specifier: ^1.0.0
         version: 1.0.0
     devDependencies:
+      '@types/debug':
+        specifier: ^4.1.12
+        version: 4.1.12
       '@types/jest':
         specifier: ^29.5.14
         version: 29.5.14
@@ -344,6 +350,9 @@ packages:
   '@types/cors@2.8.17':
     resolution: {integrity: sha512-8CGDvrBj1zgo2qE+oS3pOCyYNqCPryMWY2bGfwA0dcfopWGgxs+78df0Rs3rc9THP4JkOhLsAa+15VdpAqkcUA==}
 
+  '@types/debug@4.1.12':
+    resolution: {integrity: sha512-vIChWdVG3LG1SMxEvI/AK+FWJthlrqlTu7fbrlywTkkaONwk/UAGaULXRlf8vkzFBLVm0zkMdCquhL5aOjhXPQ==}
+
   '@types/graceful-fs@4.1.9':
     resolution: {integrity: sha512-olP3sd1qOEe5dXTSaFvQG+02VdRXcdytWLAZsAq1PecU8uqQAhkrnbli7DagjtXKW/Bl7YJbUsa8MPcuc8LHEQ==}
 
@@ -358,6 +367,9 @@ packages:
 
   '@types/jest@29.5.14':
     resolution: {integrity: sha512-ZN+4sdnLUbo8EVvVc2ao0GFW6oVrQRPn4K2lglySj7APvSrgzxHiNNK99us4WDMi57xxA2yggblIAMNhXOotLQ==}
+
+  '@types/ms@2.1.0':
+    resolution: {integrity: sha512-GsCCIZDE/p3i96vtEqx+7dBUGXrc7zeSK3wwPHIaRThS+9OhWIXRqzs4d6k1SVU8g91DrNRWxWUGhp5KXQb2VA==}
 
   '@types/node@22.15.12':
     resolution: {integrity: sha512-K0fpC/ZVeb8G9rm7bH7vI0KAec4XHEhBam616nVJCV51bKzJ6oA3luG4WdKoaztxe70QaNjS/xBmcDLmr4PiGw==}
@@ -1837,6 +1849,10 @@ snapshots:
     dependencies:
       '@types/node': 22.15.12
 
+  '@types/debug@4.1.12':
+    dependencies:
+      '@types/ms': 2.1.0
+
   '@types/graceful-fs@4.1.9':
     dependencies:
       '@types/node': 22.15.12
@@ -1855,6 +1871,8 @@ snapshots:
     dependencies:
       expect: 29.7.0
       pretty-format: 29.7.0
+
+  '@types/ms@2.1.0': {}
 
   '@types/node@22.15.12':
     dependencies:
@@ -2181,7 +2199,9 @@ snapshots:
       locate-path: 5.0.0
       path-exists: 4.0.0
 
-  follow-redirects@1.15.9: {}
+  follow-redirects@1.15.9(debug@4.4.0):
+    optionalDependencies:
+      debug: 4.4.0
 
   fs.realpath@1.0.0: {}
 

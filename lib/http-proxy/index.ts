@@ -21,7 +21,7 @@ export interface ProxyTargetDetailed {
 }
 export type ProxyType = "ws" | "web";
 export type ProxyTarget = ProxyTargetUrl | ProxyTargetDetailed;
-export type ProxyTargetUrl = URL;
+export type ProxyTargetUrl = URL | string;
 
 export interface ServerOptions {
   // NOTE: `options.target and `options.forward` cannot be both missing.
@@ -86,8 +86,9 @@ export interface ServerOptions {
 }
 
 export class ProxyServer extends EventEmitter {
-  private web;
-  private ws;
+  public readonly ws;
+  public readonly web;
+  
   private options: ServerOptions;
   private webPasses;
   private wsPasses;
@@ -206,7 +207,7 @@ export class ProxyServer extends EventEmitter {
     return this;
   };
 
-  close = (callback: Function) => {
+  close = (callback?: Function) => {
     const self = this;
     if (this._server) {
       this._server.close(done);

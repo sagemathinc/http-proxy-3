@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "repository": {
     "type": "git",
-    "url": "https://github.com/Jimbly/http-proxy-node16.git"
+    "url": "https://github.com/sagemathinc/node-proxy-2.git"
   },
   "description": "Modern rewrite of http-proxy",
   "author": "William Stein <wstein@sagemath.com>",
@@ -12,13 +12,14 @@
     "Jimb Esser (https://github.com/Jimbly/)",
     "jcrugzz <jcrugzz@gmail.com>"
   ],
-  "main": "index.js",
-  "types": "index.d.ts",
+  "main": "dist/lib/index.js",
   "dependencies": {
+    "debug": "^4.4.0",
     "follow-redirects": "^1.15.9",
     "requires-port": "^1.0.0"
   },
   "devDependencies": {
+    "@types/debug": "^4.1.12",
     "@types/jest": "^29.5.14",
     "@types/node": "^22.15.12",
     "async": "^3.2.6",

@@ -11,10 +11,12 @@ import * as https from "https";
 import * as common from "../common";
 import type { Request } from "./web-incoming";
 import type { Socket } from "net";
+import * as debug from "debug";
+
+const log = debug("http-proxy2:ws-incoming");
 
 // WebSocket requests must have the `GET` method and
 // the `upgrade:websocket` header
-
 export function checkMethodAndHeader(
   req: Request,
   socket: Socket,
@@ -48,7 +50,7 @@ export function XHeaders(req: Request, _socket: Socket, options) {
   });
 }
 
-// Does the actual proxying. Make the request and upgrade it
+// Do the actual proxying. Make the request and upgrade it
 // send the Switching Protocols request and pipe the sockets.
 export function stream(req, socket, options, head, server, clb) {
   const createHttpHeader = (line, headers) => {
@@ -111,6 +113,7 @@ export function stream(req, socket, options, head, server, clb) {
   proxyReq.on(
     "upgrade",
     (proxyRes: Request, proxySocket: Socket, proxyHead: Buffer) => {
+      log("upgrade");
       proxySocket.on("error", onOutgoingError);
 
       // Allow us to listen when the websocket has completed
