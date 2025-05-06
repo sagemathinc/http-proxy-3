@@ -91,17 +91,16 @@ export function stream(req, socket, options, head, server, clb) {
 
   // Error Handler
   proxyReq.on("error", onOutgoingError);
-  proxyReq.on("response", (res) => {
+  proxyReq.on("response", (res: Request) => {
     // if upgrade event isn't going to happen, close the socket
+    // TODO: this seems obviously wrong/deprecated as there is no
+    // upgrade field on res!  It seems very likely to be evidence
+    // of a leak.
+    // @ts-ignore
     if (!res.upgrade) {
       socket.write(
         createHttpHeader(
-          "HTTP/" +
-            res.httpVersion +
-            " " +
-            res.statusCode +
-            " " +
-            res.statusMessage,
+          `HTTP/${res.httpVersion} ${res.statusCode} ${res.statusMessage}`,
           res.headers,
         ),
       );
@@ -109,40 +108,43 @@ export function stream(req, socket, options, head, server, clb) {
     }
   });
 
-  proxyReq.on("upgrade", (proxyRes, proxySocket, proxyHead) => {
-    proxySocket.on("error", onOutgoingError);
+  proxyReq.on(
+    "upgrade",
+    (proxyRes: Request, proxySocket: Socket, proxyHead: Buffer) => {
+      proxySocket.on("error", onOutgoingError);
 
-    // Allow us to listen when the websocket has completed
-    proxySocket.on("end", () => {
-      server.emit("close", proxyRes, proxySocket, proxyHead);
-    });
+      // Allow us to listen when the websocket has completed
+      proxySocket.on("end", () => {
+        server.emit("close", proxyRes, proxySocket, proxyHead);
+      });
 
-    // The pipe below will end proxySocket if socket closes cleanly, but not
-    // if it errors (eg, vanishes from the net and starts returning
-    // EHOSTUNREACH). We need to do that explicitly.
-    socket.on("error", () => {
-      proxySocket.destroy();
-    });
+      // The pipe below will end proxySocket if socket closes cleanly, but not
+      // if it errors (eg, vanishes from the net and starts returning
+      // EHOSTUNREACH). We need to do that explicitly.
+      socket.on("error", () => {
+        proxySocket.destroy();
+      });
 
-    common.setupSocket(proxySocket);
+      common.setupSocket(proxySocket);
 
-    if (proxyHead && proxyHead.length) {
-      proxySocket.unshift(proxyHead);
-    }
+      if (proxyHead && proxyHead.length) {
+        proxySocket.unshift(proxyHead);
+      }
 
-    //
-    // Remark: Handle writing the headers to the socket when switching protocols
-    // Also handles when a header is an array
-    //
-    socket.write(
-      createHttpHeader("HTTP/1.1 101 Switching Protocols", proxyRes.headers),
-    );
+      //
+      // Remark: Handle writing the headers to the socket when switching protocols
+      // Also handles when a header is an array
+      //
+      socket.write(
+        createHttpHeader("HTTP/1.1 101 Switching Protocols", proxyRes.headers),
+      );
 
-    proxySocket.pipe(socket).pipe(proxySocket);
+      proxySocket.pipe(socket).pipe(proxySocket);
 
-    server.emit("open", proxySocket);
-    server.emit("proxySocket", proxySocket); //DEPRECATED.
-  });
+      server.emit("open", proxySocket);
+      server.emit("proxySocket", proxySocket); //DEPRECATED.
+    },
+  );
 
   function onOutgoingError(err) {
     if (clb) {
