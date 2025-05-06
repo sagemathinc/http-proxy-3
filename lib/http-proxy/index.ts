@@ -74,7 +74,7 @@ export interface ServerOptions {
     | { [oldPath: string]: string }
     | undefined;
   // object with extra headers to be added to target requests.
-  headers?: { [header: string]: string } | undefined;
+  headers?: { [header: string]: string | string[] | undefined };
   // Timeout (in milliseconds) when proxy receives no response from target. Default: 120000 (2 minutes)
   proxyTimeout?: number | undefined;
   // Timeout (in milliseconds) for incoming requests
