@@ -5,18 +5,13 @@ A `pass` is just a function that is executed on `req, res, options`
 so that you can easily add new checks while still keeping the base
 flexible.
 
-The functions exported from this file are not explicitly called.  Instead,
-this whole module is imported and iterated over, so in fact they all do get
-called elsewhere.
+NOTE: The functions exported from this module are not explicitly called. 
+Instead, this whole module is imported and iterated over, so in fact 
+they all do get called elsewhere.
 */
 
-import { parse } from "url";
 import * as common from "../common";
-import {
-  type IncomingMessage as Request,
-  type ServerResponse as Response,
-} from "http";
-import type { ServerOptions } from "../index";
+import type { Request, Response, ProxyResponse } from "./web-incoming";
 
 const redirectRegex = /^201|30(1|2|7|8)$/;
 
@@ -27,10 +22,10 @@ export function removeChunked(
   req: Request,
   _res: Response,
   // Response object from the proxy request
-  proxyRes: Response,
+  proxyRes: ProxyResponse,
 ) {
   if (req.httpVersion === "1.0") {
-    proxyRes.removeHeader("transfer-encoding");
+    delete proxyRes.headers["transfer-encoding"];
   }
 }
 
@@ -40,28 +35,32 @@ export function setConnection(
   req: Request,
   _res: Response,
   // Response object from the proxy request
-  proxyRes: Response,
+  proxyRes: ProxyResponse,
 ) {
   if (req.httpVersion === "1.0") {
-    proxyRes.setHeader("connection", req.headers["connection"] ?? "close");
-  } else if (req.httpVersion !== "2.0" && !proxyRes.getHeader("connection")) {
-    proxyRes.setHeader("connection", req.headers["connection"] ?? "keep-alive");
+    proxyRes.headers["connection"] = req.headers["connection"] ?? "close";
+  } else if (req.httpVersion !== "2.0" && !proxyRes.headers["connection"]) {
+    proxyRes.headers["connection"] = req.headers["connection"] ?? "keep-alive";
   }
 }
 
 export function setRedirectHostRewrite(
   req: Request,
   _res: Response,
-  proxyRes: Response,
+  proxyRes: ProxyResponse,
   options,
 ) {
   if (
     (options.hostRewrite || options.autoRewrite || options.protocolRewrite) &&
-    proxyRes.getHeader("location") &&
+    proxyRes.headers["location"] &&
     redirectRegex.test(`${proxyRes.statusCode}`)
   ) {
-    const target = parse(options.target);
-    const u = parse(proxyRes.getHeaders("location"));
+    const target = new URL(options.target);
+    const location = proxyRes.headers["location"];
+    if (typeof location != "string") {
+      return;
+    }
+    const u = new URL(location);
 
     // make sure the redirected host matches the target host before rewriting
     if (target.host != u.host) {
@@ -71,32 +70,33 @@ export function setRedirectHostRewrite(
     if (options.hostRewrite) {
       u.host = options.hostRewrite;
     } else if (options.autoRewrite) {
-      u.host = req.headers["host"];
+      u.host = req.headers["host"] ?? "";
     }
     if (options.protocolRewrite) {
       u.protocol = options.protocolRewrite;
     }
 
-    proxyRes.setHeaders("location", u.format());
+    proxyRes.headers["location"] = u.toString();
   }
 }
 
-// Copy headers from proxyResponse to response
-// set each header in response object.
+// Copy headers from proxyRes to res.
 export function writeHeaders(
-  req: Request,
+  _req: Request,
+  // Response to set headers in
   res: Response,
   // Response object from the proxy request
-  proxyRes: Response,
+  proxyRes: ProxyResponse,
   // options.cookieDomainRewrite: Config to rewrite cookie domain
   options,
 ) {
   let rewriteCookieDomainConfig = options.cookieDomainRewrite;
   let rewriteCookiePathConfig = options.cookiePathRewrite;
   const preserveHeaderKeyCase = options.preserveHeaderKeyCase;
-  let rawHeaderKeyMap: { [key: string]: any };
-  const setHeader = (key, header) => {
-    if (header == undefined) return;
+  const setHeader = (key: string, header) => {
+    if (header == undefined) {
+      return;
+    }
     if (rewriteCookieDomainConfig && key.toLowerCase() === "set-cookie") {
       header = common.rewriteCookieProperty(
         header,
@@ -126,6 +126,7 @@ export function writeHeaders(
 
   // message.rawHeaders is added in: v0.11.6
   // https://nodejs.org/api/http.html#http_message_rawheaders
+  let rawHeaderKeyMap: undefined | { [key: string]: string };
   if (preserveHeaderKeyCase && proxyRes.rawHeaders != undefined) {
     rawHeaderKeyMap = {};
     for (let i = 0; i < proxyRes.rawHeaders.length; i += 2) {
@@ -134,34 +135,27 @@ export function writeHeaders(
     }
   }
 
-  for (const key of proxyRes.getHeaderNames()) {
-    const header = proxyRes.getHeader(key);
+  for (const key0 in proxyRes.headers) {
+    let key = key0;
+    const header = proxyRes.headers[key];
     if (preserveHeaderKeyCase && rawHeaderKeyMap) {
-      key = rawHeaderKeyMap[key] || key;
+      key = rawHeaderKeyMap[key] ?? key;
     }
     setHeader(key, header);
   }
 }
 
-/**
- * Set the statusCode from the proxyResponse
- *
- * @param {ClientRequest} Req Request object
- * @param {IncomingMessage} Res Response object
- * @param {proxyResponse} Res Response object from the proxy request
- *
- * @api private
- */
+// Set the statusCode from the proxyResponse
 export function writeStatusCode(
   _req: Request,
   res: Response,
-  proxyRes: Response,
+  proxyRes: ProxyResponse,
 ) {
   // From Node.js docs: response.writeHead(statusCode[, statusMessage][, headers])
   if (proxyRes.statusMessage) {
-    res.statusCode = proxyRes.statusCode;
+    res.statusCode = proxyRes.statusCode!;
     res.statusMessage = proxyRes.statusMessage;
   } else {
-    res.statusCode = proxyRes.statusCode;
+    res.statusCode = proxyRes.statusCode!;
   }
 }

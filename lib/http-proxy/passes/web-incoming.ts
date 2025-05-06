@@ -1,3 +1,14 @@
+/*
+A `pass` is just a function that is executed on `req, res, options`
+so that you can easily add new checks while still keeping the base
+flexible.
+
+NOTE: The functions exported from this module are not explicitly called. 
+Instead, this whole module is imported and iterated over, so in fact 
+they all do get called elsewhere.
+
+*/
+
 import * as http from "http";
 import * as https from "https";
 import * as webOutgoing from "./web-outgoing";
@@ -8,28 +19,16 @@ import {
   type ServerResponse as Response,
 } from "http";
 
+export type ProxyResponse = Request & {
+  headers: { [key: string]: string | string[] };
+};
+export { Request, Response };
+
 const web_o = Object.keys(webOutgoing).map((pass) => webOutgoing[pass]);
 
 const nativeAgents = { http, https };
 
-/*!
- * Array of passes.
- *
- * A `pass` is just a function that is executed on `req, res, options`
- * so that you can easily add new checks while still keeping the base
- * flexible.
- */
-
-/**
- * Sets `content-length` to '0' if request is of DELETE type.
- *
- * @param {ClientRequest} Req Request object
- * @param {IncomingMessage} Res Response object
- * @param {Object} Options Config object passed to the proxy
- *
- * @api private
- */
-
+//  Sets `content-length` to '0' if request is of DELETE type.
 export function deleteLength(req: Request) {
   if (
     (req.method === "DELETE" || req.method === "OPTIONS") &&
@@ -40,32 +39,14 @@ export function deleteLength(req: Request) {
   }
 }
 
-/**
- * Sets timeout in request socket if it was specified in options.
- *
- * @param {ClientRequest} Req Request object
- * @param {IncomingMessage} Res Response object
- * @param {Object} Options Config object passed to the proxy
- *
- * @api private
- */
-
+// Sets timeout in request socket if it was specified in options.
 export function timeout(req: Request, _res, options) {
   if (options.timeout) {
     req.socket.setTimeout(options.timeout);
   }
 }
 
-/**
- * Sets `x-forwarded-*` headers if specified in config.
- *
- * @param {ClientRequest} Req Request object
- * @param {IncomingMessage} Res Response object
- * @param {Object} Options Config object passed to the proxy
- *
- * @api private
- */
-
+// Sets `x-forwarded-*` headers if specified in config.
 export function XHeaders(req: Request, _res, options) {
   if (!options.xfwd) {
     return;
@@ -89,18 +70,9 @@ export function XHeaders(req: Request, _res, options) {
     req.headers["x-forwarded-host"] || req.headers["host"] || "";
 }
 
-/**
- * Does the actual proxying. If `forward` is enabled fires up
- * a ForwardStream, same happens for ProxyStream. The request
- * just dies otherwise.
- *
- * @param {ClientRequest} Req Request object
- * @param {IncomingMessage} Res Response object
- * @param {Object} Options Config object passed to the proxy
- *
- * @api private
- */
-
+// Does the actual proxying. If `forward` is enabled fires up
+// a ForwardStream, same happens for ProxyStream. The request
+// just dies otherwise.
 export function stream(req: Request, res: Response, options, _, server, clb) {
   // And we begin!
   server.emit("start", req, res, options.target || options.forward);
@@ -177,10 +149,8 @@ export function stream(req: Request, res: Response, options, _, server, clb) {
 
   (options.buffer || req).pipe(proxyReq);
 
-  proxyReq.on("response", (proxyRes) => {
-    if (server) {
-      server.emit("proxyRes", proxyRes, req, res);
-    }
+  proxyReq.on("response", (proxyRes: ProxyResponse) => {
+    server?.emit("proxyRes", proxyRes, req, res);
 
     if (!res.headersSent && !options.selfHandleResponse) {
       for (let i = 0; i < web_o.length; i++) {
@@ -193,18 +163,14 @@ export function stream(req: Request, res: Response, options, _, server, clb) {
     if (!res.finished) {
       // Allow us to listen when the proxy has completed
       proxyRes.on("end", () => {
-        if (server) {
-          server.emit("end", req, res, proxyRes);
-        }
+        server?.emit("end", req, res, proxyRes);
       });
       // We pipe to the response unless its expected to be handled by the user
       if (!options.selfHandleResponse) {
         proxyRes.pipe(res);
       }
     } else {
-      if (server) {
-        server.emit("end", req, res, proxyRes);
-      }
+      server?.emit("end", req, res, proxyRes);
     }
   });
 }

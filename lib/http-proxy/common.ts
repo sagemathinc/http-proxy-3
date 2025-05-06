@@ -103,12 +103,11 @@ export function setupOutgoing(
   // the final path is target path + relative path requested by user:
   const target = options[forward];
   const targetPath =
-    target && options.prependPath !== false ? target.path || "" : "";
+    target && options.prependPath !== false ? target.pathname || "" : "";
 
-  //
-  // Remark: Can we somehow not use url.parse as a perf optimization?
-  //
-  let outgoingPath = !options.toProxy ? url.parse(req.url).path || "" : req.url;
+  let outgoingPath = !options.toProxy
+    ? new URL(req.url ?? "").pathname || ""
+    : req.url;
 
   //
   // Remark: ignorePath will just straight up ignore whatever the request's
@@ -117,7 +116,7 @@ export function setupOutgoing(
   //
   outgoingPath = !options.ignorePath ? outgoingPath : "";
 
-  outgoing.path = urlJoin(targetPath, outgoingPath);
+  outgoing.path = urlJoin(targetPath, outgoingPath ?? "");
 
   if (options.changeOrigin) {
     outgoing.headers.host =

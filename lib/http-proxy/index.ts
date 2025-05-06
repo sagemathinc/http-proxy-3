@@ -1,10 +1,8 @@
-import { parse } from "url";
 import * as http from "http";
 import * as https from "https";
 import * as web from "./passes/web-incoming";
 import * as ws from "./passes/ws-incoming";
 import { EventEmitter } from "events";
-import type { Url } from "url";
 import type { Stream } from "stream";
 
 export interface ProxyTargetDetailed {
@@ -23,7 +21,7 @@ export interface ProxyTargetDetailed {
 }
 export type ProxyType = "ws" | "web";
 export type ProxyTarget = ProxyTargetUrl | ProxyTargetDetailed;
-export type ProxyTargetUrl = string | Partial<Url>;
+export type ProxyTargetUrl = URL;
 
 export interface ServerOptions {
   // NOTE: `options.target and `options.forward` cannot be both missing.
@@ -154,7 +152,7 @@ export class ProxyServer extends EventEmitter {
 
         ["target", "forward"].forEach((e) => {
           if (typeof requestOptions[e] === "string")
-            requestOptions[e] = parse(requestOptions[e]);
+            requestOptions[e] = new URL(requestOptions[e]);
         });
 
         if (!requestOptions.target && !requestOptions.forward) {
