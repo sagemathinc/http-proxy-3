@@ -15,27 +15,32 @@
   "main": "index.js",
   "types": "index.d.ts",
   "dependencies": {
-    "eventemitter3": "^5.0.1",
     "follow-redirects": "^1.15.9",
     "requires-port": "^1.0.0"
   },
   "devDependencies": {
+    "@types/jest": "^29.5.14",
+    "@types/node": "^22.15.12",
     "async": "^3.2.6",
     "auto-changelog": "^2.5.0",
     "concat-stream": "^2.0.0",
     "expect.js": "~0.3.1",
+    "jest": "^29.7.0",
     "semver": "^7.7.1",
     "socket.io": "^4.8.1",
     "socket.io-client": "^4.8.1",
     "sse": "0.0.8",
-    "jest": "^29.7.0",
     "ts-jest": "^29.2.3",
+    "typescript": "^5.8.3",
     "ws": "^8.18.2"
   },
   "scripts": {
     "preinstall": "npx only-allow pnpm",
     "test": "pnpm exec jest --forceExit --runInBand",
-    "version": "auto-changelog -p && git add CHANGELOG.md"
+    "version": "auto-changelog -p && git add CHANGELOG.md",
+    "clean": "rm -rf dist node_modules",
+    "build": "pnpm exec tsc --build",
+    "tsc": "pnpm exec tsc --watch  --pretty --preserveWatchOutput"
   },
   "engines": {
     "node": ">=16.0.0"
