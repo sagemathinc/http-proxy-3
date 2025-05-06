@@ -3,7 +3,10 @@ import * as https from "https";
 import * as webOutgoing from "./web-outgoing";
 import * as common from "../common";
 import * as followRedirects from "follow-redirects";
-import { type IncomingMessage as Request } from "http";
+import {
+  type IncomingMessage as Request,
+  type ServerResponse as Response,
+} from "http";
 
 const web_o = Object.keys(webOutgoing).map((pass) => webOutgoing[pass]);
 
@@ -98,7 +101,7 @@ export function XHeaders(req: Request, _res, options) {
  * @api private
  */
 
-export function stream(req: Request, res, options, _, server, clb) {
+export function stream(req: Request, res: Response, options, _, server, clb) {
   // And we begin!
   server.emit("start", req, res, options.target || options.forward);
 
