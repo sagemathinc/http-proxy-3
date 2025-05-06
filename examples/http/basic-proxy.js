@@ -24,37 +24,53 @@
 
 */
 
-var util = require('util'),
-    colors = require('colors'),
-    http = require('http'),
-    httpProxy = require('../../lib/http-proxy');
+const http = require("http");
+const httpProxy = require("../../dist/lib");
 
-var welcome = [
-  '#    # ##### ##### #####        #####  #####   ####  #    # #   #',
-  '#    #   #     #   #    #       #    # #    # #    #  #  #   # # ',
-  '######   #     #   #    # ##### #    # #    # #    #   ##     #  ',
-  '#    #   #     #   #####        #####  #####  #    #   ##     #  ',
-  '#    #   #     #   #            #      #   #  #    #  #  #    #  ',
-  '#    #   #     #   #            #      #    #  ####  #    #   #  '
-].join('\n');
+const PORT1 = 9020;
+const PORT2 = 9021;
 
-util.puts(welcome.rainbow.bold);
+const welcome = [
+  "#    # ##### ##### #####        #####  #####   ####  #    # #   #",
+  "#    #   #     #   #    #       #    # #    # #    #  #  #   # # ",
+  "######   #     #   #    # ##### #    # #    # #    #   ##     #  ",
+  "#    #   #     #   #####        #####  #####  #    #   ##     #  ",
+  "#    #   #     #   #            #      #   #  #    #  #  #    #  ",
+  "#    #   #     #   #            #      #    #  ####  #    #   #  ",
+].join("\n");
+
+console.log(welcome);
 
 //
 // Basic Http Proxy Server
 //
-httpProxy.createServer({
-  target:'http://localhost:9003'
-}).listen(8003);
+const proxy = httpProxy
+  .createServer({
+    target: `http://localhost:${PORT1}`,
+  })
+  .listen(PORT2);
+proxy.on("error", (e) => {
+  console.log("error", e);
+});
+proxy.on("close", () => {
+  console.log("proxy closed");
+});
 
 //
 // Target Http Server
 //
-http.createServer(function (req, res) {
-  res.writeHead(200, { 'Content-Type': 'text/plain' });
-  res.write('request successfully proxied to: ' + req.url + '\n' + JSON.stringify(req.headers, true, 2));
-  res.end();
-}).listen(9003);
+http
+  .createServer((req, res) => {
+    res.writeHead(200, { "Content-Type": "text/plain" });
+    res.write(
+      "request successfully proxied to: " +
+        req.url +
+        "\n" +
+        JSON.stringify(req.headers, true, 2),
+    );
+    res.end();
+  })
+  .listen(PORT1);
 
-util.puts('http proxy server'.blue + ' started '.green.bold + 'on port '.blue + '8003'.yellow);
-util.puts('http server '.blue + 'started '.green.bold + 'on port '.blue + '9003 '.yellow);
+console.log(`http proxy server started on port ${PORT2}`);
+console.log(`http server started on port ${PORT1}`);

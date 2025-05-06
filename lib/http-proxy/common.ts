@@ -46,7 +46,7 @@ export function setupOutgoing(
   forward: string = "target",
 ) {
   outgoing.port =
-    options[forward].port || (isSSL.test(options[forward].protocol) ? 443 : 80);
+    options[forward].port ?? (isSSL.test(options[forward].protocol) ? 443 : 80);
 
   [
     "host",
@@ -63,7 +63,7 @@ export function setupOutgoing(
     outgoing[e] = options[forward][e];
   });
 
-  outgoing.method = options.method || req.method;
+  outgoing.method = options.method ?? req.method;
   outgoing.headers = { ...req.headers };
 
   if (options.headers) {
@@ -106,7 +106,7 @@ export function setupOutgoing(
     target && options.prependPath !== false ? target.pathname || "" : "";
 
   let outgoingPath = !options.toProxy
-    ? new URL(req.url ?? "").pathname || ""
+    ? (new URL(req.url ?? "", "http://dummy").pathname ?? "")
     : req.url;
 
   //

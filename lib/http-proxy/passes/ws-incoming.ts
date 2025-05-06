@@ -11,9 +11,9 @@ import * as https from "https";
 import * as common from "../common";
 import type { Request } from "./web-incoming";
 import type { Socket } from "net";
-import * as debug from "debug";
+import debug from "debug";
 
-const log = debug("http-proxy2:ws-incoming");
+const log = debug("http-proxy-2:ws-incoming");
 
 // WebSocket requests must have the `GET` method and
 // the `upgrade:websocket` header

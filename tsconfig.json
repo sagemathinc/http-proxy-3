@@ -4,7 +4,6 @@
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "strictNullChecks": true,
-    "allowJs": true,
     "declaration": true,
     "downlevelIteration": true,
     "esModuleInterop": true,

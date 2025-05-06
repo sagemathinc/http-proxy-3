@@ -4,6 +4,9 @@ import * as web from "./passes/web-incoming";
 import * as ws from "./passes/ws-incoming";
 import { EventEmitter } from "events";
 import type { Stream } from "stream";
+import debug from "debug";
+
+const log = debug("http-proxy-2");
 
 export interface ProxyTargetDetailed {
   host: string;
@@ -88,7 +91,7 @@ export interface ServerOptions {
 export class ProxyServer extends EventEmitter {
   public readonly ws;
   public readonly web;
-  
+
   private options: ServerOptions;
   private webPasses;
   private wsPasses;
@@ -96,13 +99,14 @@ export class ProxyServer extends EventEmitter {
 
   constructor(options: ServerOptions = {}) {
     super();
+    log("creating a ProxyServer", options);
     options.prependPath = options.prependPath === false ? false : true;
-
     this.options = options;
     this.web = this.createRightProxy("web")(options);
     this.ws = this.createRightProxy("ws")(options);
-    this.webPasses = Object.keys(this.web).map((pass) => web[pass]);
-    this.wsPasses = Object.keys(this.ws).map((pass) => ws[pass]);
+    this.webPasses = Object.keys(web).map((pass: string) => web[pass]);
+    global.x = { t: this };
+    this.wsPasses = Object.keys(ws).map((pass: string) => ws[pass]);
     this.on("error", this.onError);
   }
 
@@ -122,55 +126,57 @@ export class ProxyServer extends EventEmitter {
    * @api private
    */
   createRightProxy = (type: ProxyType): Function => {
+    log("createRightProxy", { type });
     return (options) => {
       return (...args: any[] /* req, res, [head], [opts] */) => {
         const req = args[0];
+        log("proxy got request from", req.url);
         const res = args[1];
         const passes = type === "ws" ? this.wsPasses : this.webPasses;
-        let cntr = args.length - 1;
+        let counter = args.length - 1;
         let head;
         let cbl;
 
         /* optional args parse begin */
-        if (typeof args[cntr] === "function") {
-          cbl = args[cntr];
-          cntr--;
+        if (typeof args[counter] === "function") {
+          cbl = args[counter];
+          counter--;
         }
 
         let requestOptions = options;
-        if (!(args[cntr] instanceof Buffer) && args[cntr] !== res) {
+        if (!(args[counter] instanceof Buffer) && args[counter] !== res) {
           // Copy global options, and
           // overwrite with request options
-          requestOptions = { ...options, ...args[cntr] };
-          cntr--;
+          requestOptions = { ...options, ...args[counter] };
+          counter--;
         }
 
-        if (args[cntr] instanceof Buffer) {
-          head = args[cntr];
+        if (args[counter] instanceof Buffer) {
+          head = args[counter];
         }
 
-        /* optional args parse end */
-
-        ["target", "forward"].forEach((e) => {
-          if (typeof requestOptions[e] === "string")
+        for (const e of ["target", "forward"]) {
+          if (typeof requestOptions[e] === "string") {
             requestOptions[e] = new URL(requestOptions[e]);
-        });
+          }
+        }
 
         if (!requestOptions.target && !requestOptions.forward) {
           this.emit("error", new Error("Must provide a proper URL as target"));
           return;
         }
 
-        for (let i = 0; i < passes.length; i++) {
+        log("doing passes.length=", passes.length);
+        for (const pass of passes) {
           /**
            * Call of passes functions
-           * pass(req, res, options, head)
+           *     pass(req, res, options, head)
            *
-           * In WebSockets case the `res` variable
+           * In WebSockets case, the `res` variable
            * refer to the connection socket
-           * pass(req, socket, options, head)
+           *    pass(req, socket, options, head)
            */
-          if (passes[i](req, res, requestOptions, head, this, cbl)) {
+          if (pass(req, res, requestOptions, head, this, cbl)) {
             // passes can return a truthy value to halt the loop
             break;
           }
@@ -187,10 +193,11 @@ export class ProxyServer extends EventEmitter {
   };
 
   listen = (port: number, hostname?: string) => {
-    const self = this,
-      closure = (req, res) => {
-        self.web(req, res);
-      };
+    log("listen", { port, hostname });
+    const self = this;
+    const closure = function (req, res) {
+      self.web(req, res);
+    };
 
     this._server = this.options.ssl
       ? https.createServer(this.options.ssl, closure)
