@@ -6,7 +6,7 @@ import { EventEmitter } from "events";
 import type { Stream } from "stream";
 import debug from "debug";
 
-const log = debug("http-proxy-2");
+const log = debug("http-proxy-3");
 
 export interface ProxyTargetDetailed {
   host: string;

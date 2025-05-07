@@ -1,9 +1,9 @@
 {
-  "name": "http-proxy-2",
-  "version": "1.19.0",
+  "name": "http-proxy-3",
+  "version": "1.19.1",
   "repository": {
     "type": "git",
-    "url": "https://github.com/sagemathinc/http-proxy-2.git"
+    "url": "https://github.com/sagemathinc/http-proxy-3.git"
   },
   "description": "Modern rewrite of http-proxy",
   "author": "William Stein <wstein@sagemath.com>",

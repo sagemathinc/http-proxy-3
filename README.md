@@ -1,8 +1,8 @@
-# http-proxy-2
+# http-proxy-3
 
-http\-proxy\-2 is a modern rewrite of
+http\-proxy\-3 is a modern rewrite of
 [http\-proxy](https://github.com/http-party/node-http-proxy), the original nodejs
-http proxy server. `http-proxy-2` is an HTTP programmable proxying library that
+http proxy server. `http-proxy-3` is an HTTP programmable proxying library that
 supports http/https and websockets. It is suitable for implementing components
 such as reverse proxies and load balancers.
 
@@ -18,6 +18,9 @@ May 2025 STATUS compared to http-proxy:
 - The nontrivial application https://CoCalc.com works using this
 - [ ] Examples: Mostly **NOT** rewritten yet.
 - [ ] Tests: **Not** rewritten yet.
+
+
+Why the name?  http-proxy-2 wasn't available on npmjs.
 
 ### Table of Contents
 
@@ -43,7 +46,7 @@ May 2025 STATUS compared to http-proxy:
 
 ### Installation
 
-`npm install http-proxy-2 --save`
+`npm install http-proxy-3 --save`
 
 **[Back to top](#table-of-contents)**
 
@@ -53,7 +56,7 @@ A new proxy is created by calling `createProxyServer` and passing
 an `options` object as argument ([valid properties are available here](lib/http-proxy.js#L26-L42))
 
 ```js
-import { createProxyServer } from "http-proxy-2";
+import { createProxyServer } from "http-proxy-3";
 const proxy = createProxyServer(options); // See below
 ```
 
@@ -102,7 +105,7 @@ to the client.
 
 ```js
 import * as http from "http";
-import { createProxyServer } from "http-proxy-2";
+import { createProxyServer } from "http-proxy-3";
 //
 // Create your proxy server and set the target in the options.
 //
@@ -135,7 +138,7 @@ and also you can put your own logic to handle the request.
 
 ```js
 import * as http from "http";
-import { createProxyServer } from "http-proxy-2";
+import { createProxyServer } from "http-proxy-3";
 
 //
 // Create a proxy server with custom application logic
@@ -166,7 +169,7 @@ modifies the outgoing proxy request by adding a special header.
 
 ```js
 import * as http from "http";
-import { createProxyServer } from "http-proxy-2";
+import { createProxyServer } from "http-proxy-3";
 
 //
 // Create a proxy server with custom application logic
@@ -211,7 +214,7 @@ Sometimes when you have received a HTML/XML document from the server of origin y
 
 ```js
 import * as http from "http";
-import { createProxyServer } from "http-proxy-2";
+import { createProxyServer } from "http-proxy-3";
 //
 // Create a proxy server with latency
 //
@@ -335,7 +338,7 @@ Also you can proxy the websocket requests just calling the `ws(req, socket, head
 
 ```js
 import * as http from "http";
-import { createProxyServer } from "http-proxy-2";
+import { createProxyServer } from "http-proxy-3";
 
 //
 // Setup our server to proxy standard HTTP requests
@@ -455,7 +458,7 @@ If you are using the `proxyServer.listen` method, the following options are also
 - (DEPRECATED) `proxySocket`: Deprecated in favor of `open`.
 
 ```js
-import { createProxyServer } from "http-proxy-2";
+import { createProxyServer } from "http-proxy-3";
 // Error example
 //
 // Http Proxy Server with bad target

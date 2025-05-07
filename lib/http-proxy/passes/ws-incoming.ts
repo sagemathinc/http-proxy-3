@@ -13,7 +13,7 @@ import type { Request } from "./web-incoming";
 import type { Socket } from "net";
 import debug from "debug";
 
-const log = debug("http-proxy-2:ws-incoming");
+const log = debug("http-proxy-3:ws-incoming");
 
 function createSocketCounter(name) {
   let sockets = new Set<number>();
