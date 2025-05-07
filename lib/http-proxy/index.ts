@@ -116,6 +116,7 @@ export class ProxyServer extends EventEmitter {
     return (options) => {
       return (...args: any[] /* req, res, [head], [opts] */) => {
         const req = args[0];
+        // console.log("proxy: ", { type, path: req.url });
         const res = args[1];
         const passes = type === "ws" ? this.wsPasses : this.webPasses;
         let counter = args.length - 1;

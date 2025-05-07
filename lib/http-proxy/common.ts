@@ -89,11 +89,9 @@ export function setupOutgoing(
   // the final path is target path + relative path requested by user:
   const target = options[forward || "target"];
   const targetPath =
-    target && options.prependPath !== false ? target.pathname || "" : "";
+    target && options.prependPath !== false ? getPath(target.pathname) : "";
 
-  let outgoingPath = !options.toProxy
-    ? (new URL(req.url ?? "", "http://dummy").pathname ?? "")
-    : req.url;
+  let outgoingPath = options.toProxy ? req.url : getPath(req.url);
 
   // Remark: ignorePath will just straight up ignore whatever the request's
   // path is. This can be labeled as FOOT-GUN material if you do not know what
@@ -213,4 +211,9 @@ export function rewriteCookieProperty(
 // Check the host and see if it potentially has a port in it (keep it simple)
 function hasPort(host: string): boolean {
   return !!~host.indexOf(":");
+}
+
+function getPath(url?: string): string {
+  const u = new URL(url ?? "", "http://dummy");
+  return `${u.pathname ?? ""}${u.search ?? ""}`;
 }

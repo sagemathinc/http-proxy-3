@@ -138,9 +138,10 @@ export function stream(
     socket.unshift(head);
   }
 
-  const proxyReq = (
-    common.isSSL.test(options.target.protocol) ? https : http
-  ).request(common.setupOutgoing(options.ssl || {}, options, req));
+  const proto = common.isSSL.test(options.target.protocol) ? https : http;
+
+  const outgoingOptions = common.setupOutgoing(options.ssl || {}, options, req);
+  const proxyReq = proto.request(outgoingOptions);
 
   // Enable developers to modify the proxyReq before headers are sent
   if (server) {

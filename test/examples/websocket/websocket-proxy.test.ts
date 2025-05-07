@@ -5,6 +5,7 @@ pnpm test websocket-proxy.test.ts
 import * as httpProxy from "../../..";
 import getPort from "../../get-port";
 import log from "../../log";
+import { createServer } from "http";
 import { Server } from "socket.io";
 import { io as socketioClient } from "socket.io-client";
 import { once } from "../../wait";
@@ -18,8 +19,9 @@ describe("Example of proxying over HTTP and WebSockets", () => {
   let servers: any = {};
   let socketIOServer: string;
   it("Create the target websocket server", async () => {
-    const io = new Server();
-    servers.io = io;
+    const httpServer = createServer();
+    servers.httpServer = httpServer;
+    const io = new Server(httpServer);
     io.on("connection", (client) => {
       log("Got websocket connection");
 
@@ -28,7 +30,7 @@ describe("Example of proxying over HTTP and WebSockets", () => {
         client.send("from server");
       });
     });
-    io.listen(ports.socketio);
+    httpServer.listen(ports.socketio);
     socketIOServer = `ws://localhost:${ports.socketio}`;
   });
 
@@ -49,8 +51,9 @@ describe("Example of proxying over HTTP and WebSockets", () => {
   });
 
   it("Create a websocket client and test the socketio server via the proxy server", async () => {
-    console.log(ports);
-    const client = socketioClient(`ws://localhost:${ports.proxy}`);
+    const client = socketioClient(`ws://localhost:${ports.proxy}`, {
+      transports: ["websocket"],
+    });
 
     client.send("I am the client");
 
@@ -59,7 +62,7 @@ describe("Example of proxying over HTTP and WebSockets", () => {
     client.close();
   });
 
-  //   it("cleans up", () => {
-  //     Object.values(servers).map((x: any) => x?.close());
-  //   });
+  it("cleans up", () => {
+    Object.values(servers).map((x: any) => x?.close());
+  });
 });
