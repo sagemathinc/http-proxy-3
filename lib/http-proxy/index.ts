@@ -182,9 +182,8 @@ export class ProxyServer extends EventEmitter {
 
   listen = (port: number, hostname?: string) => {
     log("listen", { port, hostname });
-    const self = this;
-    const closure = function (req, res) {
-      self.web(req, res);
+    const closure = (req, res) => {
+      this.web(req, res);
     };
 
     this._server = this.options.ssl
@@ -193,7 +192,7 @@ export class ProxyServer extends EventEmitter {
 
     if (this.options.ws) {
       this._server.on("upgrade", (req, socket, head) => {
-        self.ws(req, socket, head);
+        this.ws(req, socket, head);
       });
     }
 
