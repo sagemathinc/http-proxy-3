@@ -71,7 +71,7 @@ export function XHeaders(req: Request, _res, options) {
 }
 
 // Does the actual proxying. If `forward` is enabled fires up
-// a ForwardStream, same happens for ProxyStream. The request
+// a ForwardStream (there is NO RESPONSE), same happens for ProxyStream. The request
 // just dies otherwise.
 export function stream(req: Request, res: Response, options, _, server, clb) {
   // And we begin!
@@ -95,6 +95,8 @@ export function stream(req: Request, res: Response, options, _, server, clb) {
 
     (options.buffer || req).pipe(forwardReq);
     if (!options.target) {
+      // no target, so we do not send anything back to the client.
+      // If target is set, we do a separate proxy below, which might be to a completely different server.
       return res.end();
     }
   }

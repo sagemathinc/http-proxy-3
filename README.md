@@ -20,7 +20,7 @@ May 6, 2025 STATUS compared to http-proxy:
 - [ ] Examples: Mostly **NOT** rewritten yet.
 - [ ] Tests: **Not** rewritten yet.
 
-Why the name?  http-proxy-2 wasn't available on npmjs.
+Why the name? http-proxy-2 wasn't available on npmjs.
 
 ### Table of Contents
 
@@ -349,7 +349,7 @@ proxyServer.listen(8015);
 
 - **target**: url string to be parsed with the url module
 
-- **forward**: url string to be parsed with the url module or a URL object
+- **forward**: url string to be parsed with the url module or a URL object. A forward proxy without target set just forwards requests but does NOT actually wait for a response and return it to the caller.
 
 - **agent**: object to be passed to http\(s\).request \(see Node's [https agent](http://nodejs.org/api/https.html#https_class_https_agent) and [http agent](http://nodejs.org/api/http.html#http_class_http_agent) objects\)
 
@@ -382,6 +382,7 @@ proxyServer.listen(8015);
 - **protocolRewrite**: rewrites the location protocol on \(201/301/302/307/308\) redirects to 'http' or 'https'. Default: null.
 
 - **cookieDomainRewrite**: rewrites domain of `set-cookie` headers. Possible values:
+
   - `false` \(default\): disable cookie rewriting
   - String: new domain, for example `cookieDomainRewrite: "new.domain"`. To remove the domain, use `cookieDomainRewrite: ""`.
   - Object: mapping of domains to new domains, use `"*"` to match all domains.
@@ -395,6 +396,7 @@ proxyServer.listen(8015);
     ```
 
 - **cookiePathRewrite**: rewrites path of `set-cookie` headers. Possible values:
+
   - `false` \(default\): disable cookie rewriting
   - String: new path, for example `cookiePathRewrite: "/newPath/"`. To remove the path, use `cookiePathRewrite: ""`. To set path to root use `cookiePathRewrite: "/"`.
   - Object: mapping of paths to new paths, use `"*"` to match all paths.
@@ -418,6 +420,7 @@ proxyServer.listen(8015);
 - **selfHandleResponse** true/false, if set to true, none of the webOutgoing passes are called and it's your responsibility to appropriately return the response by listening and acting on the `proxyRes` event
 
 - **buffer**: stream of data to send as the request body. Maybe you have some middleware that consumes the request stream before proxying it on e.g. If you read the body of a request into a field called 'req.rawbody' you could restream this field in the buffer option:
+
   ```
   'use strict';
 
@@ -589,4 +592,3 @@ pnpm test
 > LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 > OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 > THE SOFTWARE.
-
