@@ -213,6 +213,11 @@ export class ProxyServer extends EventEmitter {
     return this;
   };
 
+  // if the proxy started its own http server, this is the address of that server.
+  address = () => {
+    return this._server?.address();
+  };
+
   close = (callback?: Function) => {
     const self = this;
     if (this._server) {
