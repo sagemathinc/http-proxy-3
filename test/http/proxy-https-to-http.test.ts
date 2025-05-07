@@ -3,12 +3,12 @@ pnpm test proxy-https-to-http.test.ts
 */
 
 import * as http from "http";
-import * as httpProxy from "../../..";
-import getPort from "../../get-port";
+import * as httpProxy from "../..";
+import getPort from "../get-port";
 import { join } from "path";
 import { readFile } from "fs/promises";
 
-const fixturesDir = join(__dirname, "..", "..", "fixtures");
+const fixturesDir = join(__dirname, "..", "fixtures");
 
 describe("Basic example of proxying over HTTPS to a target HTTP server", () => {
   let ports;

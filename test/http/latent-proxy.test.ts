@@ -3,8 +3,8 @@ pnpm test latent-proxy.test.ts
 */
 
 import * as http from "http";
-import * as httpProxy from "../../..";
-import getPort from "../../get-port";
+import * as httpProxy from "../..";
+import getPort from "../get-port";
 
 describe("Test proxying over HTTP with latency", () => {
   let ports;

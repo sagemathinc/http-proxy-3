@@ -7,9 +7,9 @@ pnpm test basic-proxy.test.ts
 */
 
 import * as http from "http";
-import * as httpProxy from "../../..";
-import log from "../../log";
-import getPort from "../../get-port";
+import * as httpProxy from "../..";
+import log from "../log";
+import getPort from "../get-port";
 
 export async function server() {
   const httpPort = await getPort();

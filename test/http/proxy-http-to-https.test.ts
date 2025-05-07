@@ -5,8 +5,8 @@ We proxy https://google.com via a local non-https http server.
 */
 
 import * as https from "https";
-import * as httpProxy from "../../..";
-import getPort from "../../get-port";
+import * as httpProxy from "../..";
+import getPort from "../get-port";
 
 describe(" Basic example of proxying over HTTP to a target HTTPS server", () => {
   let port, server;

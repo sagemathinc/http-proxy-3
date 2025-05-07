@@ -8,10 +8,10 @@
 */
 
 import * as http from "http";
-import * as httpProxy from "../../..";
-import log from "../../log";
-import getPort from "../../get-port";
-import wait from "../../wait";
+import * as httpProxy from "../..";
+import log from "../log";
+import getPort from "../get-port";
+import wait from "../wait";
 
 describe("Example of proxying over HTTP with additional forward proxy to a different server", () => {
   let ports;

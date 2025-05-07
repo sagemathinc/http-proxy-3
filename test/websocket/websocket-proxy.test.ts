@@ -2,13 +2,13 @@
 pnpm test websocket-proxy.test.ts
 */
 
-import * as httpProxy from "../../..";
-import getPort from "../../get-port";
-import log from "../../log";
+import * as httpProxy from "../..";
+import log from "../log";
+import getPort from "../get-port";
+import { once } from "../wait";
 import { createServer } from "http";
 import { Server } from "socket.io";
 import { io as socketioClient } from "socket.io-client";
-import { once } from "../../wait";
 
 describe("Example of proxying over HTTP and WebSockets", () => {
   let ports;
