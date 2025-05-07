@@ -8,8 +8,9 @@ such as reverse proxies and load balancers.
 
 **PR's welcome!**
 
-May 2025 STATUS compared to http-proxy:
+May 6, 2025 STATUS compared to http-proxy:
 
+- **DISCLAIMER: This mostly works, but obviously is NOT safe to deploy until we get the testing infrastructure in place and fix the bugs that are revealed.**
 - Library entirely rewritten in Typescript in a modern style, with many types added internally
 - Switch to pnpm
 - All dependent packages updated to latest versions, addressing all known security vulnerabilities (according to `pnpm audit`).
