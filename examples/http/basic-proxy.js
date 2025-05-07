@@ -26,9 +26,7 @@
 
 const http = require("http");
 const httpProxy = require("../../dist/lib");
-
-const PORT1 = 9020;
-const PORT2 = 9021;
+const getPort = require("get-port").default;
 
 const welcome = [
   "#    # ##### ##### #####        #####  #####   ####  #    # #   #",
@@ -41,36 +39,55 @@ const welcome = [
 
 console.log(welcome);
 
-//
-// Basic Http Proxy Server
-//
-const proxy = httpProxy
-  .createServer({
-    target: `http://localhost:${PORT1}`,
-  })
-  .listen(PORT2);
-proxy.on("error", (e) => {
-  console.log("error", e);
-});
-proxy.on("close", () => {
-  console.log("proxy closed");
-});
+async function server() {
+  const PORT1 = await getPort();
+  const PORT2 = await getPort();
 
-//
-// Target Http Server
-//
-http
-  .createServer((req, res) => {
-    res.writeHead(200, { "Content-Type": "text/plain" });
-    res.write(
-      "request successfully proxied to: " +
-        req.url +
-        "\n" +
-        JSON.stringify(req.headers, true, 2),
-    );
-    res.end();
-  })
-  .listen(PORT1);
+  // Basic Http Proxy Server
+  const proxy = httpProxy
+    .createServer({
+      target: `http://localhost:${PORT1}`,
+    })
+    .listen(PORT2);
+  proxy.on("error", (e) => {
+    console.log("error", e);
+  });
+  proxy.on("close", () => {
+    console.log("proxy closed");
+  });
 
-console.log(`http proxy server started on port ${PORT2}`);
-console.log(`http server started on port ${PORT1}`);
+  // Target Http Server
+  http
+    .createServer((req, res) => {
+      res.writeHead(200, { "Content-Type": "text/plain" });
+      res.write(
+        "request successfully proxied to: " +
+          req.url +
+          "\n" +
+          JSON.stringify(req.headers, true, 2),
+      );
+      res.end();
+    })
+    .listen(PORT1);
+
+  console.log(`http proxy server started on port ${PORT2}`);
+  console.log(`http server started on port ${PORT1}`);
+  return { PORT1, PORT2 };
+}
+
+async function check() {
+  const { PORT1, PORT2 } = await server();
+  const a = await (await fetch(`http://localhost:${PORT1}`)).text();
+  const b = await (await fetch(`http://localhost:${PORT2}`)).text();
+  console.log({ a, b });
+  if (
+    a.includes("request successfully proxied") &&
+    b.includes("request successfully proxied")
+  ) {
+    process.exit(0);
+  } else {
+    process.exit(1);
+  }
+}
+
+check();
