@@ -2,33 +2,12 @@ import * as required from "requires-port";
 import type { ProxyTargetDetailed, ServerOptions } from "./index";
 import { type IncomingMessage as Request } from "http";
 import { TLSSocket } from "tls";
+import type { Socket } from "net";
 
 const upgradeHeader = /(^|,)\s*upgrade\s*($|,)/i;
 
-/**
- * Simple Regex for testing if protocol is https
- */
+// Simple Regex for testing if protocol is https
 export const isSSL = /^https|wss/;
-
-/**
- * Copies the right headers from `options` and `req` to
- * `outgoing` which is then used to fire the proxied
- * request.
- *
- * Examples:
- *
- *    common.setupOutgoing(outgoing, options, req)
- *    // => { host: ..., hostname: ...}
- *
- * @param {Object} Outgoing Base object to be filled with required properties
- * @param {Object} Options Config object passed to the proxy
- * @param {ClientRequest} Req Request Object
- * @param {String} Forward String to select forward or target
- *
- * @return {Object} Outgoing Object with all required properties set
- *
- * @api private
- */
 
 type Outgoing0 = ProxyTargetDetailed & ServerOptions;
 
@@ -39,16 +18,24 @@ export interface Outgoing extends Outgoing0 {
   headers: { [header: string]: string | string[] | undefined };
 }
 
+// setupOutgoing -- Copies the right headers from `options` and `req` to
+// `outgoing` which is then used to fire the proxied request by calling
+// http.request or https.request with outgoing as input.
+// Returns Object with all required properties outgoing options.
 export function setupOutgoing(
+  // Base object to be filled with required properties
   outgoing: Outgoing,
+  // Config object passed to the proxy
   options,
+  // Request Object
   req: Request,
+  // String to select forward or target
   forward: string = "target",
 ) {
   outgoing.port =
     options[forward].port ?? (isSSL.test(options[forward].protocol) ? 443 : 80);
 
-  [
+  for (const e of [
     "host",
     "hostname",
     "socketPath",
@@ -59,9 +46,9 @@ export function setupOutgoing(
     "ca",
     "ciphers",
     "secureProtocol",
-  ].forEach(function (e) {
+  ]) {
     outgoing[e] = options[forward][e];
-  });
+  }
 
   outgoing.method = options.method ?? req.method;
   outgoing.headers = { ...req.headers };
@@ -86,10 +73,8 @@ export function setupOutgoing(
   outgoing.agent = options.agent || false;
   outgoing.localAddress = options.localAddress;
 
-  //
   // Remark: If we are false and not upgrading, set the connection: close. This is the right thing to do
   // as node core doesn't handle this COMPLETELY properly yet.
-  //
   if (!outgoing.agent) {
     outgoing.headers = outgoing.headers || {};
     if (
@@ -109,11 +94,9 @@ export function setupOutgoing(
     ? (new URL(req.url ?? "", "http://dummy").pathname ?? "")
     : req.url;
 
-  //
   // Remark: ignorePath will just straight up ignore whatever the request's
   // path is. This can be labeled as FOOT-GUN material if you do not know what
   // you are doing and are using conflicting options.
-  //
   outgoingPath = !options.ignorePath ? outgoingPath : "";
 
   outgoing.path = urlJoin(targetPath, outgoingPath ?? "");
@@ -128,70 +111,41 @@ export function setupOutgoing(
   return outgoing;
 }
 
-/**
- * Set the proper configuration for sockets,
- * set no delay and set keep alive, also set
- * the timeout to 0.
- *
- * Examples:
- *
- *    common.setupSocket(socket)
- *    // => Socket
- *
- * @param {Socket} Socket instance to setup
- *
- * @return {Socket} Return the configured socket.
- *
- * @api private
- */
-
-export function setupSocket(socket) {
+// Set the proper configuration for sockets,
+// set no delay and set keep alive, also set
+// the timeout to 0.
+// Return the configured socket.
+export function setupSocket(socket: Socket): Socket {
   socket.setTimeout(0);
   socket.setNoDelay(true);
-
   socket.setKeepAlive(true, 0);
-
   return socket;
 }
 
-/**
- * Get the port number from the host. Or guess it based on the connection type.
- *
- * @param {Request} req Incoming HTTP request.
- *
- * @return {String} The port number.
- *
- * @api private
- */
-export function getPort(req: Request): string {
+// Get the port number from the host. Or guess it based on the connection type.
+export function getPort(
+  // Incoming HTTP request.
+  req: Request,
+): // Retjurn the port number, as a string.
+string {
   const res = req.headers.host ? req.headers.host.match(/:(\d+)/) : "";
   return res ? res[1] : hasEncryptedConnection(req) ? "443" : "80";
 }
 
-/**
- * Check if the request has an encrypted connection.
- *
- * @param req Incoming HTTP request.
- *
- * @return Whether the connection is encrypted or not.
- */
-export function hasEncryptedConnection(req: Request): boolean {
+// Check if the request has an encrypted connection.
+export function hasEncryptedConnection(
+  req: // Incoming HTTP request.
+  Request,
+): boolean {
   const conn = req.connection;
   return (
     (conn instanceof TLSSocket && conn.encrypted) || Boolean((conn as any).pair)
   );
 }
 
-/**
- * OS-agnostic join (doesn't break on URLs like path.join does on Windows)>
- *
- * @return The generated path.
- */
-
+// OS-agnostic join (doesn't break on URLs like path.join does on Windows)>
 export function urlJoin(...args: string[]): string {
-  //
   // join url and merge all query string.
-  //
   const queryParams: string[] = [];
   let queryParamRaw = "";
   let retSegs;
@@ -205,10 +159,8 @@ export function urlJoin(...args: string[]): string {
   });
   queryParamRaw = queryParams.filter(Boolean).join("&");
 
-  //
   // Join all strings, but remove empty strings so we don't get extra slashes from
   // joining e.g. ['', 'am']
-  //
   retSegs = args
     .filter(Boolean)
     .join("/")
@@ -221,17 +173,11 @@ export function urlJoin(...args: string[]): string {
   return queryParamRaw ? retSegs + "?" + queryParamRaw : retSegs;
 }
 
-/**
- * Rewrites or removes the domain of a cookie header
- *
- * @param {String|Array} Header
- * @param {Object} Config, mapping of domain to rewritten domain.
- *                 '*' key to match any domain, null value to remove the domain.
- *
- * @api private
- */
+// Rewrites or removes the domain of a cookie header
 export function rewriteCookieProperty(
   header: string | any[],
+  // config = mapping of domain to rewritten domain.
+  //         '*' key to match any domain, null value to remove the domain.
   config: object,
   property: string,
 ) {
@@ -263,13 +209,7 @@ export function rewriteCookieProperty(
   );
 }
 
-/**
- * Check the host and see if it potentially has a port in it (keep it simple)
- *
- * @returns {Boolean} Whether we have one or not
- *
- * @api private
- */
+// Check the host and see if it potentially has a port in it (keep it simple)
 function hasPort(host: string): boolean {
   return !!~host.indexOf(":");
 }

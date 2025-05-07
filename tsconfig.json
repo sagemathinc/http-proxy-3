@@ -4,7 +4,6 @@
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "strictNullChecks": true,
-    "declaration": true,
     "downlevelIteration": true,
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
@@ -26,5 +25,5 @@
     "watchDirectory": "useFsEvents",
     "watchFile": "useFsEvents"
   },
-  "exclude": ["node_modules", "dist", "test", "examples"]
+  "exclude": ["node_modules", "dist", "examples"]
 }

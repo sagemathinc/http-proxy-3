@@ -30,7 +30,7 @@ export interface ServerOptions {
   // NOTE: `options.target and `options.forward` cannot be both missing.
   // URL string to be parsed with the url module.
   target?: ProxyTarget | undefined;
-  // URL string to be parsed with the url module.
+  // URL string to be parsed with the url module or a URL object.
   forward?: ProxyTargetUrl | undefined;
   // Object to be passed to http(s).request.
   agent?: any;
@@ -105,41 +105,27 @@ export class ProxyServer extends EventEmitter {
     this.web = this.createRightProxy("web")(options);
     this.ws = this.createRightProxy("ws")(options);
     this.webPasses = Object.keys(web).map((pass: string) => web[pass]);
-    global.x = { t: this };
     this.wsPasses = Object.keys(ws).map((pass: string) => ws[pass]);
     this.on("error", this.onError);
   }
 
-  /**
-   * createRightProxy - Returns a function that creates the loader for
-   * either `ws` or `web`'s  passes.
-   *
-   * Examples:
-   *
-   *    httpProxy.createRightProxy('ws')
-   *    // => [Function]
-   *
-   * @param {String} Type Either 'ws' or 'web'
-   *
-   * @return {Function} Loader Function that when called returns an iterator for the right passes
-   *
-   * @api private
-   */
+  // createRightProxy - Returns a function that when called creates the loader for
+  // either `ws` or `web`'s passes.
   createRightProxy = (type: ProxyType): Function => {
     log("createRightProxy", { type });
     return (options) => {
       return (...args: any[] /* req, res, [head], [opts] */) => {
         const req = args[0];
-        //log("proxy got request from", req.url);
+        // log("proxy got request from", req.url);
         const res = args[1];
         const passes = type === "ws" ? this.wsPasses : this.webPasses;
         let counter = args.length - 1;
         let head;
-        let cbl;
+        let cb;
 
-        /* optional args parse begin */
+        // optional args parse begin
         if (typeof args[counter] === "function") {
-          cbl = args[counter];
+          cb = args[counter];
           counter--;
         }
 
@@ -162,7 +148,10 @@ export class ProxyServer extends EventEmitter {
         }
 
         if (!requestOptions.target && !requestOptions.forward) {
-          this.emit("error", new Error("Must provide a proper URL as target"));
+          this.emit(
+            "error",
+            new Error("Must provide a proper URL as target or forward"),
+          );
           return;
         }
 
@@ -175,7 +164,7 @@ export class ProxyServer extends EventEmitter {
            * refer to the connection socket
            *    pass(req, socket, options, head)
            */
-          if (pass(req, res, requestOptions, head, this, cbl)) {
+          if (pass(req, res, requestOptions, head, this, cb)) {
             // passes can return a truthy value to halt the loop
             break;
           }
@@ -218,22 +207,22 @@ export class ProxyServer extends EventEmitter {
     return this._server?.address();
   };
 
-  close = (callback?: Function) => {
+  close = (cb?: Function) => {
     const self = this;
     if (this._server) {
       this._server.close(done);
     }
 
-    // Wrap callback to nullify server after all open connections are closed.
+    // Wrap cb to nullify server after all open connections are closed.
     function done() {
       self._server = null;
-      if (callback) {
-        callback.apply(null, arguments);
+      if (cb) {
+        cb.apply(null, arguments);
       }
     }
   };
 
-  before = (type: ProxyType, passName: string, callback: Function) => {
+  before = (type: ProxyType, passName: string, cb: Function) => {
     if (type !== "ws" && type !== "web") {
       throw new Error("type must be `web` or `ws`");
     }
@@ -250,10 +239,10 @@ export class ProxyServer extends EventEmitter {
       throw new Error("No such pass");
     }
 
-    passes.splice(i, 0, callback);
+    passes.splice(i, 0, cb);
   };
 
-  after = (type: ProxyType, passName: string, callback: Function) => {
+  after = (type: ProxyType, passName: string, cb: Function) => {
     if (type !== "ws" && type !== "web") {
       throw new Error("type must be `web` or `ws`");
     }
@@ -270,6 +259,6 @@ export class ProxyServer extends EventEmitter {
       throw new Error("No such pass");
     }
 
-    passes.splice(i++, 0, callback);
+    passes.splice(i++, 0, cb);
   };
 }

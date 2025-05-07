@@ -20,7 +20,6 @@ May 6, 2025 STATUS compared to http-proxy:
 - [ ] Examples: Mostly **NOT** rewritten yet.
 - [ ] Tests: **Not** rewritten yet.
 
-
 Why the name?  http-proxy-2 wasn't available on npmjs.
 
 ### Table of Contents
@@ -141,16 +140,12 @@ and also you can put your own logic to handle the request.
 import * as http from "http";
 import { createProxyServer } from "http-proxy-3";
 
-//
 // Create a proxy server with custom application logic
-//
 const proxy = createProxyServer({});
 
-//
 // Create your custom server and just call `proxy.web()` to proxy
 // a web request to the target passed in the options
 // also you can use `proxy.ws()` to proxy a websockets request
-//
 const server = http.createServer((req, res) => {
   // You can define here your custom logic to handle the request
   // and then proxy the request.
@@ -172,9 +167,7 @@ modifies the outgoing proxy request by adding a special header.
 import * as http from "http";
 import { createProxyServer } from "http-proxy-3";
 
-//
 // Create a proxy server with custom application logic
-//
 const proxy = createProxyServer({});
 
 // To modify the proxy connection before data is sent, you can listen
@@ -184,7 +177,6 @@ const proxy = createProxyServer({});
 //  http.ServerResponse res, Object options). This mechanism is useful when
 // you need to modify the proxy request before the proxy connection
 // is made to the target.
-//
 proxy.on("proxyReq", (proxyReq, req, res, options) => {
   proxyReq.setHeader("X-Special-Proxy-Header", "foobar");
 });
@@ -216,15 +208,12 @@ Sometimes when you have received a HTML/XML document from the server of origin y
 ```js
 import * as http from "http";
 import { createProxyServer } from "http-proxy-3";
-//
+
 // Create a proxy server with latency
-//
 const proxy = createProxyServer();
 
-//
 // Create your server that makes an operation that waits a while
 // and then proxies the request
-//
 http
   .createServer((req, res) => {
     // This simulates an operation that takes 500ms to execute
@@ -236,9 +225,7 @@ http
   })
   .listen(8008);
 
-//
 // Create your target server
-//
 http
   .createServer(function (req, res) {
     res.writeHead(200, { "Content-Type": "text/plain" });
@@ -262,9 +249,7 @@ You can activate the validation of a secure SSL certificate to the target connec
 ##### HTTPS -> HTTP
 
 ```js
-//
 // Create the HTTPS proxy server in front of a HTTP server
-//
 httpProxy
   .createServer({
     target: {
@@ -282,9 +267,7 @@ httpProxy
 ##### HTTPS -> HTTPS
 
 ```js
-//
 // Create the proxy server listening on port 443
-//
 httpProxy
   .createServer({
     ssl: {
@@ -300,9 +283,7 @@ httpProxy
 ##### HTTP -> HTTPS (using a PKCS12 client certificate)
 
 ```js
-//
 // Create an HTTP proxy server with an HTTPS target
-//
 httpProxy
   .createProxyServer({
     target: {
@@ -324,9 +305,7 @@ httpProxy
 You can activate the websocket support for the proxy using `ws:true` in the options.
 
 ```js
-//
 // Create a proxy server for websockets
-//
 httpProxy
   .createServer({
     target: "ws://localhost:9014",
@@ -341,9 +320,7 @@ Also you can proxy the websocket requests just calling the `ws(req, socket, head
 import * as http from "http";
 import { createProxyServer } from "http-proxy-3";
 
-//
 // Setup our server to proxy standard HTTP requests
-//
 
 const proxy = createProxyServer({
   target: {
@@ -355,10 +332,8 @@ var proxyServer = http.createServer((req, res) => {
   proxy.web(req, res);
 });
 
-//
 // Listen to the `upgrade` event and proxy the
 // WebSocket requests as well.
-//
 proxyServer.on("upgrade", (req, socket, head) => {
   proxy.ws(req, socket, head);
 });
@@ -373,24 +348,41 @@ proxyServer.listen(8015);
 `httpProxy.createProxyServer` supports the following options:
 
 - **target**: url string to be parsed with the url module
-- **forward**: url string to be parsed with the url module
-- **agent**: object to be passed to http(s).request (see Node's [https agent](http://nodejs.org/api/https.html#https_class_https_agent) and [http agent](http://nodejs.org/api/http.html#http_class_http_agent) objects)
-- **ssl**: object to be passed to https.createServer()
+
+- **forward**: url string to be parsed with the url module or a URL object
+
+- **agent**: object to be passed to http\(s\).request \(see Node's [https agent](http://nodejs.org/api/https.html#https_class_https_agent) and [http agent](http://nodejs.org/api/http.html#http_class_http_agent) objects\)
+
+- **ssl**: object to be passed to https.createServer\(\)
+
 - **ws**: true/false, if you want to proxy websockets
-- **xfwd**: true/false, adds x-forward headers
+
+- **xfwd**: true/false, adds x\-forward headers
+
 - **secure**: true/false, if you want to verify the SSL Certs
-- **toProxy**: true/false, passes the absolute URL as the `path` (useful for proxying to proxies)
-- **prependPath**: true/false, Default: true - specify whether you want to prepend the target's path to the proxy path
-- **ignorePath**: true/false, Default: false - specify whether you want to ignore the proxy path of the incoming request (note: you will have to append / manually if required).
+
+- **toProxy**: true/false, passes the absolute URL as the `path` \(useful for proxying to proxies\)
+
+- **prependPath**: true/false, Default: true \- specify whether you want to prepend the target's path to the proxy path
+
+- **ignorePath**: true/false, Default: false \- specify whether you want to ignore the proxy path of the incoming request \(note: you will have to append / manually if required\).
+
 - **localAddress**: Local interface string to bind for outgoing connections
-- **changeOrigin**: true/false, Default: false - changes the origin of the host header to the target URL
-- **preserveHeaderKeyCase**: true/false, Default: false - specify whether you want to keep letter case of response header key
+
+- **changeOrigin**: true/false, Default: false \- changes the origin of the host header to the target URL
+
+- **preserveHeaderKeyCase**: true/false, Default: false \- specify whether you want to keep letter case of response header key
+
 - **auth**: Basic authentication i.e. 'user:password' to compute an Authorization header.
-- **hostRewrite**: rewrites the location hostname on (201/301/302/307/308) redirects.
-- **autoRewrite**: rewrites the location host/port on (201/301/302/307/308) redirects based on requested host/port. Default: false.
-- **protocolRewrite**: rewrites the location protocol on (201/301/302/307/308) redirects to 'http' or 'https'. Default: null.
+
+- **hostRewrite**: rewrites the location hostname on \(201/301/302/307/308\) redirects.
+
+- **autoRewrite**: rewrites the location host/port on \(201/301/302/307/308\) redirects based on requested host/port. Default: false.
+
+- **protocolRewrite**: rewrites the location protocol on \(201/301/302/307/308\) redirects to 'http' or 'https'. Default: null.
+
 - **cookieDomainRewrite**: rewrites domain of `set-cookie` headers. Possible values:
-  - `false` (default): disable cookie rewriting
+  - `false` \(default\): disable cookie rewriting
   - String: new domain, for example `cookieDomainRewrite: "new.domain"`. To remove the domain, use `cookieDomainRewrite: ""`.
   - Object: mapping of domains to new domains, use `"*"` to match all domains.
     For example keep one domain unchanged, rewrite one domain and remove other domains:
@@ -401,8 +393,9 @@ proxyServer.listen(8015);
       "*": ""
     }
     ```
+
 - **cookiePathRewrite**: rewrites path of `set-cookie` headers. Possible values:
-  - `false` (default): disable cookie rewriting
+  - `false` \(default\): disable cookie rewriting
   - String: new path, for example `cookiePathRewrite: "/newPath/"`. To remove the path, use `cookiePathRewrite: ""`. To set path to root use `cookiePathRewrite: "/"`.
   - Object: mapping of paths to new paths, use `"*"` to match all paths.
     For example, to keep one path unchanged, rewrite one path and remove other paths:
@@ -413,13 +406,18 @@ proxyServer.listen(8015);
       "*": ""
     }
     ```
-- **headers**: object with extra headers to be added to target requests.
-- **proxyTimeout**: timeout (in millis) for outgoing proxy requests
-- **timeout**: timeout (in millis) for incoming requests
-- **followRedirects**: true/false, Default: false - specify whether you want to follow redirects
-- **selfHandleResponse** true/false, if set to true, none of the webOutgoing passes are called and it's your responsibility to appropriately return the response by listening and acting on the `proxyRes` event
-- **buffer**: stream of data to send as the request body. Maybe you have some middleware that consumes the request stream before proxying it on e.g. If you read the body of a request into a field called 'req.rawbody' you could restream this field in the buffer option:
 
+- **headers**: object with extra headers to be added to target requests.
+
+- **proxyTimeout**: timeout \(in millis\) for outgoing proxy requests
+
+- **timeout**: timeout \(in millis\) for incoming requests
+
+- **followRedirects**: true/false, Default: false \- specify whether you want to follow redirects
+
+- **selfHandleResponse** true/false, if set to true, none of the webOutgoing passes are called and it's your responsibility to appropriately return the response by listening and acting on the `proxyRes` event
+
+- **buffer**: stream of data to send as the request body. Maybe you have some middleware that consumes the request stream before proxying it on e.g. If you read the body of a request into a field called 'req.rawbody' you could restream this field in the buffer option:
   ```
   'use strict';
 
@@ -463,14 +461,12 @@ import { createProxyServer } from "http-proxy-3";
 // Error example
 //
 // Http Proxy Server with bad target
-//
 const proxy = createProxyServer({
   target: "http://localhost:9005",
 });
 
 proxy.listen(8005);
 
-//
 // Listen for the `error` event on `proxy`.
 proxy.on("error", (err, req, res) => {
   res.writeHead(500, {
@@ -480,9 +476,7 @@ proxy.on("error", (err, req, res) => {
   res.end("Something went wrong. And we are reporting a custom error message.");
 });
 
-//
 // Listen for the `proxyRes` event on `proxy`.
-//
 proxy.on("proxyRes", (proxyRes, req, res) => {
   console.log(
     "RAW Response from the target",
@@ -490,17 +484,13 @@ proxy.on("proxyRes", (proxyRes, req, res) => {
   );
 });
 
-//
 // Listen for the `open` event on `proxy`.
-//
 proxy.on("open", (proxySocket) => {
   // listen for messages coming FROM the target here
   proxySocket.on("data", hybiParseAndLogMessage);
 });
 
-//
 // Listen for the `close` event on `proxy`.
-//
 proxy.on("close", (res, socket, head) => {
   // view disconnected websocket connections
   console.log("Client disconnected");
@@ -562,7 +552,7 @@ proxy.web(req, res, option);
 
 A proxy table API is available through this add-on [module](https://github.com/donasaur/http-proxy-rules), which lets you define a set of rules to translate matching routes to target routes that the reverse proxy will talk to.
 
-#### **Test: NOT SUPPORTED YET!!!**
+#### **Test**
 
 ```sh
 pnpm test

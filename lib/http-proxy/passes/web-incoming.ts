@@ -82,7 +82,7 @@ export function stream(req: Request, res: Response, options, _, server, clb) {
   const https = agents.https;
 
   if (options.forward) {
-    // If forward enable, so just pipe the request
+    // forward enabled, so just pipe the request
     const forwardReq = (
       options.forward.protocol === "https:" ? https : http
     ).request(common.setupOutgoing(options.ssl || {}, options, req, "forward"));
