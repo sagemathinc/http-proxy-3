@@ -359,7 +359,7 @@ proxyServer.listen(8015);
 
 - **xfwd**: true/false, adds x\-forward headers
 
-- **secure**: true/false, if you want to verify the SSL Certs
+- **secure**: true/false, if you want to verify the SSL Certs.  Set this to false if you're proxying another server that has a self-signed cert, e.g., [test/examples/http/proxy-https-to-https.test.ts](test/examples/http/proxy-https-to-https.test.ts).
 
 - **toProxy**: true/false, passes the absolute URL as the `path` \(useful for proxying to proxies\)
 
