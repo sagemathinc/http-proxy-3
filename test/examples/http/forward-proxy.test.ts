@@ -13,7 +13,7 @@ import * as http from "http";
 import * as httpProxy from "../../..";
 import log from "../../log";
 import getPort from "../../get-port";
-import { delay } from "awaiting";
+import wait from "../../wait";
 
 describe("Example of proxying over HTTP with additional forward proxy", () => {
   let forwardingServer,
@@ -59,9 +59,7 @@ describe("Example of proxying over HTTP with additional forward proxy", () => {
     expect(b).toContain("");
     // Handling of the forward on the remote server is totally decoupled, so we
     // just have to wait:
-    while (numRequests <= before) {
-      await delay(5);
-    }
+    await wait({ until: () => numRequests > before });
     // indeed, the remote server did get a request
     expect(numRequests).toBe(before + 1);
   });
@@ -87,9 +85,7 @@ describe("Example of proxying over HTTP with additional forward proxy", () => {
     const b = await (await fetch(`http://localhost:${proxy2Port}`)).text();
     // This b is supposed to be empty, because the
     expect(b).toContain("request successfully forwarded to");
-    while (numRequests <= before + 1) {
-      await delay(5);
-    }
+    await wait({ until: () => numRequests >= before + 2 });
     // indeed, the remote server did get a request TWICE, once from the
     // forward and once from being the target.
     expect(numRequests).toBe(before + 2);
