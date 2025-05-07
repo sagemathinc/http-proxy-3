@@ -15,6 +15,40 @@ import debug from "debug";
 
 const log = debug("http-proxy-2:ws-incoming");
 
+function createSocketCounter(name) {
+  let sockets = new Set<number>();
+  return ({
+    add,
+    rm,
+  }: {
+    add?: Socket & { id?: number };
+    rm?: Socket & { id?: number };
+  } = {}) => {
+    if (add) {
+      if (!add.id) {
+        add.id = Math.random();
+      }
+      if (!sockets.has(add.id)) {
+        log("open  socket ", { name, id: add.id });
+        sockets.add(add.id);
+      }
+    }
+    if (rm) {
+      if (!rm.id) {
+        rm.id = Math.random();
+      }
+      if (sockets.has(rm.id)) {
+        log("close socket ", { name, id: rm.id });
+        sockets.delete(rm.id);
+      }
+    }
+    log("sockets", { name, numSockets: sockets.size });
+  };
+}
+
+const socketCounter = createSocketCounter("socket");
+const proxySocketCounter = createSocketCounter("proxySocket");
+
 // WebSocket requests must have the `GET` method and
 // the `upgrade:websocket` header
 export function checkMethodAndHeader(
@@ -36,23 +70,38 @@ export function checkMethodAndHeader(
 export function XHeaders(req: Request, _socket: Socket, options) {
   if (!options.xfwd) return;
 
-  var values = {
+  const values = {
     for: req.connection.remoteAddress || req.socket.remoteAddress,
     port: common.getPort(req),
     proto: common.hasEncryptedConnection(req) ? "wss" : "ws",
   };
 
-  ["for", "port", "proto"].forEach((header: string) => {
+  for (const header of ["for", "port", "proto"]) {
     req.headers["x-forwarded-" + header] =
       (req.headers["x-forwarded-" + header] || "") +
       (req.headers["x-forwarded-" + header] ? "," : "") +
       values[header];
-  });
+  }
 }
 
-// Do the actual proxying. Make the request and upgrade it
-// send the Switching Protocols request and pipe the sockets.
-export function stream(req, socket, options, head, server, clb) {
+// Do the actual proxying. Make the request and upgrade it.
+// Send the Switching Protocols request and pipe the sockets.
+export function stream(
+  req: Request,
+  socket: Socket,
+  options,
+  head: Buffer,
+  server,
+  cb: Function,
+) {
+  const proxySockets: Socket[] = [];
+  socketCounter({ add: socket });
+  socket.on("close", () => {
+    socketCounter({ rm: socket });
+    for (const p of proxySockets) {
+      p.destroy();
+    }
+  });
   const createHttpHeader = (line, headers) => {
     return (
       Object.keys(headers)
@@ -93,31 +142,23 @@ export function stream(req, socket, options, head, server, clb) {
 
   // Error Handler
   proxyReq.on("error", onOutgoingError);
-  proxyReq.on("response", (res: Request) => {
-    // if upgrade event isn't going to happen, close the socket
-    // TODO: this seems obviously wrong/deprecated as there is no
-    // upgrade field on res!  It seems very likely to be evidence
-    // of a leak.
-    // @ts-ignore
-    if (!res.upgrade) {
-      socket.write(
-        createHttpHeader(
-          `HTTP/${res.httpVersion} ${res.statusCode} ${res.statusMessage}`,
-          res.headers,
-        ),
-      );
-      res.pipe(socket);
-    }
-  });
 
   proxyReq.on(
     "upgrade",
     (proxyRes: Request, proxySocket: Socket, proxyHead: Buffer) => {
       log("upgrade");
+
+      proxySocketCounter({ add: proxySocket });
+      proxySockets.push(proxySocket);
+      proxySocket.on("close", () => {
+        proxySocketCounter({ rm: proxySocket });
+      });
+
       proxySocket.on("error", onOutgoingError);
 
-      // Allow us to listen when the websocket has completed
+      // Allow us to listen for when the websocket has completed.
       proxySocket.on("end", () => {
+        socket.end();
         server.emit("close", proxyRes, proxySocket, proxyHead);
       });
 
@@ -134,10 +175,8 @@ export function stream(req, socket, options, head, server, clb) {
         proxySocket.unshift(proxyHead);
       }
 
-      //
       // Remark: Handle writing the headers to the socket when switching protocols
-      // Also handles when a header is an array
-      //
+      // Also handles when a header is an array.
       socket.write(
         createHttpHeader("HTTP/1.1 101 Switching Protocols", proxyRes.headers),
       );
@@ -145,19 +184,17 @@ export function stream(req, socket, options, head, server, clb) {
       proxySocket.pipe(socket).pipe(proxySocket);
 
       server.emit("open", proxySocket);
-      server.emit("proxySocket", proxySocket); //DEPRECATED.
     },
   );
 
   function onOutgoingError(err) {
-    if (clb) {
-      clb(err, req, socket);
+    if (cb) {
+      cb(err, req, socket);
     } else {
       server.emit("error", err, req, socket);
     }
     socket.end();
   }
 
-  // TODO: XXX: CHECK IF THIS IS THIS CORRECT
-  return proxyReq.end();
+  proxyReq.end();
 }

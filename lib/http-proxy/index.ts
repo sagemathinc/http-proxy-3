@@ -130,7 +130,7 @@ export class ProxyServer extends EventEmitter {
     return (options) => {
       return (...args: any[] /* req, res, [head], [opts] */) => {
         const req = args[0];
-        log("proxy got request from", req.url);
+        //log("proxy got request from", req.url);
         const res = args[1];
         const passes = type === "ws" ? this.wsPasses : this.webPasses;
         let counter = args.length - 1;
@@ -166,7 +166,6 @@ export class ProxyServer extends EventEmitter {
           return;
         }
 
-        log("doing passes.length=", passes.length);
         for (const pass of passes) {
           /**
            * Call of passes functions
