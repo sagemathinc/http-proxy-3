@@ -38,9 +38,9 @@ export function setConnection(
   proxyRes: ProxyResponse,
 ) {
   if (req.httpVersion === "1.0") {
-    proxyRes.headers["connection"] = req.headers["connection"] ?? "close";
+    proxyRes.headers["connection"] = req.headers["connection"] || "close";
   } else if (req.httpVersion !== "2.0" && !proxyRes.headers["connection"]) {
-    proxyRes.headers["connection"] = req.headers["connection"] ?? "keep-alive";
+    proxyRes.headers["connection"] = req.headers["connection"] || "keep-alive";
   }
 }
 

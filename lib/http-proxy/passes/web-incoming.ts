@@ -59,12 +59,12 @@ export function XHeaders(req: Request, _res, options) {
     proto: encrypted ? "https" : "http",
   };
 
-  ["for", "port", "proto"].forEach((header) => {
+  for (const header of ["for", "port", "proto"]) {
     req.headers["x-forwarded-" + header] =
       (req.headers["x-forwarded-" + header] || "") +
       (req.headers["x-forwarded-" + header] ? "," : "") +
       values[header];
-  });
+  }
 
   req.headers["x-forwarded-host"] =
     req.headers["x-forwarded-host"] || req.headers["host"] || "";
@@ -96,7 +96,8 @@ export function stream(req: Request, res: Response, options, _, server, clb) {
     (options.buffer || req).pipe(forwardReq);
     if (!options.target) {
       // no target, so we do not send anything back to the client.
-      // If target is set, we do a separate proxy below, which might be to a completely different server.
+      // If target is set, we do a separate proxy below, which might be to a 
+      // completely different server.
       return res.end();
     }
   }
@@ -107,9 +108,9 @@ export function stream(req: Request, res: Response, options, _, server, clb) {
   ).request(common.setupOutgoing(options.ssl || {}, options, req));
 
   // Enable developers to modify the proxyReq before headers are sent
-  proxyReq.on("socket", (socket) => {
+  proxyReq.on("socket", () => {
     if (server && !proxyReq.getHeader("expect")) {
-      server.emit("proxyReq", proxyReq, req, res, options, socket);
+      server.emit("proxyReq", proxyReq, req, res, options);
     }
   });
 
@@ -163,7 +164,7 @@ export function stream(req: Request, res: Response, options, _, server, clb) {
     }
 
     if (!res.finished) {
-      // Allow us to listen when the proxy has completed
+      // Allow us to listen for when the proxy has completed
       proxyRes.on("end", () => {
         server?.emit("end", req, res, proxyRes);
       });

@@ -30,10 +30,11 @@ export function setupOutgoing(
   // Request Object
   req: Request,
   // String to select forward or target
-  forward: string = "target",
+  forward?: string,
 ) {
   outgoing.port =
-    options[forward].port ?? (isSSL.test(options[forward].protocol) ? 443 : 80);
+    options[forward || "target"].port ??
+    (isSSL.test(options[forward || "target"].protocol) ? 443 : 80);
 
   for (const e of [
     "host",
@@ -47,10 +48,10 @@ export function setupOutgoing(
     "ciphers",
     "secureProtocol",
   ]) {
-    outgoing[e] = options[forward][e];
+    outgoing[e] = options[forward || "target"][e];
   }
 
-  outgoing.method = options.method ?? req.method;
+  outgoing.method = options.method || req.method;
   outgoing.headers = { ...req.headers };
 
   if (options.headers) {
@@ -65,7 +66,7 @@ export function setupOutgoing(
     outgoing.ca = options.ca;
   }
 
-  if (isSSL.test(options[forward].protocol)) {
+  if (isSSL.test(options[forward || "target"].protocol)) {
     outgoing.rejectUnauthorized =
       typeof options.secure === "undefined" ? true : options.secure;
   }
@@ -86,7 +87,7 @@ export function setupOutgoing(
   }
 
   // the final path is target path + relative path requested by user:
-  const target = options[forward];
+  const target = options[forward || "target"];
   const targetPath =
     target && options.prependPath !== false ? target.pathname || "" : "";
 
@@ -103,7 +104,7 @@ export function setupOutgoing(
 
   if (options.changeOrigin) {
     outgoing.headers.host =
-      required(outgoing.port, options[forward].protocol) &&
+      required(outgoing.port, options[forward || "target"].protocol) &&
       !hasPort(outgoing.host)
         ? outgoing.host + ":" + outgoing.port
         : outgoing.host;

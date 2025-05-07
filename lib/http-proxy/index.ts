@@ -116,7 +116,6 @@ export class ProxyServer extends EventEmitter {
     return (options) => {
       return (...args: any[] /* req, res, [head], [opts] */) => {
         const req = args[0];
-        // log("proxy got request from", req.url);
         const res = args[1];
         const passes = type === "ws" ? this.wsPasses : this.webPasses;
         let counter = args.length - 1;
@@ -131,8 +130,7 @@ export class ProxyServer extends EventEmitter {
 
         let requestOptions = options;
         if (!(args[counter] instanceof Buffer) && args[counter] !== res) {
-          // Copy global options, and
-          // overwrite with request options
+          // Copy global options, and overwrite with request options
           requestOptions = { ...options, ...args[counter] };
           counter--;
         }
@@ -182,13 +180,10 @@ export class ProxyServer extends EventEmitter {
 
   listen = (port: number, hostname?: string) => {
     log("listen", { port, hostname });
-    const closure = (req, res) => {
-      this.web(req, res);
-    };
 
     this._server = this.options.ssl
-      ? https.createServer(this.options.ssl, closure)
-      : http.createServer(closure);
+      ? https.createServer(this.options.ssl, this.web)
+      : http.createServer(this.web);
 
     if (this.options.ws) {
       this._server.on("upgrade", (req, socket, head) => {
