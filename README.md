@@ -1,14 +1,23 @@
 # http-proxy-2
 
-Modern rewrite of [http-proxy](https://github.com/http-party/node-http-proxy), the original nodejs http proxy server.
+http\-proxy\-2 is a modern rewrite of
+[http\-proxy](https://github.com/http-party/node-http-proxy), the original nodejs
+http proxy server. `http-proxy-2` is an HTTP programmable proxying library that
+supports http/https and websockets. It is suitable for implementing components
+such as reverse proxies and load balancers.
 
-PR's welcome!
+**PR's welcome!**
 
-# node-http-proxy
+May 2025 STATUS compared to http-proxy:
 
-`node-http-proxy` is an HTTP programmable proxying library that supports
-websockets. It is suitable for implementing components such as reverse
-proxies and load balancers.
+- Library entirely rewritten in Typescript in a modern style, with many types added internally
+- Switch to pnpm
+- All dependent packages updated to latest versions, addressing all known security vulnerabilities (according to `pnpm audit`).
+- Code rewritten to not use deprecated/insecure API's, e.g., using `URL` instead of `parse`.
+- Fixed major socket leaks in the Websocket proxy code
+- The nontrivial application https://CoCalc.com works using this
+- [ ] Examples: Mostly **NOT** rewritten yet.
+- [ ] Tests: **Not** rewritten yet.
 
 ### Table of Contents
 
@@ -34,7 +43,7 @@ proxies and load balancers.
 
 ### Installation
 
-`npm install http-proxy --save`
+`npm install http-proxy-2 --save`
 
 **[Back to top](#table-of-contents)**
 
@@ -43,15 +52,14 @@ proxies and load balancers.
 A new proxy is created by calling `createProxyServer` and passing
 an `options` object as argument ([valid properties are available here](lib/http-proxy.js#L26-L42))
 
-```javascript
-var httpProxy = require("http-proxy");
-
-var proxy = httpProxy.createProxyServer(options); // See (†)
+```js
+import { createProxyServer } from "http-proxy-2";
+const proxy = createProxyServer(options); // See below
 ```
 
-†Unless listen(..) is invoked on the object, this does not create a webserver. See below.
+Unless listen(..) is invoked on the object, this does not create a webserver. See below.
 
-An object will be returned with four methods:
+An object is returned with four methods:
 
 - web `req, res, [options]` (used for proxying regular HTTP(S) requests)
 - ws `req, socket, head, [options]` (used for proxying WS(S) requests)
@@ -60,16 +68,16 @@ An object will be returned with four methods:
 
 It is then possible to proxy requests by calling these functions
 
-```javascript
-http.createServer(function (req, res) {
+```js
+http.createServer((req, res) => {
   proxy.web(req, res, { target: "http://mytarget.com:8080" });
 });
 ```
 
 Errors can be listened on either using the Event Emitter API
 
-```javascript
-proxy.on('error', function(e) {
+```js
+proxy.on('error', (err) => {
   ...
 });
 ```
@@ -77,7 +85,7 @@ proxy.on('error', function(e) {
 or using the callback API
 
 ```javascript
-proxy.web(req, res, { target: 'http://mytarget.com:8080' }, function(e) { ... });
+proxy.web(req, res, { target: 'http://mytarget.com:8080' }, (err) => { ... });
 ```
 
 When a request is proxied it follows two different pipelines ([available here](lib/http-proxy/passes))
@@ -93,18 +101,18 @@ to the client.
 #### Setup a basic stand-alone proxy server
 
 ```js
-var http = require("http"),
-  httpProxy = require("http-proxy");
+import * as http from "http";
+import { createProxyServer } from "http-proxy-2";
 //
 // Create your proxy server and set the target in the options.
 //
-httpProxy.createProxyServer({ target: "http://localhost:9000" }).listen(8000); // See (†)
+createProxyServer({ target: "http://localhost:9000" }).listen(8000); // See (†)
 
 //
 // Create your target server
 //
 http
-  .createServer(function (req, res) {
+  .createServer((req, res) => {
     res.writeHead(200, { "Content-Type": "text/plain" });
     res.write(
       "request successfully proxied!" +
@@ -126,20 +134,20 @@ This example shows how you can proxy a request using your own HTTP server
 and also you can put your own logic to handle the request.
 
 ```js
-var http = require("http"),
-  httpProxy = require("http-proxy");
+import * as http from "http";
+import { createProxyServer } from "http-proxy-2";
 
 //
 // Create a proxy server with custom application logic
 //
-var proxy = httpProxy.createProxyServer({});
+const proxy = createProxyServer({});
 
 //
 // Create your custom server and just call `proxy.web()` to proxy
 // a web request to the target passed in the options
 // also you can use `proxy.ws()` to proxy a websockets request
 //
-var server = http.createServer(function (req, res) {
+const server = http.createServer((req, res) => {
   // You can define here your custom logic to handle the request
   // and then proxy the request.
   proxy.web(req, res, { target: "http://127.0.0.1:5050" });
@@ -157,13 +165,13 @@ This example shows how you can proxy a request using your own HTTP server that
 modifies the outgoing proxy request by adding a special header.
 
 ```js
-var http = require("http"),
-  httpProxy = require("http-proxy");
+import * as http from "http";
+import { createProxyServer } from "http-proxy-2";
 
 //
 // Create a proxy server with custom application logic
 //
-var proxy = httpProxy.createProxyServer({});
+const proxy = createProxyServer({});
 
 // To modify the proxy connection before data is sent, you can listen
 // for the 'proxyReq' event. When the event is fired, you will receive
@@ -173,11 +181,11 @@ var proxy = httpProxy.createProxyServer({});
 // you need to modify the proxy request before the proxy connection
 // is made to the target.
 //
-proxy.on("proxyReq", function (proxyReq, req, res, options) {
+proxy.on("proxyReq", (proxyReq, req, res, options) => {
   proxyReq.setHeader("X-Special-Proxy-Header", "foobar");
 });
 
-var server = http.createServer(function (req, res) {
+const server = http.createServer((req, res) => {
   // You can define here your custom logic to handle the request
   // and then proxy the request.
   proxy.web(req, res, {
@@ -202,20 +210,19 @@ Sometimes when you have received a HTML/XML document from the server of origin y
 #### Setup a stand-alone proxy server with latency
 
 ```js
-var http = require("http"),
-  httpProxy = require("http-proxy");
-
+import * as http from "http";
+import { createProxyServer } from "http-proxy-2";
 //
 // Create a proxy server with latency
 //
-var proxy = httpProxy.createProxyServer();
+const proxy = createProxyServer();
 
 //
 // Create your server that makes an operation that waits a while
 // and then proxies the request
 //
 http
-  .createServer(function (req, res) {
+  .createServer((req, res) => {
     // This simulates an operation that takes 500ms to execute
     setTimeout(function () {
       proxy.web(req, res, {
@@ -327,16 +334,20 @@ httpProxy
 Also you can proxy the websocket requests just calling the `ws(req, socket, head)` method.
 
 ```js
+import * as http from "http";
+import { createProxyServer } from "http-proxy-2";
+
 //
 // Setup our server to proxy standard HTTP requests
 //
-var proxy = new httpProxy.createProxyServer({
+
+const proxy = createProxyServer({
   target: {
     host: "localhost",
     port: 9015,
   },
 });
-var proxyServer = http.createServer(function (req, res) {
+var proxyServer = http.createServer((req, res) => {
   proxy.web(req, res);
 });
 
@@ -344,7 +355,7 @@ var proxyServer = http.createServer(function (req, res) {
 // Listen to the `upgrade` event and proxy the
 // WebSocket requests as well.
 //
-proxyServer.on("upgrade", function (req, socket, head) {
+proxyServer.on("upgrade", (req, socket, head) => {
   proxy.ws(req, socket, head);
 });
 
@@ -444,12 +455,12 @@ If you are using the `proxyServer.listen` method, the following options are also
 - (DEPRECATED) `proxySocket`: Deprecated in favor of `open`.
 
 ```js
-var httpProxy = require("http-proxy");
+import { createProxyServer } from "http-proxy-2";
 // Error example
 //
 // Http Proxy Server with bad target
 //
-var proxy = httpProxy.createServer({
+const proxy = createProxyServer({
   target: "http://localhost:9005",
 });
 
@@ -457,7 +468,7 @@ proxy.listen(8005);
 
 //
 // Listen for the `error` event on `proxy`.
-proxy.on("error", function (err, req, res) {
+proxy.on("error", (err, req, res) => {
   res.writeHead(500, {
     "Content-Type": "text/plain",
   });
@@ -468,7 +479,7 @@ proxy.on("error", function (err, req, res) {
 //
 // Listen for the `proxyRes` event on `proxy`.
 //
-proxy.on("proxyRes", function (proxyRes, req, res) {
+proxy.on("proxyRes", (proxyRes, req, res) => {
   console.log(
     "RAW Response from the target",
     JSON.stringify(proxyRes.headers, true, 2),
@@ -478,7 +489,7 @@ proxy.on("proxyRes", function (proxyRes, req, res) {
 //
 // Listen for the `open` event on `proxy`.
 //
-proxy.on("open", function (proxySocket) {
+proxy.on("open", (proxySocket) => {
   // listen for messages coming FROM the target here
   proxySocket.on("data", hybiParseAndLogMessage);
 });
@@ -486,7 +497,7 @@ proxy.on("open", function (proxySocket) {
 //
 // Listen for the `close` event on `proxy`.
 //
-proxy.on("close", function (res, socket, head) {
+proxy.on("close", (res, socket, head) => {
   // view disconnected websocket connections
   console.log("Client disconnected");
 });
@@ -500,7 +511,7 @@ proxy.on("close", function (res, socket, head) {
 - This will stop the proxy from accepting new connections.
 
 ```js
-var proxy = new httpProxy.createProxyServer({
+const proxy = createProxyServer({
   target: {
     host: "localhost",
     port: 1337,
@@ -523,21 +534,23 @@ data.
 ### Modify response
 
 ```js
-var option = {
+const option = {
   target: target,
   selfHandleResponse: true,
 };
-proxy.on("proxyRes", function (proxyRes, req, res) {
+
+proxy.on("proxyRes", (proxyRes, req, res) => {
   var body = [];
-  proxyRes.on("data", function (chunk) {
+  proxyRes.on("data", (chunk) => {
     body.push(chunk);
   });
-  proxyRes.on("end", function () {
+  proxyRes.on("end", () => {
     body = Buffer.concat(body).toString();
     console.log("res from proxied server:", body);
     res.end("my response to cli");
   });
 });
+
 proxy.web(req, res, option);
 ```
 
@@ -545,26 +558,17 @@ proxy.web(req, res, option);
 
 A proxy table API is available through this add-on [module](https://github.com/donasaur/http-proxy-rules), which lets you define a set of rules to translate matching routes to target routes that the reverse proxy will talk to.
 
-#### Test
+#### **Test: NOT SUPPORTED YET!!!**
 
+```sh
+pnpm test
 ```
-$ npm test
-```
-
-#### Logo
-
-Logo created by [Diego Pasquali](http://dribbble.com/diegopq)
 
 **[Back to top](#table-of-contents)**
 
 ### Contributing and Issues
 
-- Read carefully our [Code Of Conduct](https://github.com/http-party/node-http-proxy/blob/master/CODE_OF_CONDUCT.md)
-- Search on Google/Github
-- If you can't find anything, open an issue
-- If you feel comfortable about fixing the issue, fork the repo
-- Commit to your local branch (which must be different from `master`)
-- Submit your Pull Request (be sure to include tests and update documentation)
+- Submit a PR! I want this project to be active again! Port ideas from https://github.com/http-party/node-http-proxy/pulls and https://github.com/http-party/node-http-proxy/issues
 
 **[Back to top](#table-of-contents)**
 
@@ -572,7 +576,7 @@ Logo created by [Diego Pasquali](http://dribbble.com/diegopq)
 
 > The MIT License (MIT)
 >
-> Copyright (c) 2010 - 2016 Charlie Robbins, Jarrett Cruger & the Contributors.
+> Copyright (c) 2010 - 2025 William Stein, Charlie Robbins, Jarrett Cruger & all other Contributors.
 >
 > Permission is hereby granted, free of charge, to any person obtaining a copy
 > of this software and associated documentation files (the "Software"), to deal
@@ -591,3 +595,4 @@ Logo created by [Diego Pasquali](http://dribbble.com/diegopq)
 > LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 > OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 > THE SOFTWARE.
+
