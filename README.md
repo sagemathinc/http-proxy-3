@@ -1,6 +1,6 @@
 # http-proxy-3
 
-http\-proxy\-3 is a modern rewrite of
+http\-proxy\-3 is a modern drop-in-replacement rewrite of
 [http\-proxy](https://github.com/http-party/node-http-proxy), the original nodejs
 http proxy server. `http-proxy-3` is an HTTP programmable proxying library that
 supports http/https and websockets. It is suitable for implementing components
@@ -8,19 +8,19 @@ such as reverse proxies and load balancers.
 
 **PR's welcome!**
 
-May 6, 2025 STATUS compared to http-proxy:
+May 7, 2025 STATUS compared to http-proxy:
 
-- **DISCLAIMER: This mostly works, but obviously is NOT safe to deploy until we get the testing infrastructure in place and fix the bugs that are revealed.**
 - Library entirely rewritten in Typescript in a modern style, with many types added internally
-- Switch to pnpm
 - All dependent packages updated to latest versions, addressing all known security vulnerabilities (according to `pnpm audit`).
 - Code rewritten to not use deprecated/insecure API's, e.g., using `URL` instead of `parse`.
 - Fixed major socket leaks in the Websocket proxy code
-- The nontrivial application https://CoCalc.com works using this
-- [ ] Examples: Mostly **NOT** rewritten yet.
-- [ ] Tests: **Not** rewritten yet.
+- Used heavily in production on https://CoCalc.com
+- Switch to pnpm for development.
+- Jest unit tests: converted many examples into unit tests with automated testing that they actually work. http-proxy's unit tests just setup the examples in many cases, but didn't test that they actually work.
 
 Why the name? http-proxy-2 wasn't available on npmjs.
+
+**Motivation:** http-proxy is one of the oldest and most famous nodejs modules, and it gets downloaded around 15 million times a week. Unfortunately, it is [unmaintained](https://github.com/http-party/node-http-proxy/issues/1687), it has significant leaks that [regularly crash production servers](https://github.com/jupyterhub/configurable-http-proxy/issues/434), and is written in ancient untyped Javascript that `npm audit` warns has security vulnerabilities. The maintainers have long since stopped responding, so there is no choice but to fork and start over. I just wanted to do my part to help maintain the open source ecosystem, hence this library. I hope you find it useful.
 
 ### Table of Contents
 
@@ -359,7 +359,7 @@ proxyServer.listen(8015);
 
 - **xfwd**: true/false, adds x\-forward headers
 
-- **secure**: true/false, if you want to verify the SSL Certs.  Set this to false if you're proxying another server that has a self-signed cert, e.g., [test/examples/http/proxy-https-to-https.test.ts](test/examples/http/proxy-https-to-https.test.ts).
+- **secure**: true/false, if you want to verify the SSL Certs. Set this to false if you're proxying another server that has a self-signed cert, e.g., [test/examples/http/proxy-https-to-https.test.ts](test/examples/http/proxy-https-to-https.test.ts).
 
 - **toProxy**: true/false, passes the absolute URL as the `path` \(useful for proxying to proxies\)
 
