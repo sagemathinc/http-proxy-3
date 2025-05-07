@@ -197,7 +197,7 @@ export function urlJoin(...args: string[]): string {
   let retSegs;
 
   args.forEach((url, index) => {
-    var qpStart = url.indexOf("?");
+    const qpStart = url.indexOf("?");
     if (qpStart !== -1) {
       queryParams.push(url.substring(qpStart + 1));
       args[index] = url.substring(0, qpStart);

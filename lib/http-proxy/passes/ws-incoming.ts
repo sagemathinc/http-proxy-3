@@ -29,7 +29,6 @@ function createSocketCounter(name) {
         add.id = Math.random();
       }
       if (!sockets.has(add.id)) {
-        log("open  socket ", { name, id: add.id });
         sockets.add(add.id);
       }
     }
@@ -38,11 +37,10 @@ function createSocketCounter(name) {
         rm.id = Math.random();
       }
       if (sockets.has(rm.id)) {
-        log("close socket ", { name, id: rm.id });
         sockets.delete(rm.id);
       }
     }
-    log("sockets", { name, numSockets: sockets.size });
+    log("socket counter:", { [name]: sockets.size });
   };
 }
 
@@ -96,18 +94,27 @@ export function stream(
 ) {
   const proxySockets: Socket[] = [];
   socketCounter({ add: socket });
-  socket.on("close", () => {
-    socketCounter({ rm: socket });
+  const cleanUpProxySockets = () => {
     for (const p of proxySockets) {
       p.destroy();
     }
+  };
+  socket.on("close", () => {
+    socketCounter({ rm: socket });
+    cleanUpProxySockets();
   });
+
+  // The pipe below will end proxySocket if socket closes cleanly, but not
+  // if it errors (eg, vanishes from the net and starts returning
+  // EHOSTUNREACH). We need to do that explicitly.
+  socket.on("error", cleanUpProxySockets);
+
   const createHttpHeader = (line, headers) => {
     return (
       Object.keys(headers)
         .reduce(
           (head, key) => {
-            var value = headers[key];
+            const value = headers[key];
 
             if (!Array.isArray(value)) {
               head.push(key + ": " + value);
@@ -156,17 +163,14 @@ export function stream(
 
       proxySocket.on("error", onOutgoingError);
 
-      // Allow us to listen for when the websocket has completed.
       proxySocket.on("end", () => {
-        socket.end();
-        server.emit("close", proxyRes, proxySocket, proxyHead);
+        socket.destroy();
       });
 
-      // The pipe below will end proxySocket if socket closes cleanly, but not
-      // if it errors (eg, vanishes from the net and starts returning
-      // EHOSTUNREACH). We need to do that explicitly.
-      socket.on("error", () => {
-        proxySocket.destroy();
+      // Allow us to listen for when the websocket has completed.
+      proxySocket.on("close", () => {
+        socket.destroy();
+        server.emit("close", proxyRes, proxySocket, proxyHead);
       });
 
       common.setupSocket(proxySocket);
@@ -193,7 +197,7 @@ export function stream(
     } else {
       server.emit("error", err, req, socket);
     }
-    socket.end();
+    socket.destroy();
   }
 
   proxyReq.end();
