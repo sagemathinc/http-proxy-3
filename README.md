@@ -22,6 +22,24 @@ Why the name? http-proxy-2 wasn't available on npmjs.
 
 **Motivation:** http-proxy is one of the oldest and most famous nodejs modules, and it gets downloaded around 15 million times a week. Unfortunately, it is [unmaintained](https://github.com/http-party/node-http-proxy/issues/1687), it has significant leaks that [regularly crash production servers](https://github.com/jupyterhub/configurable-http-proxy/issues/434), and is written in ancient untyped Javascript that `npm audit` warns has security vulnerabilities. The maintainers have long since stopped responding, so there is no choice but to fork and start over. I just wanted to do my part to help maintain the open source ecosystem, hence this library. I hope you find it useful.
 
+**Development:**
+
+```sh
+git clone https://github.com/sagemathinc/http-proxy-3.git
+cd http-proxy-3
+pnpm install
+pnpm build
+pnpm test
+```
+
+Then do
+
+```
+pnpm tsc
+```
+
+and make changes to code under lib/.
+
 ### Table of Contents
 
 - [Installation](#installation)

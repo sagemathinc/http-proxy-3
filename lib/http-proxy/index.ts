@@ -203,18 +203,15 @@ export class ProxyServer extends EventEmitter {
   };
 
   close = (cb?: Function) => {
-    const self = this;
-    if (this._server) {
-      this._server.close(done);
+    if (this._server == null) {
+      cb?.();
+      return;
     }
-
-    // Wrap cb to nullify server after all open connections are closed.
-    function done() {
-      self._server = null;
-      if (cb) {
-        cb.apply(null, arguments);
-      }
-    }
+    // Wrap cb anb nullify server after all open connections are closed.
+    this._server.close((err?) => {
+      this._server = null;
+      cb?.(err);
+    });
   };
 
   before = (type: ProxyType, passName: string, cb: Function) => {

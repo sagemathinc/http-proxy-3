@@ -1,5 +1,7 @@
 /*
-standalone-websocket-proxy.test.ts: Proxying websockets over HTTP with a standalone HTTP server.
+latent-websocket-proxy.test.ts: Proxying websockets over HTTP with a standalone HTTP server.
+
+pnpm test latent-websocket-proxy.test.ts
 */
 
 import * as httpProxy from "../..";
@@ -44,22 +46,45 @@ describe("Proxying websockets over HTTP with a standalone HTTP server.", () => {
 
   it("Listen to the `upgrade` event and proxy the WebSocket requests as well.", async () => {
     servers.proxyServer.on("upgrade", (req, socket, head) => {
-      proxy.ws(req, socket, head);
+      setTimeout(() => {
+        if (done) {
+          // if we already finished testing do not upgrade - this
+          // happens with socketio in the "very clever" example below.
+          return;
+        }
+        proxy.ws(req, socket, head);
+      }, 500);
     });
     servers.proxyServer.listen(ports.proxy);
   });
 
   it("Create client and test the proxy server directly", async () => {
-    const client = socketioClient(`ws://localhost:${ports.proxy}`);
     const t = Date.now();
+    const client = socketioClient(`ws://localhost:${ports.proxy}`, {
+      // We *must* use the websocket transport of socketio will fall back
+      // to a different protocol and work very quickly anyways! See below.
+      transports: ["websocket"],
+    });
     client.send("I am the client");
     const msg = await once(client as any, "message");
-    expect(Math.abs(Date.now() - t)).toBeLessThan(100);
     expect(msg).toEqual(["from server"]);
+    expect(Math.abs(Date.now() - t)).toBeGreaterThan(500);
     client.close();
   });
 
+  it("Illustrate that the socketio client is very clever if we don't specify the protocol", async () => {
+    const t = Date.now();
+    const client = socketioClient(`ws://localhost:${ports.proxy}`);
+    client.send("I am the client");
+    const msg = await once(client as any, "message");
+    expect(msg).toEqual(["from server"]);
+    expect(Math.abs(Date.now() - t)).toBeLessThan(150);
+    client.close();
+  });
+
+  let done = false;
   it("cleans up", () => {
     Object.values(servers).map((x: any) => x?.close());
+    done = true;
   });
 });
