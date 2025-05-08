@@ -1,5 +1,7 @@
 # http-proxy-3
 
+**WARNING: DEFINITELY DO NOT USE THIS IN PRODUCTION YET.  It is not ready.**
+
 http\-proxy\-3 is a modern drop-in-replacement rewrite of
 [http\-proxy](https://github.com/http-party/node-http-proxy), the original nodejs
 http proxy server. `http-proxy-3` is an HTTP programmable proxying library that
@@ -16,7 +18,7 @@ May 7, 2025 STATUS compared to http-proxy:
 - Fixed major socket leaks in the Websocket proxy code
 - Used heavily in production on https://CoCalc.com
 - Switch to pnpm for development.
-- Jest unit tests: converted many examples into unit tests with automated testing that they actually work. http-proxy's unit tests just setup the examples in many cases, but didn't test that they actually work.
+- Some jest unit tests: converted many examples into unit tests with automated testing that they actually work. http-proxy's unit tests just setup the examples in many cases, but didn't test that they actually work.
 
 Why the name? http-proxy-2 wasn't available on npmjs.
 
