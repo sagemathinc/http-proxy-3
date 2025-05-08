@@ -13,6 +13,7 @@ describe("Test proxying over HTTP with latency", () => {
   });
 
   let servers: any = {};
+  const LATENCY = 250;
   it("creates servers", () => {
     // generic proxy server for explicitly doing proxies.
     // This is NOT listening.
@@ -26,7 +27,7 @@ describe("Test proxying over HTTP with latency", () => {
           proxy.web(req, res, {
             target: `http://localhost:${ports.http}`,
           });
-        }, 500);
+        }, LATENCY);
       })
       .listen(ports.proxy);
 
@@ -49,7 +50,7 @@ describe("Test proxying over HTTP with latency", () => {
     const t = Date.now();
     const r = await (await fetch(`http://localhost:${ports.proxy}`)).text();
     expect(r).toContain("request successfully proxied to");
-    expect(Date.now() - t).toBeGreaterThan(500);
+    expect(Date.now() - t).toBeGreaterThan(LATENCY);
   });
 
   it("Clean up", () => {

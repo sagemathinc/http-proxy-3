@@ -10,6 +10,7 @@ import { once } from "../wait";
 import { createServer } from "http";
 import { Server } from "socket.io";
 import { io as socketioClient } from "socket.io-client";
+import { delay } from "awaiting";
 
 describe("Proxying websockets over HTTP with a standalone HTTP server.", () => {
   let ports;
@@ -38,22 +39,19 @@ describe("Proxying websockets over HTTP with a standalone HTTP server.", () => {
         port: ports.ws,
       },
     });
-
     servers.proxyServer = createServer((req, res) => {
       proxy.web(req, res);
     });
   });
+  
+  const LATENCY = 200;
 
   it("Listen to the `upgrade` event and proxy the WebSocket requests as well.", async () => {
     servers.proxyServer.on("upgrade", (req, socket, head) => {
+      if (hangForever) return;
       setTimeout(() => {
-        if (done) {
-          // if we already finished testing do not upgrade - this
-          // happens with socketio in the "very clever" example below.
-          return;
-        }
         proxy.ws(req, socket, head);
-      }, 500);
+      }, LATENCY);
     });
     servers.proxyServer.listen(ports.proxy);
   });
@@ -68,11 +66,13 @@ describe("Proxying websockets over HTTP with a standalone HTTP server.", () => {
     client.send("I am the client");
     const msg = await once(client as any, "message");
     expect(msg).toEqual(["from server"]);
-    expect(Math.abs(Date.now() - t)).toBeGreaterThan(500);
+    expect(Math.abs(Date.now() - t)).toBeGreaterThan(LATENCY);
     client.close();
   });
 
+  let hangForever = false;
   it("Illustrate that the socketio client is very clever if we don't specify the protocol", async () => {
+    hangForever = true;
     const t = Date.now();
     const client = socketioClient(`ws://localhost:${ports.proxy}`);
     client.send("I am the client");
@@ -82,9 +82,7 @@ describe("Proxying websockets over HTTP with a standalone HTTP server.", () => {
     client.close();
   });
 
-  let done = false;
   it("cleans up", () => {
     Object.values(servers).map((x: any) => x?.close());
-    done = true;
   });
 });
