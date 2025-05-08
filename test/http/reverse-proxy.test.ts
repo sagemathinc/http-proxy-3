@@ -1,0 +1,77 @@
+/*
+reverse-proxy.test.ts: Example of reverse proxying (with HTTPS support)
+
+pnpm test ./reverse-proxy.test.ts
+*/
+
+import * as http from "http";
+import * as httpProxy from "../..";
+import getPort from "../get-port";
+import * as net from "net";
+import * as url from "url";
+import log from "../log";
+import { HttpsProxyAgent } from "https-proxy-agent";
+import fetch from "node-fetch";
+
+describe("Reverse proxying -- create a server that...", () => {
+  let port;
+  it("allocates a port", async () => {
+    port = await getPort();
+  });
+
+  let server;
+  it("creates reverse proxy server", async () => {
+    const proxy = httpProxy.createServer();
+    server = http
+      .createServer((req, res) => {
+        log("Receiving reverse proxy request for:", req.url);
+        const parsedUrl = url.parse(req.url ?? "");
+        const target = parsedUrl.protocol + "//" + parsedUrl.hostname;
+        proxy.web(req, res, { target, secure: false });
+      })
+      .listen(port);
+    log(`Listening on http://localhost:${port}`);
+
+    server.on("connect", (req, socket) => {
+      log("Receiving reverse proxy request for:", req.url);
+
+      const serverUrl = url.parse("https://" + req.url);
+
+      const srvSocket = net.connect(
+        parseInt(serverUrl.port ?? "0"),
+        serverUrl.hostname!,
+        () => {
+          socket.write(
+            "HTTP/1.1 200 Connection Established\r\n" +
+              "Proxy-agent: Node-Proxy\r\n" +
+              "\r\n",
+          );
+          srvSocket.pipe(socket);
+          socket.pipe(srvSocket);
+        },
+      );
+    });
+  });
+
+  it("Tests the reverse proxy out to access https://www.google.com using an http proxy running on localhost.", async () => {
+    // The following code is like doing this on the
+    // command line:
+    //     curl -vv -x http://localhost:38207 https://www.google.com
+
+    const proxy = `http://localhost:${port}`;
+    const agent = new HttpsProxyAgent(proxy);
+    const a = await (await fetch("https://www.google.com", { agent })).text();
+    expect(a).toContain("Search the world");
+  });
+
+  it("Tests the reverse proxy out to access http://www.google.com and https://www.google.com using an http proxy running on localhost.", async () => {
+    const proxy = `http://localhost:${port}`;
+    const agent = new HttpsProxyAgent(proxy);
+    const a = await (await fetch("http://www.google.com", { agent })).text();
+    expect(a).toContain("Search the world");
+  });
+
+  it("Cleans up", () => {
+    server.close();
+  });
+});
