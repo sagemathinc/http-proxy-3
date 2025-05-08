@@ -32,7 +32,7 @@ describe("Test proxying over HTTP with latency", () => {
 
     // Target Http Server
     servers.http = http
-      .createServer(function (req, res) {
+      .createServer((req, res) => {
         res.writeHead(200, { "Content-Type": "text/plain" });
         res.write(
           "request successfully proxied to: " +

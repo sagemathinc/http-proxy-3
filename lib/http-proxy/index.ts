@@ -11,16 +11,16 @@ const log = debug("http-proxy-3");
 export interface ProxyTargetDetailed {
   host: string;
   port: number;
-  protocol?: string | undefined;
-  hostname?: string | undefined;
-  socketPath?: string | undefined;
-  key?: string | undefined;
-  passphrase?: string | undefined;
-  pfx?: Buffer | string | undefined;
-  cert?: string | undefined;
-  ca?: string | undefined;
-  ciphers?: string | undefined;
-  secureProtocol?: string | undefined;
+  protocol?: string;
+  hostname?: string;
+  socketPath?: string;
+  key?: string;
+  passphrase?: string;
+  pfx?: Buffer | string;
+  cert?: string;
+  ca?: string;
+  ciphers?: string;
+  secureProtocol?: string;
 }
 export type ProxyType = "ws" | "web";
 export type ProxyTarget = ProxyTargetUrl | ProxyTargetDetailed;
@@ -29,63 +29,55 @@ export type ProxyTargetUrl = URL | string;
 export interface ServerOptions {
   // NOTE: `options.target and `options.forward` cannot be both missing.
   // URL string to be parsed with the url module.
-  target?: ProxyTarget | undefined;
+  target?: ProxyTarget;
   // URL string to be parsed with the url module or a URL object.
-  forward?: ProxyTargetUrl | undefined;
+  forward?: ProxyTargetUrl;
   // Object to be passed to http(s).request.
   agent?: any;
   // Object to be passed to https.createServer().
   ssl?: any;
   // If you want to proxy websockets.
-  ws?: boolean | undefined;
+  ws?: boolean;
   // Adds x- forward headers.
-  xfwd?: boolean | undefined;
+  xfwd?: boolean;
   // Verify SSL certificate.
-  secure?: boolean | undefined;
+  secure?: boolean;
   // Explicitly specify if we are proxying to another proxy.
-  toProxy?: boolean | undefined;
+  toProxy?: boolean;
   // Specify whether you want to prepend the target's path to the proxy path.
-  prependPath?: boolean | undefined;
+  prependPath?: boolean;
   // Specify whether you want to ignore the proxy path of the incoming request.
-  ignorePath?: boolean | undefined;
+  ignorePath?: boolean;
   // Local interface string to bind for outgoing connections.
-  localAddress?: string | undefined;
+  localAddress?: string;
   // Changes the origin of the host header to the target URL.
-  changeOrigin?: boolean | undefined;
+  changeOrigin?: boolean;
   // specify whether you want to keep letter case of response header key
-  preserveHeaderKeyCase?: boolean | undefined;
+  preserveHeaderKeyCase?: boolean;
   // Basic authentication i.e. 'user:password' to compute an Authorization header.
-  auth?: string | undefined;
+  auth?: string;
   // Rewrites the location hostname on (301 / 302 / 307 / 308) redirects, Default: null.
-  hostRewrite?: string | undefined;
+  hostRewrite?: string;
   // Rewrites the location host/ port on (301 / 302 / 307 / 308) redirects based on requested host/ port.Default: false.
-  autoRewrite?: boolean | undefined;
+  autoRewrite?: boolean;
   // Rewrites the location protocol on (301 / 302 / 307 / 308) redirects to 'http' or 'https'.Default: null.
-  protocolRewrite?: string | undefined;
+  protocolRewrite?: string;
   // rewrites domain of set-cookie headers.
-  cookieDomainRewrite?:
-    | false
-    | string
-    | { [oldDomain: string]: string }
-    | undefined;
+  cookieDomainRewrite?: false | string | { [oldDomain: string]: string };
   // rewrites path of set-cookie headers. Default: false
-  cookiePathRewrite?:
-    | false
-    | string
-    | { [oldPath: string]: string }
-    | undefined;
+  cookiePathRewrite?: false | string | { [oldPath: string]: string };
   // object with extra headers to be added to target requests.
   headers?: { [header: string]: string | string[] | undefined };
   // Timeout (in milliseconds) when proxy receives no response from target. Default: 120000 (2 minutes)
-  proxyTimeout?: number | undefined;
+  proxyTimeout?: number;
   // Timeout (in milliseconds) for incoming requests
-  timeout?: number | undefined;
+  timeout?: number;
   // Specify whether you want to follow redirects. Default: false
-  followRedirects?: boolean | undefined;
+  followRedirects?: boolean;
   // If set to true, none of the webOutgoing passes are called and it's your responsibility to appropriately return the response by listening and acting on the proxyRes event
-  selfHandleResponse?: boolean | undefined;
+  selfHandleResponse?: boolean;
   // Buffer
-  buffer?: Stream | undefined;
+  buffer?: Stream;
 }
 
 export class ProxyServer extends EventEmitter {

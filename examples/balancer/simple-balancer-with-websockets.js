@@ -1,5 +1,5 @@
 /*
-  simple-balancer.js: Example of a simple round robin balancer for websockets
+  simple-balancer.js: Example of a simple round robin load balancer for websockets
 
   Copyright (c) 2013 - 2016 Charlie Robbins, Jarrett Cruger & the Contributors.
 
