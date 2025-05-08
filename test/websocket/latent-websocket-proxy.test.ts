@@ -10,7 +10,6 @@ import { once } from "../wait";
 import { createServer } from "http";
 import { Server } from "socket.io";
 import { io as socketioClient } from "socket.io-client";
-import { delay } from "awaiting";
 
 describe("Proxying websockets over HTTP with a standalone HTTP server.", () => {
   let ports;

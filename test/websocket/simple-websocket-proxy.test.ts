@@ -17,7 +17,7 @@ import log from "../log";
 import getPort from "../get-port";
 import { once } from "../wait";
 
-describe("Example of proxying over HTTP and WebSockets", () => {
+describe("Example of simple proxying of a WebSocket", () => {
   let ports;
   it("assigns ports", async () => {
     ports = { ws: await getPort(), proxy: await getPort() };
@@ -65,7 +65,7 @@ describe("Example of proxying over HTTP and WebSockets", () => {
       .listen(ports.proxy);
   });
 
-  it("Create a websocket client and test the ws server directly", async () => {
+  it("Create a websocket client and test the proxy server", async () => {
     const options = {
       port: ports.proxy,
       host: "localhost",

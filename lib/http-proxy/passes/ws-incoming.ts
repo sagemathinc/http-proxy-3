@@ -13,6 +13,11 @@ import type { Request } from "./web-incoming";
 import type { Socket } from "net";
 import debug from "debug";
 
+// If true, we go beyond the original upstream node-http-proxy
+// in aggressive attempts to close sockets.  This leads to a bug
+// at scale, hence is disabled by default for now.
+const AGGRESSIVE_CLOSE = !!process.env.PROXY_AGGRESSIVE_WEBSOCKET_CLOSE;
+
 const log = debug("http-proxy-3:ws-incoming");
 
 function createSocketCounter(name) {
@@ -41,11 +46,16 @@ function createSocketCounter(name) {
       }
     }
     log("socket counter:", { [name]: sockets.size });
+    return sockets.size;
   };
 }
 
 const socketCounter = createSocketCounter("socket");
 const proxySocketCounter = createSocketCounter("proxySocket");
+
+export function numOpenSockets(): number {
+  return socketCounter() + proxySocketCounter();
+}
 
 // WebSocket requests must have the `GET` method and
 // the `upgrade:websocket` header
@@ -90,18 +100,24 @@ export function stream(
   options,
   head: Buffer,
   server,
-  cb: Function,
+  cb?: Function,
 ) {
   const proxySockets: Socket[] = [];
   socketCounter({ add: socket });
   const cleanUpProxySockets = () => {
     for (const p of proxySockets) {
-      p.destroy();
+      if (AGGRESSIVE_CLOSE) {
+        p.destroy();
+      } else {
+        p.end();
+      }
     }
   };
   socket.on("close", () => {
     socketCounter({ rm: socket });
-    cleanUpProxySockets();
+    if (AGGRESSIVE_CLOSE) {
+      cleanUpProxySockets();
+    }
   });
 
   // The pipe below will end proxySocket if socket closes cleanly, but not
@@ -164,15 +180,19 @@ export function stream(
 
       proxySocket.on("error", onOutgoingError);
 
+      // Allow us to listen for when the websocket has completed.
       proxySocket.on("end", () => {
-        socket.destroy();
+        server.emit("close", proxyRes, proxySocket, proxyHead);
+        if (AGGRESSIVE_CLOSE) {
+          socket.destroy();
+        }
       });
 
-      // Allow us to listen for when the websocket has completed.
-      proxySocket.on("close", () => {
-        socket.destroy();
-        server.emit("close", proxyRes, proxySocket, proxyHead);
-      });
+      if (AGGRESSIVE_CLOSE) {
+        proxySocket.on("close", () => {
+          socket.destroy();
+        });
+      }
 
       common.setupSocket(proxySocket);
 
@@ -198,7 +218,11 @@ export function stream(
     } else {
       server.emit("error", err, req, socket);
     }
-    socket.destroy();
+    if (AGGRESSIVE_CLOSE) {
+      socket.destroy();
+    } else {
+      socket.end();
+    }
   }
 
   proxyReq.end();

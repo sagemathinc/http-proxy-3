@@ -1,5 +1,6 @@
 import { ProxyServer, type ServerOptions } from "./http-proxy/index";
 export { ProxyServer };
+export { numOpenSockets } from "./http-proxy/passes/ws-incoming";
 
 /**
  * Creates the proxy server.
