@@ -1,7 +1,7 @@
 import * as http from "http";
 import * as https from "https";
-import * as web from "./passes/web-incoming";
-import * as ws from "./passes/ws-incoming";
+import { WEB_PASSES } from "./passes/web-incoming";
+import { WS_PASSES } from "./passes/ws-incoming";
 import { EventEmitter } from "events";
 import type { Stream } from "stream";
 import debug from "debug";
@@ -96,8 +96,8 @@ export class ProxyServer extends EventEmitter {
     this.options = options;
     this.web = this.createRightProxy("web")(options);
     this.ws = this.createRightProxy("ws")(options);
-    this.webPasses = Object.keys(web).map((pass: string) => web[pass]);
-    this.wsPasses = Object.keys(ws).map((pass: string) => ws[pass]);
+    this.webPasses = Object.values(WEB_PASSES);
+    this.wsPasses = Object.values(WS_PASSES);
     this.on("error", this.onError);
   }
 
@@ -108,7 +108,7 @@ export class ProxyServer extends EventEmitter {
     return (options) => {
       return (...args: any[] /* req, res, [head], [opts] */) => {
         const req = args[0];
-        // console.log("proxy: ", { type, path: req.url });
+        log("proxy: ", { type, path: req.url });
         const res = args[1];
         const passes = type === "ws" ? this.wsPasses : this.webPasses;
         let counter = args.length - 1;
@@ -121,11 +121,13 @@ export class ProxyServer extends EventEmitter {
           counter--;
         }
 
-        let requestOptions = options;
+        let requestOptions;
         if (!(args[counter] instanceof Buffer) && args[counter] !== res) {
           // Copy global options, and overwrite with request options
           requestOptions = { ...options, ...args[counter] };
           counter--;
+        } else {
+          requestOptions = { ...options };
         }
 
         if (args[counter] instanceof Buffer) {

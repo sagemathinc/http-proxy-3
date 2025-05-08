@@ -1,10 +1,12 @@
-/*!
- * Websockets Passes: Array of passes.
- *
- * A `pass` is just a function that is executed on `req, socket, options`
- * so that you can easily add new checks while still keeping the base
- * flexible.
- */
+/*
+Websockets Passes: Array of passes.
+
+A `pass` is just a function that is executed on `req, socket, options`
+so that you can easily add new checks while still keeping the base
+flexible.
+
+The names of passes are exported as WS_PASSES from this module.
+*/
 
 import * as http from "http";
 import * as https from "https";
@@ -12,11 +14,6 @@ import * as common from "../common";
 import type { Request } from "./web-incoming";
 import type { Socket } from "net";
 import debug from "debug";
-
-// If true, we go beyond the original upstream node-http-proxy
-// in aggressive attempts to close sockets.  This leads to a bug
-// at scale, hence is disabled by default for now.
-const AGGRESSIVE_CLOSE = !!process.env.PROXY_AGGRESSIVE_WEBSOCKET_CLOSE;
 
 const log = debug("http-proxy-3:ws-incoming");
 
@@ -45,7 +42,11 @@ function createSocketCounter(name) {
         sockets.delete(rm.id);
       }
     }
-    log("socket counter:", { [name]: sockets.size });
+    log(
+      "socket counter:",
+      { [name]: sockets.size },
+      add ? "add" : rm ? "rm" : "",
+    );
     return sockets.size;
   };
 }
@@ -63,6 +64,7 @@ export function checkMethodAndHeader(
   req: Request,
   socket: Socket,
 ): true | undefined {
+  log("websocket: checkMethodAndHeader");
   if (req.method !== "GET" || !req.headers.upgrade) {
     socket.destroy();
     return true;
@@ -77,6 +79,7 @@ export function checkMethodAndHeader(
 // Sets `x-forwarded-*` headers if specified in config.
 export function XHeaders(req: Request, _socket: Socket, options) {
   if (!options.xfwd) return;
+  log("websocket: XHeaders");
 
   const values = {
     for: req.connection.remoteAddress || req.socket.remoteAddress,
@@ -102,22 +105,17 @@ export function stream(
   server,
   cb?: Function,
 ) {
+  log("websocket: new stream");
   const proxySockets: Socket[] = [];
   socketCounter({ add: socket });
   const cleanUpProxySockets = () => {
     for (const p of proxySockets) {
-      if (AGGRESSIVE_CLOSE) {
-        p.destroy();
-      } else {
-        p.end();
-      }
+      p.end();
     }
   };
   socket.on("close", () => {
     socketCounter({ rm: socket });
-    if (AGGRESSIVE_CLOSE) {
-      cleanUpProxySockets();
-    }
+    cleanUpProxySockets();
   });
 
   // The pipe below will end proxySocket if socket closes cleanly, but not
@@ -183,16 +181,11 @@ export function stream(
       // Allow us to listen for when the websocket has completed.
       proxySocket.on("end", () => {
         server.emit("close", proxyRes, proxySocket, proxyHead);
-        if (AGGRESSIVE_CLOSE) {
-          socket.destroy();
-        }
       });
 
-      if (AGGRESSIVE_CLOSE) {
-        proxySocket.on("close", () => {
-          socket.destroy();
-        });
-      }
+      proxySocket.on("close", () => {
+        socket.end();
+      });
 
       common.setupSocket(proxySocket);
 
@@ -218,12 +211,10 @@ export function stream(
     } else {
       server.emit("error", err, req, socket);
     }
-    if (AGGRESSIVE_CLOSE) {
-      socket.destroy();
-    } else {
-      socket.end();
-    }
+    socket.end();
   }
 
   proxyReq.end();
 }
+
+export const WS_PASSES = { checkMethodAndHeader, XHeaders, stream };

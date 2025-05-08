@@ -8,7 +8,6 @@ import * as http from "http";
 import * as httpProxy from "../..";
 import getPort from "../get-port";
 import wait, { once } from "../wait";
-import { delay } from "awaiting";
 
 describe("Load testing proxying a WebSocket", () => {
   let ports;
@@ -43,7 +42,7 @@ describe("Load testing proxying a WebSocket", () => {
   });
 
   const LATENCY = 250;
-  const COUNT = 100;
+  const COUNT = 250;
 
   it(`Serial test ${COUNT} times plain websocket server`, async () => {
     const t = Date.now();
@@ -52,10 +51,35 @@ describe("Load testing proxying a WebSocket", () => {
     expect(elapsed).toBeLessThan(LATENCY + COUNT * 5);
   });
 
-  // skip -- it reveals a bug
-  it.skip(`Serial test ${COUNT} times proxy server`, async () => {
+  it(`Parallel test ${COUNT} times plain websocket server`, async () => {
+    const t = Date.now();
+    await loadTestWebsocketServerSerial({
+      port: ports.ws,
+      count: COUNT,
+      parallel: true,
+    });
+    const elapsed = Date.now() - t;
+    expect(elapsed).toBeLessThan(LATENCY + COUNT * 5);
+  });
+
+  it(`Serial test ${COUNT} times proxy server`, async () => {
     const t = Date.now();
     await loadTestWebsocketServerSerial({ port: ports.proxy, count: COUNT });
+    const elapsed = Date.now() - t;
+    expect(elapsed).toBeLessThan(LATENCY + COUNT * 5);
+    // confirm that there are no socket leaks -- we have to wait since the sockets aren't
+    // freed instantly -- last few bytes get sent.
+    await wait({ until: () => httpProxy.numOpenSockets() == 0 });
+    expect(httpProxy.numOpenSockets()).toBe(0);
+  });
+
+  it(`Parallel test ${COUNT} times proxy server`, async () => {
+    const t = Date.now();
+    await loadTestWebsocketServerSerial({
+      port: ports.proxy,
+      count: COUNT,
+      parallel: true,
+    });
     const elapsed = Date.now() - t;
     expect(elapsed).toBeLessThan(LATENCY + COUNT * 5);
     // no socket leaks -- we have to wait since the sockets aren't
@@ -69,12 +93,15 @@ describe("Load testing proxying a WebSocket", () => {
   });
 });
 
+// using simple builtin to nodejs client
 async function loadTestWebsocketServerSerial({
   port,
   count,
+  parallel,
 }: {
   port: number;
   count: number;
+  parallel?: boolean;
 }) {
   const options = {
     port,
@@ -92,9 +119,15 @@ async function loadTestWebsocketServerSerial({
     res.socket.end();
   }
 
-  for (let i = 0; i < count; i++) {
-    await connectToProxy();
-    // without this delay, the proxy test hangs!  That's a bug obviously, which we'll fix.
-    // await delay(0);
+  if (parallel) {
+    const v: any[] = [];
+    for (let i = 0; i < count; i++) {
+      v.push(connectToProxy());
+    }
+    await Promise.all(v);
+  } else {
+    for (let i = 0; i < count; i++) {
+      await connectToProxy();
+    }
   }
 }

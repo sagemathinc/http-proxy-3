@@ -3,15 +3,13 @@ A `pass` is just a function that is executed on `req, res, options`
 so that you can easily add new checks while still keeping the base
 flexible.
 
-NOTE: The functions exported from this module are not explicitly called. 
-Instead, this whole module is imported and iterated over, so in fact 
-they all do get called elsewhere.
+The names of passes are exported as WEB_PASSES from this module.
 
 */
 
 import * as http from "http";
 import * as https from "https";
-import * as webOutgoing from "./web-outgoing";
+import { OUTGOING_PASSES } from "./web-outgoing";
 import * as common from "../common";
 import * as followRedirects from "follow-redirects";
 import {
@@ -22,9 +20,9 @@ import {
 export type ProxyResponse = Request & {
   headers: { [key: string]: string | string[] };
 };
-export { Request, Response };
+export type { Request, Response };
 
-const web_o = Object.keys(webOutgoing).map((pass) => webOutgoing[pass]);
+const web_o = Object.values(OUTGOING_PASSES);
 
 const nativeAgents = { http, https };
 
@@ -96,7 +94,7 @@ export function stream(req: Request, res: Response, options, _, server, clb) {
     (options.buffer || req).pipe(forwardReq);
     if (!options.target) {
       // no target, so we do not send anything back to the client.
-      // If target is set, we do a separate proxy below, which might be to a 
+      // If target is set, we do a separate proxy below, which might be to a
       // completely different server.
       return res.end();
     }
@@ -156,10 +154,9 @@ export function stream(req: Request, res: Response, options, _, server, clb) {
     server?.emit("proxyRes", proxyRes, req, res);
 
     if (!res.headersSent && !options.selfHandleResponse) {
-      for (let i = 0; i < web_o.length; i++) {
-        if (web_o[i](req, res, proxyRes, options)) {
-          break;
-        }
+      for (const pass of web_o) {
+        // note: none of these return anything
+        pass(req, res, proxyRes, options);
       }
     }
 
@@ -177,3 +174,5 @@ export function stream(req: Request, res: Response, options, _, server, clb) {
     }
   });
 }
+
+export const WEB_PASSES = { deleteLength, timeout, XHeaders, stream };

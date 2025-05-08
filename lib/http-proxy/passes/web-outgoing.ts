@@ -5,9 +5,8 @@ A `pass` is just a function that is executed on `req, res, options`
 so that you can easily add new checks while still keeping the base
 flexible.
 
-NOTE: The functions exported from this module are not explicitly called. 
-Instead, this whole module is imported and iterated over, so in fact 
-they all do get called elsewhere.
+NOTE: The function in OUTGOING_PASSES are called. They are assumed
+to not return anything.
 */
 
 import * as common from "../common";
@@ -159,3 +158,11 @@ export function writeStatusCode(
     res.statusCode = proxyRes.statusCode!;
   }
 }
+
+export const OUTGOING_PASSES = {
+  removeChunked,
+  setConnection,
+  setRedirectHostRewrite,
+  writeHeaders,
+  writeStatusCode,
+};
