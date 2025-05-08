@@ -1,6 +1,6 @@
 # http-proxy-3
 
-**WARNING: DEFINITELY DO NOT USE THIS IN PRODUCTION YET.  It is not ready.**
+**WARNING: DEFINITELY DO NOT USE THIS IN PRODUCTION YET. It is not ready.**
 
 http\-proxy\-3 is a modern drop-in-replacement rewrite of
 [http\-proxy](https://github.com/http-party/node-http-proxy), the original nodejs
@@ -24,6 +24,10 @@ Why the name? http-proxy-2 wasn't available on npmjs.
 
 **Motivation:** http-proxy is one of the oldest and most famous nodejs modules, and it gets downloaded around 15 million times a week. Unfortunately, it is [unmaintained](https://github.com/http-party/node-http-proxy/issues/1687), it has significant leaks that [regularly crash production servers](https://github.com/jupyterhub/configurable-http-proxy/issues/434), and is written in ancient untyped Javascript that `npm audit` warns has security vulnerabilities. The maintainers have long since stopped responding, so there is no choice but to fork and start over. I just wanted to do my part to help maintain the open source ecosystem, hence this library. I hope you find it useful.
 
+**Related Projects:**
+
+- https://github.com/unjs/httpxy: it has the same motivation as this project -- it's a modern maintained rewrite of http-proxy. It seems to have [very little unit testing](https://github.com/unjs/httpxy/tree/main/test), which may make it more difficult to contribute to in the longrun.
+
 **Development:**
 
 ```sh
@@ -42,7 +46,7 @@ pnpm tsc
 
 and make changes to code under lib/.
 
-### Table of Contents
+## User's Guide
 
 - [Installation](#installation)
 - [Core Concept](#core-concept)
