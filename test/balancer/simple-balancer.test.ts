@@ -7,7 +7,6 @@ pnpm test simple-balancer.test.ts
 import * as http from "http";
 import * as httpProxy from "../..";
 import getPort from "../get-port";
-import log from "../log";
 
 describe("A simple round-robin load balancing strategy.", () => {
   let addresses;
@@ -59,7 +58,7 @@ describe("A simple round-robin load balancing strategy.", () => {
   });
 
   it("sends requests to the load balance and confirms that it behaves as claimed", async () => {
-    const v: string[] = [];
+    const v: number[] = [];
     for (let i = 0; i < 3; i++) {
       v.push(
         parseInt(await (await fetch(`http://localhost:${proxyPort}`)).text()),

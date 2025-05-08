@@ -11,3 +11,4 @@ coverage
 tsconfig.tsbuildinfo
 dist
 *.sage-chat
+*.term

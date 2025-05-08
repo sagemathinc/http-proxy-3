@@ -42,7 +42,7 @@
     "test": "NODE_TLS_REJECT_UNAUTHORIZED=0 pnpm exec jest",
     "version": "auto-changelog -p && git add CHANGELOG.md",
     "clean": "rm -rf dist node_modules",
-    "build": "pnpm exec tsc --build",
+    "build": "pnpm exec tsc --build .tsconfig-bootstrap.json && pnpm exec tsc --build",
     "tsc": "pnpm exec tsc --watch  --pretty --preserveWatchOutput",
     "prepublishOnly": "pnpm audit && pnpm test"
   },
