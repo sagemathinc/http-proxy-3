@@ -24,6 +24,10 @@ Why the name? http-proxy-2 wasn't available on npmjs.
 
 **Motivation:** http-proxy is one of the oldest and most famous nodejs modules, and it gets downloaded around 15 million times a week. Unfortunately, it is [unmaintained](https://github.com/http-party/node-http-proxy/issues/1687), it has significant leaks that [regularly crash production servers](https://github.com/jupyterhub/configurable-http-proxy/issues/434), and is written in ancient untyped Javascript that `npm audit` warns has security vulnerabilities. The maintainers have long since stopped responding, so there is no choice but to fork and start over. I just wanted to do my part to help maintain the open source ecosystem, hence this library. I hope you find it useful.
 
+**Performance:**
+
+I've been adding load tests to the unit tests in various places. Generally speaking on a local machine over localhost the penalty to using the proxy server is that **things take about twice as long**. That's not surprising because it's twice as much work being done all in the same language (with the same tools).
+
 **Related Projects:**
 
 - https://github.com/unjs/httpxy: it has the same motivation as this project -- it's a modern maintained rewrite of http-proxy. It seems to have [very little unit testing](https://github.com/unjs/httpxy/tree/main/test), which may make it more difficult to contribute to in the longrun.
@@ -47,6 +51,8 @@ pnpm tsc
 and make changes to code under lib/.
 
 ## User's Guide
+
+This is the original user's guide, but with various updates.
 
 - [Installation](#installation)
 - [Core Concept](#core-concept)

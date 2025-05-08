@@ -57,3 +57,58 @@ describe("tests proxying a basic http server", () => {
     target.close();
   });
 });
+
+describe("Load test against the basic proxy", () => {
+  let x;
+  it("creates servers", async () => {
+    x = await server();
+  });
+
+  const COUNT = 200;
+  const MAX_TIME = 500;
+  it(`Does a serial load test of HTTP server with ${COUNT} requests`, async () => {
+    const t = Date.now();
+    for (let i = 0; i < COUNT; i++) {
+      const a = await (await fetch(`http://localhost:${x.httpPort}`)).text();
+      if (!a.includes("request successfully proxied")) {
+        throw Error("incorrect response");
+      }
+    }
+    const elapsed = Date.now() - t;
+    expect(elapsed).toBeLessThan(MAX_TIME);
+  });
+
+  it(`Does a serial load test of PROXY server with ${COUNT} requests`, async () => {
+    const t = Date.now();
+    for (let i = 0; i < COUNT; i++) {
+      const a = await (await fetch(`http://localhost:${x.proxyPort}`)).text();
+      if (!a.includes("request successfully proxied")) {
+        throw Error("incorrect response");
+      }
+    }
+    const elapsed = Date.now() - t;
+    expect(elapsed).toBeLessThan(MAX_TIME);
+  });
+
+  it(`Does a parallel load test of PROXY server with ${COUNT} requests`, async () => {
+    const f = async () => {
+      const a = await (await fetch(`http://localhost:${x.proxyPort}`)).text();
+      if (!a.includes("request successfully proxied")) {
+        throw Error("incorrect response");
+      }
+    };
+    const t = Date.now();
+    const v: any[] = [];
+    for (let i = 0; i < COUNT; i++) {
+      v.push(f());
+    }
+    await Promise.all(v);
+    const elapsed = Date.now() - t;
+    expect(elapsed).toBeLessThan(MAX_TIME);
+  });
+
+  it("Cleans up", () => {
+    x.proxy.close();
+    x.target.close();
+  });
+});
