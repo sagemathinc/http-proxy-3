@@ -4,7 +4,6 @@
 pnpm test ./custom-proxy-error.test.ts
 */
 
-import * as http from "http";
 import * as httpProxy from "../..";
 import getPort from "../get-port";
 
@@ -18,7 +17,6 @@ describe("Test proxying over HTTP with latency", () => {
   });
 
   let servers: any = {};
-  const LATENCY = 250;
   it("creates servers with bad target", () => {
     const proxy = httpProxy
       .createServer({
@@ -27,7 +25,7 @@ describe("Test proxying over HTTP with latency", () => {
       })
       .listen(ports.proxy);
 
-    proxy.on("error", (err, req, res) => {
+    proxy.on("error", (_err, _req, res) => {
       res.writeHead(500, {
         "Content-Type": "text/plain",
       });
