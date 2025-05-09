@@ -207,7 +207,7 @@ const proxy = createProxyServer({});
 //  http.ServerResponse res, Object options). This mechanism is useful when
 // you need to modify the proxy request before the proxy connection
 // is made to the target.
-proxy.on("proxyReq", (proxyReq, req, res, options) => {
+proxy.on("proxyReq", (proxyReq, req, res, options, socket) => {
   proxyReq.setHeader("X-Special-Proxy-Header", "foobar");
 });
 

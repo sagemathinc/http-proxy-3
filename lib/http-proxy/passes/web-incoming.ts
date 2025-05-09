@@ -16,6 +16,7 @@ import {
   type IncomingMessage as Request,
   type ServerResponse as Response,
 } from "http";
+import { type Socket } from "net";
 
 export type ProxyResponse = Request & {
   headers: { [key: string]: string | string[] };
@@ -71,7 +72,7 @@ export function XHeaders(req: Request, _res, options) {
 // Does the actual proxying. If `forward` is enabled fires up
 // a ForwardStream (there is NO RESPONSE), same happens for ProxyStream. The request
 // just dies otherwise.
-export function stream(req: Request, res: Response, options, _, server, clb) {
+export function stream(req: Request, res: Response, options, _, server, cb) {
   // And we begin!
   server.emit("start", req, res, options.target || options.forward);
 
@@ -101,14 +102,14 @@ export function stream(req: Request, res: Response, options, _, server, clb) {
   }
 
   // Request initalization
-  const proxyReq = (
-    options.target.protocol === "https:" ? https : http
-  ).request(common.setupOutgoing(options.ssl || {}, options, req));
+  const proto = options.target.protocol === "https:" ? https : http;
+  const outgoingOptions = common.setupOutgoing(options.ssl || {}, options, req);
+  const proxyReq = proto.request(outgoingOptions);
 
   // Enable developers to modify the proxyReq before headers are sent
-  proxyReq.on("socket", () => {
+  proxyReq.on("socket", (socket: Socket) => {
     if (server && !proxyReq.getHeader("expect")) {
-      server.emit("proxyReq", proxyReq, req, res, options);
+      server.emit("proxyReq", proxyReq, req, res, options, socket);
     }
   });
 
@@ -116,7 +117,7 @@ export function stream(req: Request, res: Response, options, _, server, clb) {
   // show an error page at the initial request
   if (options.proxyTimeout) {
     proxyReq.setTimeout(options.proxyTimeout, () => {
-      proxyReq.abort();
+      proxyReq.destroy();
     });
   }
 
@@ -124,7 +125,7 @@ export function stream(req: Request, res: Response, options, _, server, clb) {
   res.on("close", () => {
     const aborted = !res.writableFinished;
     if (aborted) {
-      proxyReq.abort();
+      proxyReq.destroy();
     }
   });
 
@@ -134,14 +135,15 @@ export function stream(req: Request, res: Response, options, _, server, clb) {
   proxyReq.on("error", proxyError);
 
   function createErrorHandler(proxyReq, url) {
-    return function proxyError(err) {
+    return (err) => {
       if (req.socket.destroyed && err.code === "ECONNRESET") {
         server.emit("econnreset", err, req, res, url);
-        return proxyReq.abort();
+        proxyReq.destroy();
+        return;
       }
 
-      if (clb) {
-        clb(err, req, res, url);
+      if (cb) {
+        cb(err, req, res, url);
       } else {
         server.emit("error", err, req, res, url);
       }
