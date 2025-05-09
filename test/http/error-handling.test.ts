@@ -6,6 +6,7 @@ import * as httpProxy from "../..";
 import * as http from "http";
 import getPort from "../get-port";
 import log from "../log";
+import { callback } from "awaiting";
 
 const CUSTOM_ERROR = "There was an error proxying your request";
 
@@ -16,6 +17,8 @@ describe("Test proxying over HTTP with latency", () => {
   });
 
   let servers: any = {};
+  let customWSErrorCalled = false;
+  let customHttpErrorCalled = false;
   it("creates servers with bad target", () => {
     const proxy = httpProxy.createServer({
       target: `http://localhost:${ports.bad}`,
@@ -30,6 +33,7 @@ describe("Test proxying over HTTP with latency", () => {
         // and handle it by yourself
         // if (err) {throw err;}
         log(`${err}`);
+        customHttpErrorCalled = true;
         res.writeHead(502);
         res.end(CUSTOM_ERROR);
       });
@@ -41,18 +45,20 @@ describe("Test proxying over HTTP with latency", () => {
         // and handle it by yourself
         // if (err) {throw err;}
         log(`Proxy websocket upgrade error: ${err}`);
+        customWSErrorCalled = true;
         socket.destroy();
       });
     });
     servers.proxy.listen(ports.proxy);
   });
 
-  it("makes a request and observes the custom error we installed", async () => {
+  it("makes http request and observes the custom error we installed", async () => {
     const a = await (await fetch(`http://localhost:${ports.proxy}`)).text();
     expect(a).toEqual(CUSTOM_ERROR);
+    expect(customHttpErrorCalled).toBe(true);
   });
 
-  it("makes a websocket attempt", async () => {
+  it("makes websocket request and observer error", async () => {
     const options = {
       port: ports.proxy,
       host: "localhost",
@@ -61,15 +67,17 @@ describe("Test proxying over HTTP with latency", () => {
         Upgrade: "websocket",
       },
     };
-    const req = http.request(options);
-    req.on("error", (err) => {
-      log(`request error`, err.message);
-    });
-    //     await delay(1000);
-    //     console.log("e = ", e);
-    // await wait({ until: () => e });
-    //console.log({ err });
-    //expect(err.message).toContain("ECONNREFUSED");
+    const f = (cb) => {
+      const req = http.request(options);
+      req.end();
+      req.on("error", (err) => {
+        log(`request error -- ${err}`);
+        cb(undefined, err);
+      });
+    };
+    const err = await callback(f);
+    expect(err.message).toContain("socket hang up");
+    expect(customWSErrorCalled).toBe(true);
   });
 
   it("Clean up", () => {

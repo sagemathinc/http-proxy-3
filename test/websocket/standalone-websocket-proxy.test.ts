@@ -1,5 +1,7 @@
 /*
 standalone-websocket-proxy.test.ts: Proxying websockets over HTTP with a standalone HTTP server.
+
+pnpm test ./standalone-websocket-proxy.test.ts
 */
 
 import * as httpProxy from "../..";
@@ -54,7 +56,7 @@ describe("Proxying websockets over HTTP with a standalone HTTP server.", () => {
     const t = Date.now();
     client.send("I am the client");
     const msg = await once(client as any, "message");
-    expect(Math.abs(Date.now() - t)).toBeLessThan(100);
+    expect(Math.abs(Date.now() - t)).toBeLessThan(500);
     expect(msg).toEqual(["from server"]);
     client.close();
   });

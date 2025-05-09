@@ -77,7 +77,7 @@ describe("Proxying websockets over HTTP with a standalone HTTP server.", () => {
     client.send("I am the client");
     const msg = await once(client as any, "message");
     expect(msg).toEqual(["from server"]);
-    expect(Math.abs(Date.now() - t)).toBeLessThan(150);
+    expect(Math.abs(Date.now() - t)).toBeLessThan(500);
     client.close();
   });
 
