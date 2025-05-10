@@ -18,6 +18,14 @@ export interface Outgoing extends Outgoing0 {
   headers: { [header: string]: string | string[] | undefined };
 }
 
+// If we allow this header and a user sends it with a request,
+// then serving this request goes into a weird broken state, which
+// wastes resources.  This could be a DOS security vulnerability.
+// We strip this header if it appears in any request, and then things
+// work fine.
+// See https://github.com/http-party/node-http-proxy/issues/1647
+const HEADER_BLACKLIST = new Set(["trailer"]);
+
 // setupOutgoing -- Copies the right headers from `options` and `req` to
 // `outgoing` which is then used to fire the proxied request by calling
 // http.request or https.request with outgoing as input.
@@ -56,6 +64,16 @@ export function setupOutgoing(
 
   if (options.headers) {
     outgoing.headers = { ...outgoing.headers, ...options.headers };
+  }
+
+  // note -- we do the scan in this order since
+  // the header could be any case, i.e., doing
+  // outgoing.headers['Trailer'] won't work, because
+  // it might be {'TrAiLeR':...}
+  for (const header in outgoing.headers) {
+    if (HEADER_BLACKLIST.has(header.toLowerCase())) {
+      delete outgoing.headers[header];
+    }
   }
 
   if (options.auth) {

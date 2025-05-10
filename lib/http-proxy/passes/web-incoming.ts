@@ -82,9 +82,14 @@ export function stream(req: Request, res: Response, options, _, server, cb) {
 
   if (options.forward) {
     // forward enabled, so just pipe the request
-    const forwardReq = (
-      options.forward.protocol === "https:" ? https : http
-    ).request(common.setupOutgoing(options.ssl || {}, options, req, "forward"));
+    const proto = options.forward.protocol === "https:" ? https : http;
+    const outgoingOptions = common.setupOutgoing(
+      options.ssl || {},
+      options,
+      req,
+      "forward",
+    );
+    const forwardReq = proto.request(outgoingOptions);
 
     // error handler (e.g. ECONNRESET, ECONNREFUSED)
     // Handle errors on incoming request as well as it makes sense to
