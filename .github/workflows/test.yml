@@ -28,6 +28,7 @@ jobs:
       matrix:
         # See supported Node.js release schedule at https://nodejs.org/en/about/releases/
         node-version:
+          - "16"
           - "18"
           - "20"
           - "22"
