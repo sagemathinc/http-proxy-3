@@ -23,7 +23,7 @@ export interface Outgoing extends Outgoing0 {
 // We strip this header if it appears in any request, and then things
 // work fine.
 // See https://github.com/http-party/node-http-proxy/issues/1647
-const HEADER_BLACKLIST = new Set(["trailer"]);
+const HEADER_BLACKLIST = "trailer";
 
 // setupOutgoing -- Copies the right headers from `options` and `req` to
 // `outgoing` which is then used to fire the proxied request by calling
@@ -70,8 +70,9 @@ export function setupOutgoing(
   // outgoing.headers['Trailer'] won't work, because
   // it might be {'TrAiLeR':...}
   for (const header in outgoing.headers) {
-    if (HEADER_BLACKLIST.has(header.toLowerCase())) {
+    if (HEADER_BLACKLIST == header.toLowerCase()) {
       delete outgoing.headers[header];
+      break;
     }
   }
 
