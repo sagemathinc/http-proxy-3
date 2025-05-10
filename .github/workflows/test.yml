@@ -51,5 +51,3 @@ jobs:
       - run: pnpm test
       - name: Attest
         uses: actions/attest-build-provenance@v2
-        with:
-          subject-path: '${{ github.workspace }}/http-proxy-3'
