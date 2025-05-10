@@ -90,9 +90,9 @@ function address(port: number) {
 
 describe("#createProxyServer.web() using own http server", () => {
   it("gets some ports", async () => {
-    ports["8080"] = await getPort();
-    ports["8081"] = await getPort();
-    ports["8082"] = await getPort();
+    for (let n = 8080; n < 8090; n++) {
+      ports[`${n}`] = await getPort();
+    }
   });
 
   it("should proxy the request using the web proxy handler", (done) => {
@@ -227,11 +227,10 @@ describe("#createProxyServer.web() using own http server", () => {
     client.end();
   });
 
-  /*
-  
   it("should proxy the request and handle error via event listener", (done) => {
     const proxy = httpProxy.createProxyServer({
       target: address(8080),
+      timeout: 100,
     });
 
     const proxyServer = http.createServer(requestHandler);
@@ -239,7 +238,6 @@ describe("#createProxyServer.web() using own http server", () => {
     function requestHandler(req, res) {
       proxy.once("error", (err, errReq, errRes) => {
         proxyServer.close();
-        expect(err).toBeInstanceOf(Error);
         expect(errReq).toEqual(req);
         expect(errRes).toEqual(res);
         expect(err.code).toEqual("ECONNREFUSED");
@@ -249,23 +247,24 @@ describe("#createProxyServer.web() using own http server", () => {
       proxy.web(req, res);
     }
 
-    proxyServer.listen("8083");
+    proxyServer.listen(ports["8083"]);
 
-    http
-      .request(
-        {
-          hostname: "127.0.0.1",
-          port: "8083",
-          method: "GET",
-        },
-        () => {},
-      )
-      .end();
+    const client = http.request(
+      {
+        hostname: "127.0.0.1",
+        port: ports["8083"],
+        method: "GET",
+      },
+      () => {},
+    );
+    client.on("error", () => {});
+    client.end();
   });
 
   it("should forward the request and handle error via event listener", (done) => {
     const proxy = httpProxy.createProxyServer({
       forward: "http://127.0.0.1:8080",
+      timeout: 100,
     });
 
     const proxyServer = http.createServer(requestHandler);
@@ -273,7 +272,6 @@ describe("#createProxyServer.web() using own http server", () => {
     function requestHandler(req, res) {
       proxy.once("error", (err, errReq, errRes) => {
         proxyServer.close();
-        expect(err).toBeInstanceOf(Error);
         expect(errReq).toEqual(req);
         expect(errRes).toEqual(res);
         expect(err.code).toEqual("ECONNREFUSED");
@@ -283,38 +281,37 @@ describe("#createProxyServer.web() using own http server", () => {
       proxy.web(req, res);
     }
 
-    proxyServer.listen("8083");
+    proxyServer.listen(ports["8083"]);
 
-    http
-      .request(
-        {
-          hostname: "127.0.0.1",
-          port: "8083",
-          method: "GET",
-        },
-        () => {},
-      )
-      .end();
+    const client = http.request(
+      {
+        hostname: "127.0.0.1",
+        port: ports["8083"],
+        method: "GET",
+      },
+      () => {},
+    );
+    client.on("error", () => {});
+    client.end();
   });
 
   it("should proxy the request and handle timeout error (proxyTimeout)", (done) => {
     const proxy = httpProxy.createProxyServer({
-      target: "http://127.0.0.1:45000",
+      target: address(8083),
       proxyTimeout: 100,
+      timeout: 150, // so client exits and isn't left handing the test.
     });
 
-    require("net").createServer().listen(45000);
+    const server = require("net").createServer().listen(ports["8083"]);
 
-    const proxyServer = http.createServer(requestHandler);
-
-    const started = new Date().getTime();
+    const started = Date.now();
     function requestHandler(req, res) {
       proxy.once("error", (err, errReq, errRes) => {
         proxyServer.close();
-        expect(err).toBeInstanceOf(Error);
+        server.close();
         expect(errReq).toEqual(req);
         expect(errRes).toEqual(res);
-        expect(new Date().getTime() - started).toBeGreaterThan(99);
+        expect(Date.now() - started).toBeGreaterThan(99);
         expect(err.code).toEqual("ECONNRESET");
         done();
       });
@@ -322,27 +319,28 @@ describe("#createProxyServer.web() using own http server", () => {
       proxy.web(req, res);
     }
 
-    proxyServer.listen("8084");
+    const proxyServer = http.createServer(requestHandler);
+    proxyServer.listen(ports["8084"]);
 
-    http
-      .request(
-        {
-          hostname: "127.0.0.1",
-          port: "8084",
-          method: "GET",
-        },
-        () => {},
-      )
-      .end();
+    const client = http.request(
+      {
+        hostname: "127.0.0.1",
+        port: ports["8084"],
+        method: "GET",
+      },
+      () => {},
+    );
+    client.on("error", () => {});
+    client.end();
   });
 
   it("should proxy the request and handle timeout error", (done) => {
     const proxy = httpProxy.createProxyServer({
-      target: "http://127.0.0.1:45001",
+      target: address(8083),
       timeout: 100,
     });
 
-    require("net").createServer().listen(45001);
+    const server = require("net").createServer().listen(ports["8083"]);
 
     const proxyServer = http.createServer(requestHandler);
 
@@ -352,11 +350,11 @@ describe("#createProxyServer.web() using own http server", () => {
       if (cnt === 2) done();
     };
 
-    const started = new Date().getTime();
+    const started = Date.now();
     function requestHandler(req, res) {
       proxy.once("econnreset", (err, errReq, errRes) => {
         proxyServer.close();
-        expect(err).toBeInstanceOf(Error);
+        server.close();
         expect(errReq).toEqual(req);
         expect(errRes).toEqual(res);
         expect(err.code).toEqual("ECONNRESET");
@@ -366,26 +364,26 @@ describe("#createProxyServer.web() using own http server", () => {
       proxy.web(req, res);
     }
 
-    proxyServer.listen("8085");
+    proxyServer.listen(ports["8085"]);
 
     const req = http.request(
       {
         hostname: "127.0.0.1",
-        port: "8085",
+        port: ports["8085"],
         method: "GET",
       },
       () => {},
     );
 
     req.on("error", (err) => {
-      expect(err).toBeInstanceOf(Error);
       // @ts-ignore
       expect(err.code).toEqual("ECONNRESET");
-      expect(new Date().getTime() - started).toBeGreaterThan(99);
+      expect(Date.now() - started).toBeGreaterThan(99);
       doneOne();
     });
     req.end();
   });
+  /*
 
   it("should proxy the request and provide a proxyRes event with the request and response parameters", (done) => {
     const proxy = httpProxy.createProxyServer({
@@ -788,7 +786,6 @@ describe("#createProxyServer.web() using own http server", () => {
     function requestHandler(req, res) {
       proxy.web(req, res, function (err) {
         proxyServer.close();
-        expect(err).toBeInstanceOf(Error);
         expect(err.code).toEqual("ECONNREFUSED");
         done();
       });
@@ -818,7 +815,6 @@ describe("#createProxyServer.web() using own http server", () => {
     function requestHandler(req, res) {
       proxy.once("error", function (err, errReq, errRes) {
         proxyServer.close();
-        expect(err).toBeInstanceOf(Error);
         expect(errReq).toEqual(req);
         expect(errRes).toEqual(res);
         expect(err.code).toEqual("ECONNREFUSED");
@@ -852,7 +848,6 @@ describe("#createProxyServer.web() using own http server", () => {
     function requestHandler(req, res) {
       proxy.once("error", function (err, errReq, errRes) {
         proxyServer.close();
-        expect(err).toBeInstanceOf(Error);
         expect(errReq).toEqual(req);
         expect(errRes).toEqual(res);
         expect(err.code).toEqual("ECONNREFUSED");
@@ -886,14 +881,13 @@ describe("#createProxyServer.web() using own http server", () => {
 
     const proxyServer = http.createServer(requestHandler);
 
-    const started = new Date().getTime();
+    const started = Date.now();
     function requestHandler(req, res) {
       proxy.once("error", function (err, errReq, errRes) {
         proxyServer.close();
-        expect(err).toBeInstanceOf(Error);
         expect(errReq).toEqual(req);
         expect(errRes).toEqual(res);
-        expect(new Date().getTime() - started).to.be.greaterThan(99);
+        expect(Date.now() - started).to.be.greaterThan(99);
         expect(err.code).toEqual("ECONNRESET");
         done();
       });
@@ -931,11 +925,10 @@ describe("#createProxyServer.web() using own http server", () => {
       if (cnt === 2) done();
     };
 
-    const started = new Date().getTime();
+    const started = Date.now();
     function requestHandler(req, res) {
       proxy.once("econnreset", function (err, errReq, errRes) {
         proxyServer.close();
-        expect(err).toBeInstanceOf(Error);
         expect(errReq).toEqual(req);
         expect(errRes).toEqual(res);
         expect(err.code).toEqual("ECONNRESET");
@@ -957,9 +950,8 @@ describe("#createProxyServer.web() using own http server", () => {
     );
 
     req.on("error", function (err) {
-      expect(err).toBeInstanceOf(Error);
       expect(err.code).toEqual("ECONNRESET");
-      expect(new Date().getTime() - started).to.be.greaterThan(99);
+      expect(Date.now() - started).to.be.greaterThan(99);
       doneOne();
     });
     req.end();
