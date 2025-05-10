@@ -24,6 +24,10 @@ describe(" Basic example of proxying over HTTP to a target HTTPS server", () => 
   });
 
   it("queries the proxy server as a test", async () => {
+    if (process.env.GITHUB_ACTIONS) {
+      // google tends to block CI
+      return;
+    }
     const r = await (await fetch(`http://localhost:${port}`)).text();
     expect(r).toContain("Search the world");
   });

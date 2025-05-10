@@ -20,6 +20,9 @@ on:
         required: false
         default: false
 
+env:
+  GITHUB_ACTIONS: yes
+
 jobs:
   build:
     runs-on: ubuntu-latest

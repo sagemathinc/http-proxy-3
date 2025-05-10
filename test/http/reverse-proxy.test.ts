@@ -54,6 +54,10 @@ describe("Reverse proxying -- create a server that...", () => {
   });
 
   it("Tests the reverse proxy out to access https://www.google.com using an http proxy running on localhost.", async () => {
+    if (process.env.GITHUB_ACTIONS) {
+      // google tends to block CI
+      return;
+    }
     // The following code is like doing this on the
     // command line:
     //     curl -vv -x http://localhost:38207 https://www.google.com
@@ -65,6 +69,10 @@ describe("Reverse proxying -- create a server that...", () => {
   });
 
   it("Tests the reverse proxy out to access http://www.google.com and https://www.google.com using an http proxy running on localhost.", async () => {
+    if (process.env.GITHUB_ACTIONS) {
+      // google tends to block CI
+      return;
+    }
     const proxy = `http://localhost:${port}`;
     const agent = new HttpsProxyAgent(proxy);
     const a = await (await fetch("http://www.google.com", { agent })).text();
