@@ -1,4 +1,3 @@
-import * as required from "requires-port";
 import type { ProxyTargetDetailed, ServerOptions } from "./index";
 import { type IncomingMessage as Request } from "http";
 import { TLSSocket } from "tls";
@@ -234,4 +233,25 @@ function hasPort(host: string): boolean {
 function getPath(url?: string): string {
   const u = new URL(url ?? "", "http://dummy");
   return `${u.pathname ?? ""}${u.search ?? ""}`;
+}
+
+// vendor simplified version of https://www.npmjs.com/package/requires-port to
+// reduce dep and add typescript.
+function required(port: number, protocol: string): boolean {
+  protocol = protocol.split(":")[0];
+  port = +port;
+
+  if (!port) return false;
+
+  switch (protocol) {
+    case "http":
+    case "ws":
+      return port !== 80;
+
+    case "https":
+    case "wss":
+      return port !== 443;
+  }
+
+  return port !== 0;
 }

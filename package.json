@@ -15,8 +15,7 @@
   "main": "dist/lib/index.js",
   "dependencies": {
     "debug": "^4.4.0",
-    "follow-redirects": "^1.15.9",
-    "requires-port": "^1.0.0"
+    "follow-redirects": "^1.15.9"
   },
   "devDependencies": {
     "@types/debug": "^4.1.12",
