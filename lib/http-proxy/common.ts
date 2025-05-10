@@ -106,8 +106,9 @@ export function setupOutgoing(
 
   // the final path is target path + relative path requested by user:
   const target = options[forward || "target"];
+  // target if defined is a URL object so has attribute "pathname", not "path".
   const targetPath =
-    target && options.prependPath !== false ? getPath(target.pathname) : "";
+    target && options.prependPath !== false ? getPath(target.pathname) : "/";
 
   let outgoingPath = options.toProxy ? req.url : getPath(req.url);
 

@@ -525,10 +525,11 @@ describe("#createProxyServer.web() using own http server", () => {
     // http://127.0.0.1:8080/s1/ -> http://127.0.0.1:8081/
     // http://127.0.0.1:8080/ -> http://127.0.0.1:8082/
     function requestHandler(req, res) {
-      if (req.url.indexOf("/s1/") === 0) {
+      if (req.url.startsWith("/s1/")) {
+        const target = address(8081) + req.url.substring(3);
         proxy.web(req, res, {
           ignorePath: true,
-          target: address(8081) + req.url.substring(3),
+          target,
         });
       } else {
         proxy.web(req, res, {
