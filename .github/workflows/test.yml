@@ -23,12 +23,6 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    
-    permissions:
-      id-token: write
-      packages: write
-      contents: read
-      attestations: write
 
     strategy:
       matrix:
@@ -49,5 +43,3 @@ jobs:
       - run: pnpm install
       - run: pnpm build
       - run: pnpm test
-      - name: Attest
-        uses: actions/attest-build-provenance@v2
