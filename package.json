@@ -26,6 +26,7 @@
     "auto-changelog": "^2.5.0",
     "awaiting": "^3.0.0",
     "better-sse": "^0.14.1",
+    "body-parser": "^2.2.0",
     "compression": "^1.8.0",
     "concat-stream": "^2.0.0",
     "connect": "^3.7.0",
