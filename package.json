@@ -1,6 +1,6 @@
 {
   "name": "http-proxy-3",
-  "version": "1.19.7",
+  "version": "1.19.8",
   "repository": {
     "type": "git",
     "url": "https://github.com/sagemathinc/http-proxy-3.git"
@@ -13,6 +13,7 @@
     "jcrugzz <jcrugzz@gmail.com>"
   ],
   "main": "dist/lib/index.js",
+  "files": ["dist"],
   "dependencies": {
     "debug": "^4.4.0",
     "follow-redirects": "^1.15.9"
