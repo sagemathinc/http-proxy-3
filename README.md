@@ -1,5 +1,7 @@
 # http-proxy-3
 
+[![Build package and run tests](https://github.com/sagemathinc/http-proxy-3/actions/workflows/test.yml/badge.svg)](https://github.com/sagemathinc/http-proxy-3/actions/workflows/test.yml)
+
 **WARNING: DEFINITELY DO NOT USE THIS IN PRODUCTION YET. It is not ready.**
 
 http\-proxy\-3 is a modern drop-in-replacement rewrite of
