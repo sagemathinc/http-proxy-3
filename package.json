@@ -1,6 +1,6 @@
 {
   "name": "http-proxy-3",
-  "version": "1.19.11",
+  "version": "1.19.12",
   "repository": {
     "type": "git",
     "url": "https://github.com/sagemathinc/http-proxy-3.git"
@@ -50,7 +50,7 @@
     "clean": "rm -rf dist node_modules",
     "build": "pnpm exec tsc --build .tsconfig-bootstrap.json && pnpm exec tsc --build",
     "tsc": "pnpm exec tsc --watch  --pretty --preserveWatchOutput",
-    "prepublishOnly": "pnpm audit && pnpm test --runInBand && rm -f dist/*.tsbuildinfo && rm -rf dist/test"
+    "prepublishOnly": "pnpm audit && pnpm test --runInBand && rm -f dist/*.tsbuildinfo dist/.tsconfig-bootstrap* && rm -rf dist/test"
   },
   "engines": {
     "node": ">=20.0.0"
