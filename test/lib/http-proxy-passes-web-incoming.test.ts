@@ -9,8 +9,8 @@ import {
 } from "../../dist/lib/http-proxy/passes/web-incoming";
 import * as httpProxy from "../..";
 import * as http from "http";
-// import * as concat from "concat-stream";
-// import * as async from "async";
+import concat from "concat-stream";
+import * as async from "async";
 import getPort from "../get-port";
 
 describe("#deleteLength", () => {
@@ -81,11 +81,15 @@ describe("#XHeaders", () => {
 });
 
 const ports: { [port: string]: number } = {};
-function address(port: number) {
-  if (ports[port] == null) {
-    throw Error(`invalid port ${port}`);
+function address(p: number | string) {
+  return `http://127.0.0.1:${port(p)}`;
+}
+function port(p: number | string) {
+  const x = ports[p];
+  if (x == null) {
+    throw Error(`invalid port ${p}`);
   }
-  return `http://127.0.0.1:${ports[port]}`;
+  return x;
 }
 
 describe("#createProxyServer.web() using own http server", () => {
@@ -383,7 +387,6 @@ describe("#createProxyServer.web() using own http server", () => {
     });
     req.end();
   });
-  /*
 
   it("should proxy the request and provide a proxyRes event with the request and response parameters", (done) => {
     const proxy = httpProxy.createProxyServer({
@@ -391,9 +394,10 @@ describe("#createProxyServer.web() using own http server", () => {
     });
 
     function requestHandler(req, res) {
-      proxy.once("proxyRes", (_proxyRes, pReq, pRes) => {
+      proxy.once("proxyRes", (proxyRes, pReq, pRes) => {
         source.close();
         proxyServer.close();
+        expect(proxyRes != null).toBe(true);
         expect(pReq).toEqual(req);
         expect(pRes).toEqual(res);
         done();
@@ -408,9 +412,9 @@ describe("#createProxyServer.web() using own http server", () => {
       res.end("Response");
     });
 
-    proxyServer.listen("8086");
-    source.listen(ports['8080']);
-    http.request("http://127.0.0.1:8086", () => {}).end();
+    proxyServer.listen(port(8086));
+    source.listen(port(8080));
+    http.request(address(8086), () => {}).end();
   });
 
   it("should proxy the request and provide and respond to manual user response when using modifyResponse", (done) => {
@@ -440,12 +444,12 @@ describe("#createProxyServer.web() using own http server", () => {
 
     async.parallel(
       [
-        (next) => proxyServer.listen(8086, next),
-        (next) => source.listen(8080, next),
+        (next) => proxyServer.listen(port(8086), next),
+        (next) => source.listen(port(8080), next),
       ],
       (_err) => {
         http
-          .get("http://127.0.0.1:8086", (res) => {
+          .get(address(8086), (res) => {
             res.pipe(
               concat((body) => {
                 expect(body.toString("utf8")).toEqual("my-custom-response");
@@ -455,35 +459,37 @@ describe("#createProxyServer.web() using own http server", () => {
               }),
             );
           })
-          .once("error", done);
+          .once("error", (err) => {
+            source.close();
+            proxyServer.close();
+            done(err);
+          });
       },
     );
   });
 
   it("should proxy the request and handle changeOrigin option", (done) => {
-    const proxy = httpProxy.createProxyServer({
-      target: address(8080),
-      changeOrigin: true,
-    });
+    const proxy = httpProxy
+      .createProxyServer({
+        target: address(8080),
+        changeOrigin: true,
+      })
+      .listen(port(8081));
 
-    function requestHandler(req, res) {
-      proxy.web(req, res);
-    }
+    const source = http
+      .createServer((req, res) => {
+        source.close();
+        proxy.close();
+        expect(req.method).toEqual("GET");
+        expect(req.headers.host?.split(":")[1]).toEqual(`${port(8080)}`);
+        res.end();
+        done();
+      })
+      .listen(port(8080));
 
-    const proxyServer = http.createServer(requestHandler);
-
-    const source = http.createServer((req, _res) => {
-      source.close();
-      proxyServer.close();
-      expect(req.method).toEqual("GET");
-      expect(req.headers.host?.split(":")[1]).toEqual("8080");
-      done();
-    });
-
-    proxyServer.listen(ports['8081']);
-    source.listen(ports['8080']);
-
-    http.request(address(8081), () => {}).end();
+    const client = http.request(address(8081), () => {});
+    client.on("error", () => {});
+    client.end();
   });
 
   it("should proxy the request with the Authorization header set", (done) => {
@@ -491,14 +497,9 @@ describe("#createProxyServer.web() using own http server", () => {
       target: address(8080),
       auth: "user:pass",
     });
+    const proxyServer = http.createServer(proxy.web);
 
-    function requestHandler(req, res) {
-      proxy.web(req, res);
-    }
-
-    const proxyServer = http.createServer(requestHandler);
-
-    const source = http.createServer((req, _res) => {
+    const source = http.createServer((req, res) => {
       source.close();
       proxyServer.close();
       const auth = new Buffer(
@@ -507,11 +508,12 @@ describe("#createProxyServer.web() using own http server", () => {
       );
       expect(req.method).toEqual("GET");
       expect(auth.toString()).toEqual("user:pass");
+      res.end();
       done();
     });
 
-    proxyServer.listen(ports['8081']);
-    source.listen(ports['8080']);
+    proxyServer.listen(port(8081));
+    source.listen(port(8080));
 
     http.request(address(8081), () => {}).end();
   });
@@ -530,37 +532,38 @@ describe("#createProxyServer.web() using own http server", () => {
         });
       } else {
         proxy.web(req, res, {
-          target: "http://127.0.0.1:8082",
+          target: address(8082),
         });
       }
     }
 
     const proxyServer = http.createServer(requestHandler);
 
-    const source1 = http.createServer((req, _res) => {
+    const source1 = http.createServer((req, res) => {
       expect(req.method).toEqual("GET");
-      expect(req.headers.host?.split(":")[1]).toEqual("8080");
+      expect(req.headers.host?.split(":")[1]).toEqual(`${port(8080)}`);
       expect(req.url).toEqual("/test1");
+      res.end();
     });
 
-    const source2 = http.createServer((req, _res) => {
+    const source2 = http.createServer((req, res) => {
       source1.close();
       source2.close();
       proxyServer.close();
       expect(req.method).toEqual("GET");
-      expect(req.headers.host?.split(":")[1]).toEqual("8080");
+      expect(req.headers.host?.split(":")[1]).toEqual(`${port(8080)}`);
       expect(req.url).toEqual("/test2");
+      res.end();
       done();
     });
 
-    proxyServer.listen(ports['8080']);
-    source1.listen(ports['8081']);
-    source2.listen("8082");
+    proxyServer.listen(port(8080));
+    source1.listen(port(8081));
+    source2.listen(port(8082));
 
-    http.request("http://127.0.0.1:8080/s1/test1", () => {}).end();
-    http.request("http://127.0.0.1:8080/test2", () => {}).end();
+    http.request(`${address(8080)}/s1/test1`, () => {}).end();
+    http.request(`${address(8080)}/test2`, () => {}).end();
   });
-  */
 });
 
 /*
