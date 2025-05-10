@@ -52,7 +52,7 @@
     "prepublishOnly": "pnpm audit && pnpm test"
   },
   "engines": {
-    "node": ">=16.0.0"
+    "node": ">=20.0.0"
   },
   "license": "MIT"
 }

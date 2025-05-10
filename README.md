@@ -50,6 +50,8 @@ pnpm tsc
 
 and make changes to code under lib/.
 
+Tested with nodejs versions 20 or higher.
+
 ## User's Guide
 
 This is the original user's guide, but with various updates.
