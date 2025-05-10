@@ -12,7 +12,6 @@ describe("blacklisting the Trailer header", () => {
   let ports;
   it("gets ports", async () => {
     ports = { http: await getPort(), proxy: await getPort() };
-    console.log(ports);
   });
 
   let servers: any = {};
