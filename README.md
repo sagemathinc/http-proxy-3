@@ -2,37 +2,37 @@
 
 [![Build package and run tests](https://github.com/sagemathinc/http-proxy-3/actions/workflows/test.yml/badge.svg)](https://github.com/sagemathinc/http-proxy-3/actions/workflows/test.yml)
 
-**WARNING: DEFINITELY DO NOT USE THIS IN PRODUCTION YET. It is not ready.**
+**THIS IS READY TO USE IN PRODUCTION.**
 
-http\-proxy\-3 is a modern drop-in-replacement rewrite of
+http\-proxy\-3 is a modern API compatible rewrite of
 [http\-proxy](https://github.com/http-party/node-http-proxy), the original nodejs
 http proxy server. `http-proxy-3` is an HTTP programmable proxying library that
-supports http/https and websockets. It is suitable for implementing components
-such as reverse proxies and load balancers.
+supports http/https and websockets. It is also suitable for implementing components
+such as reverse proxies and load balancers. It's main strength is that you can combine application logic written in Javascript with a proxy server, unlike what
+can be done using nginx or haproxy.
 
 **PR's welcome!**
 
-May 7, 2025 STATUS compared to http-proxy:
+May 10, 2025 STATUS compared to [http-proxy](https://www.npmjs.com/package/http-proxy) and [httpxy](https://www.npmjs.com/package/httpxy):
 
-- Library entirely rewritten in Typescript in a modern style, with many types added internally
-- All dependent packages updated to latest versions, addressing all known security vulnerabilities (according to `pnpm audit`).
+- Library entirely rewritten in Typescript in a modern style, with many typings added internally.
+- All dependent packages updated to latest versions, addressing all security vulnerabilities according to `pnpm audit`.
 - Code rewritten to not use deprecated/insecure API's, e.g., using `URL` instead of `parse`.
-- Fixed major socket leaks in the Websocket proxy code
-- Used heavily in production on https://CoCalc.com
+- Fixed socket leaks in the Websocket proxy code, going beyond [http-proxy-node16](https://www.npmjs.com/package/http-proxy-node16) to also instrument and logging socket counts.
 - Switch to pnpm for development.
-- Some jest unit tests: converted many examples into unit tests with automated testing that they actually work. http-proxy's unit tests just setup the examples in many cases, but didn't test that they actually work.
+- More jest unit tests than both http-proxy and httpxy: converted all the http-proxy examples into working unit tests that they actually work (http-proxy's unit tests just setup the examples in many cases, but didn't test that they actually work). Also httpxy seems to have almost no tests. These tests should make contributing PR's much easier.
+- Used in production on https://CoCalc.com
+- Addressed [this vulnerability](https://github.com/http-party/node-http-proxy/issues/1647).
 
-Why the name? http-proxy-2 wasn't available on npmjs.
-
-**Motivation:** http-proxy is one of the oldest and most famous nodejs modules, and it gets downloaded around 15 million times a week. Unfortunately, it is [unmaintained](https://github.com/http-party/node-http-proxy/issues/1687), it has significant leaks that [regularly crash production servers](https://github.com/jupyterhub/configurable-http-proxy/issues/434), and is written in ancient untyped Javascript that `npm audit` warns has security vulnerabilities. The maintainers have long since stopped responding, so there is no choice but to fork and start over. I just wanted to do my part to help maintain the open source ecosystem, hence this library. I hope you find it useful.
+**Motivation:** http-proxy is one of the oldest and most famous nodejs modules, and it gets downloaded around 15 million times a week, and I've loved using it for years. Unfortunately, it is [unmaintained](https://github.com/http-party/node-http-proxy/issues/1687), it has significant leaks that [regularly crash production servers](https://github.com/jupyterhub/configurable-http-proxy/issues/434), and is written in ancient untyped Javascript. The maintainers have long since stopped responding, so there is no choice but to fork and start over. I wanted to do my part to help maintain the open source ecosystem, hence this library. I hope you find it useful.
 
 **Performance:**
 
-I've been adding load tests to the unit tests in various places. Generally speaking on a local machine over localhost the penalty to using the proxy server is that **things take about twice as long**. That's not surprising because it's twice as much work being done all in the same language (with the same tools).
+I've been adding load tests to the unit tests in various places. Generally speaking on a local machine over localhost the penalty to using the proxy server is that **things take about twice as long**. That's not surprising because it's twice as much work being done.
 
 **Related Projects:**
 
-- https://github.com/unjs/httpxy: it has the same motivation as this project -- it's a modern maintained rewrite of http-proxy. It seems to have [very little unit testing](https://github.com/unjs/httpxy/tree/main/test), which may make it more difficult to contribute to in the longrun.
+- https://github.com/unjs/httpxy: it has the same motivation as this project -- it's a modern maintained rewrite of http-proxy. Unfortunately, it seems to have [very little unit testing](https://github.com/unjs/httpxy/tree/main/test). In http-proxy-3 (and the original http-proxy), there's an order of magnitude more unit test code than code in the actual library.
 
 **Development:**
 
@@ -52,7 +52,9 @@ pnpm tsc
 
 and make changes to code under lib/.
 
-Tested with nodejs versions 20 or higher.
+Tested with nodejs versions 20 and 22.
+
+[![Build package and run tests](https://github.com/sagemathinc/http-proxy-3/actions/workflows/test.yml/badge.svg)](https://github.com/sagemathinc/http-proxy-3/actions/workflows/test.yml)
 
 ## User's Guide
 
@@ -135,19 +137,19 @@ to the client.
 
 ### Use Cases
 
+There are unit tested examples illustrating everything below in
+the tests subdirectory.
+
 #### Setup a basic stand-alone proxy server
 
 ```js
 import * as http from "http";
 import { createProxyServer } from "http-proxy-3";
-//
+
 // Create your proxy server and set the target in the options.
-//
 createProxyServer({ target: "http://localhost:9000" }).listen(8000); // See (†)
 
-//
 // Create your target server
-//
 http
   .createServer((req, res) => {
     res.writeHead(200, { "Content-Type": "text/plain" });
@@ -161,7 +163,7 @@ http
   .listen(9000);
 ```
 
-†Invoking listen(..) triggers the creation of a web server. Otherwise, just the proxy instance is created.
+† Just like with the nodejs http module, invoking `listen(...)` triggers the creation of a web server. Otherwise, just the proxy instance is created, which is just a lightweight object with configuration. _If you call close on the proxy it is a no\-op unless you have called listen._
 
 **[Back to top](#table-of-contents)**
 
@@ -599,7 +601,7 @@ pnpm test
 
 ### Contributing and Issues
 
-- Submit a PR! I want this project to be active again! Port ideas from https://github.com/http-party/node-http-proxy/pulls and https://github.com/http-party/node-http-proxy/issues
+- Submit a PR! I want this project to be active again! Port ideas from [https://github.com/http\-party/node\-http\-proxy/pulls](https://github.com/http-party/node-http-proxy/pulls) and [https://github.com/http\-party/node\-http\-proxy/issues](https://github.com/http-party/node-http-proxy/issues).  Email me at [wstein@sagemath.com](mailto:wstein@sagemath.com). 
 
 **[Back to top](#table-of-contents)**
 
@@ -626,3 +628,4 @@ pnpm test
 > LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 > OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 > THE SOFTWARE.
+
