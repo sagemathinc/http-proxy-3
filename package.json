@@ -1,6 +1,6 @@
 {
   "name": "http-proxy-3",
-  "version": "1.20.0",
+  "version": "1.20.1",
   "repository": {
     "type": "git",
     "url": "https://github.com/sagemathinc/http-proxy-3.git"
@@ -46,14 +46,15 @@
   "scripts": {
     "preinstall": "npx only-allow pnpm",
     "test": "NODE_TLS_REJECT_UNAUTHORIZED=0 pnpm exec jest",
-    "version": "auto-changelog -p && git add CHANGELOG.md",
+    "test-all": "pnpm audit && TEST_EXTERNAL_REVERSE_PROXY=yes pnpm test --runInBand",
+    "test-versions": ". \"$NVM_DIR/nvm.sh\" && nvm use 18 && pnpm test && nvm use 20 && pnpm test && nvm use 22 && pnpm test && nvm use 24 && pnpm test && nvm use 20",
     "clean": "rm -rf dist node_modules",
     "build": "pnpm exec tsc --build .tsconfig-bootstrap.json && pnpm exec tsc --build",
     "tsc": "pnpm exec tsc --watch  --pretty --preserveWatchOutput",
-    "prepublishOnly": "pnpm audit && pnpm test --runInBand && rm -f dist/*.tsbuildinfo dist/.tsconfig-bootstrap* && rm -rf dist/test"
+    "prepublishOnly": "pnpm test-versions && pnpm test-all && rm -f dist/*.tsbuildinfo dist/.tsconfig-bootstrap* && rm -rf dist/test"
   },
   "engines": {
-    "node": ">=20.0.0"
+    "node": ">=18"
   },
   "license": "MIT"
 }

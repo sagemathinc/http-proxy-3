@@ -14,6 +14,7 @@ import * as httpProxy from "../..";
 import log from "../log";
 import getPort from "../get-port";
 import wait from "../wait";
+import fetch from "node-fetch";
 
 describe("Example of proxying over HTTP with additional forward proxy", () => {
   let forwardingServer,

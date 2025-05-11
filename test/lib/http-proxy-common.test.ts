@@ -3,7 +3,6 @@ pnpm test ./http-proxy-common.test.ts
 */
 
 import { setupOutgoing, setupSocket } from "../../dist/lib/http-proxy/common";
-import * as url from "url";
 
 describe("#setupOutgoing", () => {
   it("should setup the correct headers", () => {
@@ -291,7 +290,7 @@ describe("#setupOutgoing", () => {
     setupOutgoing(
       outgoing,
       {
-        target: url.parse("http://sometarget.com:80"),
+        target: new URL("http://sometarget.com:80", "http://dummy.org"),
         toProxy: true,
       },
       { url: google },
@@ -306,7 +305,7 @@ describe("#setupOutgoing", () => {
     setupOutgoing(
       outgoing,
       {
-        target: url.parse("http://sometarget.com:80"),
+        target: new URL("http://sometarget.com:80", "http://dummy.org"),
         toProxy: true,
       },
       { url: google },
@@ -321,7 +320,7 @@ describe("#setupOutgoing", () => {
     setupOutgoing(
       outgoing,
       {
-        target: url.parse("http://sometarget.com:80"),
+        target: new URL("http://sometarget.com:80", "http://dummy.org"),
         toProxy: true,
       },
       { url: google },
@@ -337,7 +336,7 @@ describe("#setupOutgoing", () => {
       setupOutgoing(
         outgoing,
         {
-          target: url.parse(myEndpoint),
+          target: new URL(myEndpoint, "http://dummy.org"),
           ignorePath: true,
         },
         { url: "/more/crazy/pathness" },
@@ -352,7 +351,7 @@ describe("#setupOutgoing", () => {
       setupOutgoing(
         outgoing,
         {
-          target: url.parse(myEndpoint),
+          target: new URL(myEndpoint, "http://dummy.org"),
           ignorePath: true,
           prependPath: false,
         },
@@ -364,13 +363,13 @@ describe("#setupOutgoing", () => {
   });
 
   describe("when using changeOrigin", () => {
-    it("should correctly set the port to the host when it is a non-standard port using url.parse", () => {
+    it("should correctly set the port to the host when it is a non-standard port using new URL", () => {
       const outgoing: any = {};
       const myEndpoint = "https://myCouch.com:6984";
       setupOutgoing(
         outgoing,
         {
-          target: url.parse(myEndpoint),
+          target: new URL(myEndpoint, "http://dummy.org"),
           changeOrigin: true,
         },
         { url: "/" },
@@ -437,7 +436,7 @@ describe("#setupOutgoing", () => {
     setupOutgoing(
       outgoing,
       {
-        target: url.parse("https://whooooo.com"),
+        target: new URL("https://whooooo.com", "http://dummy.org"),
         method: "POST",
       },
       { method: "GET", url: "" },
@@ -446,7 +445,6 @@ describe("#setupOutgoing", () => {
     expect(outgoing.method).toEqual("POST");
   });
 
-  // url.parse('').path => null
   it("should not pass null as last arg to #urlJoin", () => {
     const outgoing: any = {};
     setupOutgoing(outgoing, { target: { pathname: "" } }, { url: "" });

@@ -9,6 +9,7 @@ import * as http from "http";
 import getPort from "../get-port";
 import connect from "connect";
 import bodyParser from "body-parser";
+import fetch from "node-fetch";
 
 describe("connect.bodyParser() middleware in http-proxy-3", () => {
   let ports;

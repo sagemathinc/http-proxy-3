@@ -7,6 +7,7 @@ import * as http from "http";
 import getPort from "../get-port";
 import log from "../log";
 import { callback } from "awaiting";
+import fetch from "node-fetch";
 
 const CUSTOM_ERROR = "There was an error proxying your request";
 

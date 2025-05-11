@@ -10,6 +10,7 @@ import * as http from "http";
 import * as httpProxy from "../..";
 import log from "../log";
 import getPort from "../get-port";
+import fetch from "node-fetch";
 
 export async function server() {
   const httpPort = await getPort();

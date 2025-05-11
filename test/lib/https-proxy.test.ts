@@ -220,7 +220,7 @@ describe("HTTPS not allow SSL self signed", () => {
 
     proxy.on("error", (err, _req, res) => {
       res.end();
-      expect(err.toString()).toEqual(
+      expect(err.toString()).toContain(
         "Error: unable to verify the first certificate",
       );
       source.close();

@@ -8,6 +8,7 @@ import * as httpProxy from "../..";
 import * as http from "http";
 import getPort from "../get-port";
 import connect from "connect";
+import fetch from "node-fetch";
 
 describe("Using the connect-gzip middleware from connect with http-proxy-3", () => {
   let ports;

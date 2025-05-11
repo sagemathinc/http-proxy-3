@@ -8,7 +8,6 @@ import * as http from "http";
 import * as httpProxy from "../..";
 import getPort from "../get-port";
 import * as net from "net";
-import * as url from "url";
 import log from "../log";
 import { HttpsProxyAgent } from "https-proxy-agent";
 import fetch from "node-fetch";
@@ -25,8 +24,8 @@ describe("Reverse proxying -- create a server that...", () => {
     server = http
       .createServer((req, res) => {
         log("Receiving reverse proxy request for:", req.url);
-        const parsedUrl = url.parse(req.url ?? "");
-        const target = parsedUrl.protocol + "//" + parsedUrl.hostname;
+        const urlObj = new URL(req.url ?? "", "http://dummy.org");
+        const target = urlObj.origin;
         proxy.web(req, res, { target, secure: false });
       })
       .listen(port);
@@ -35,10 +34,9 @@ describe("Reverse proxying -- create a server that...", () => {
     server.on("connect", (req, socket) => {
       log("Receiving reverse proxy request for:", req.url);
 
-      const serverUrl = url.parse("https://" + req.url);
-
+      const serverUrl = new URL(`https://${req.url}`);
       const srvSocket = net.connect(
-        parseInt(serverUrl.port ?? "0"),
+        parseInt(serverUrl.port ? serverUrl.port : "443"),
         serverUrl.hostname!,
         () => {
           socket.write(
@@ -54,7 +52,7 @@ describe("Reverse proxying -- create a server that...", () => {
   });
 
   it("Tests the reverse proxy out to access https://www.google.com using an http proxy running on localhost.", async () => {
-    if (process.env.GITHUB_ACTIONS) {
+    if (!process.env.TEST_EXTERNAL_REVERSE_PROXY) {
       // google tends to block CI
       return;
     }
@@ -69,7 +67,7 @@ describe("Reverse proxying -- create a server that...", () => {
   });
 
   it("Tests the reverse proxy out to access http://www.google.com and https://www.google.com using an http proxy running on localhost.", async () => {
-    if (process.env.GITHUB_ACTIONS) {
+    if (!process.env.TEST_EXTERNAL_REVERSE_PROXY) {
       // google tends to block CI
       return;
     }

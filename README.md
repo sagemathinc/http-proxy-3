@@ -13,7 +13,7 @@ can be done using nginx or haproxy.
 
 **PR's welcome!**
 
-May 10, 2025 STATUS compared to [http-proxy](https://www.npmjs.com/package/http-proxy) and [httpxy](https://www.npmjs.com/package/httpxy):
+May 11, 2025 STATUS compared to [http-proxy](https://www.npmjs.com/package/http-proxy) and [httpxy](https://www.npmjs.com/package/httpxy):
 
 - Library entirely rewritten in Typescript in a modern style, with many typings added internally.
 - All dependent packages updated to latest versions, addressing all security vulnerabilities according to `pnpm audit`.
@@ -34,6 +34,12 @@ I've been adding load tests to the unit tests in various places. Generally speak
 
 - https://github.com/unjs/httpxy: it has the same motivation as this project -- it's a modern maintained rewrite of http-proxy. Unfortunately, it seems to have [very little unit testing](https://github.com/unjs/httpxy/tree/main/test). In http-proxy-3 (and the original http-proxy), there's an order of magnitude more unit test code than code in the actual library.
 
+**Officially supported platforms:**
+
+We run GitHUB CI on the following:
+
+- nodejs versions 18, 20, 22, and 24
+
 **Development:**
 
 ```sh
@@ -51,8 +57,6 @@ pnpm tsc
 ```
 
 and make changes to code under lib/.
-
-Tested with nodejs versions 20 and 22.
 
 [![Build package and run tests](https://github.com/sagemathinc/http-proxy-3/actions/workflows/test.yml/badge.svg)](https://github.com/sagemathinc/http-proxy-3/actions/workflows/test.yml)
 
@@ -601,7 +605,7 @@ pnpm test
 
 ### Contributing and Issues
 
-- Submit a PR! I want this project to be active again! Port ideas from [https://github.com/http\-party/node\-http\-proxy/pulls](https://github.com/http-party/node-http-proxy/pulls) and [https://github.com/http\-party/node\-http\-proxy/issues](https://github.com/http-party/node-http-proxy/issues).  Email me at [wstein@sagemath.com](mailto:wstein@sagemath.com). 
+- Submit a PR! I want this project to be active again! Port ideas from [https://github.com/http\-party/node\-http\-proxy/pulls](https://github.com/http-party/node-http-proxy/pulls) and [https://github.com/http\-party/node\-http\-proxy/issues](https://github.com/http-party/node-http-proxy/issues). Email me at [wstein@sagemath.com](mailto:wstein@sagemath.com).
 
 **[Back to top](#table-of-contents)**
 

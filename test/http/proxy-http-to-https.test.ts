@@ -7,6 +7,7 @@ We proxy https://google.com via a local non-https http server.
 import * as https from "https";
 import * as httpProxy from "../..";
 import getPort from "../get-port";
+import fetch from "node-fetch";
 
 describe(" Basic example of proxying over HTTP to a target HTTPS server", () => {
   let port, server;
@@ -24,7 +25,7 @@ describe(" Basic example of proxying over HTTP to a target HTTPS server", () => 
   });
 
   it("queries the proxy server as a test", async () => {
-    if (process.env.GITHUB_ACTIONS) {
+    if (!process.env.TEST_EXTERNAL_REVERSE_PROXY) {
       // google tends to block CI
       return;
     }

@@ -6,6 +6,7 @@ pnpm test ./custom-proxy-error.test.ts
 
 import * as httpProxy from "../..";
 import getPort from "../get-port";
+import fetch from "node-fetch";
 
 const CUSTOM_ERROR =
   "Something went wrong. And we are reporting a custom error message.";

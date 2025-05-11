@@ -8,6 +8,7 @@ import * as http from "http";
 import * as httpProxy from "../..";
 import getPort from "../get-port";
 import { once } from "../wait";
+import fetch from "node-fetch";
 
 describe("A simple round-robin load balancer that supports websockets", () => {
   let addresses;
