@@ -58,6 +58,8 @@ pnpm tsc
 
 and make changes to code under lib/.
 
+Code Style: use prettier with the defaults.
+
 [![Build package and run tests](https://github.com/sagemathinc/http-proxy-3/actions/workflows/test.yml/badge.svg)](https://github.com/sagemathinc/http-proxy-3/actions/workflows/test.yml)
 
 ## User's Guide

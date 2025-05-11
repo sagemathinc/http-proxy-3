@@ -24,6 +24,7 @@ I run these manually before making a release, but not as part of CI. Use
 ```sh
 pnpm test-all
 ```
+
 to include these tests and also pnpm audit.
 
 ## fetch
@@ -48,3 +49,4 @@ These warnings in the test suite are expected, because we're testing ssl using s
 (node:52812) Warning: Setting the NODE_TLS_REJECT_UNAUTHORIZED environment variable to '0' makes TLS connections and HTTPS requests insecure by disabling certificate verification.
 (Use `node --trace-warnings ...` to show where the warning was created)
 ```
+
