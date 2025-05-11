@@ -27,7 +27,10 @@ export type ProxyTarget = ProxyTargetUrl | ProxyTargetDetailed;
 export type ProxyTargetUrl = URL | string;
 
 export interface ServerOptions {
-  // NOTE: `options.target and `options.forward` cannot be both missing.
+  // NOTE: `options.target and `options.forward` cannot be both missing when the 
+  // actually proxying is called.  However, they can be missing when creating the
+  // proxy server in the first place!  E.g., you could make a proxy server P with 
+  // no options, then use P.web(req,res, {target:...}).
   // URL string to be parsed with the url module.
   target?: ProxyTarget;
   // URL string to be parsed with the url module or a URL object.

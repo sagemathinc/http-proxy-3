@@ -211,7 +211,11 @@ export function stream(
     } else {
       server.emit("error", err, req, socket);
     }
-    socket.end();
+    // I changed this from "socket.end()" which is what node-http-proxy does to destroySoon() due to getting
+    // the unit test "should close client socket if upstream is closed before upgrade" from lib/http-proxy.test.ts
+    // to work.  Just doing socket.end() leaves things half open for a while if proxySocket errors out,
+    // which may be another leak type situation and definitely doesn't work for unit testing.
+    socket.destroySoon();
   }
 
   proxyReq.end();
