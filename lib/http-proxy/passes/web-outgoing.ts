@@ -54,12 +54,12 @@ export function setRedirectHostRewrite(
     proxyRes.headers["location"] &&
     redirectRegex.test(`${proxyRes.statusCode}`)
   ) {
-    const target = new URL(options.target, "http://dummy.org");
+    const target = common.toURL(options.target);
     const location = proxyRes.headers["location"];
     if (typeof location != "string") {
       return;
     }
-    const u = new URL(location, "http://dummy.org");
+    const u = common.toURL(location);
 
     // make sure the redirected host matches the target host before rewriting
     if (target.host != u.host) {

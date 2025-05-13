@@ -2,6 +2,7 @@ import type { ProxyTargetDetailed, ServerOptions } from "./index";
 import { type IncomingMessage as Request } from "http";
 import { TLSSocket } from "tls";
 import type { Socket } from "net";
+import * as urllib from "url";
 
 const upgradeHeader = /(^|,)\s*upgrade\s*($|,)/i;
 
@@ -233,8 +234,19 @@ function hasPort(host: string): boolean {
 }
 
 function getPath(url?: string): string {
-  const u = new URL(url ?? "", "http://dummy");
+  const u = toURL(url);
   return `${u.pathname ?? ""}${u.search ?? ""}`;
+}
+
+export function toURL(url: URL | urllib.Url | string | undefined): URL {
+  if (url instanceof URL) {
+    return url;
+  } else if (typeof url === "object" && typeof url.href === "string") {
+    // urllib.Url is deprecated but we support it by converting to URL
+    return new URL(url.href, "http://dummy.org");
+  } else {
+    return new URL(url ?? "", "http://dummy.org");
+  }
 }
 
 // vendor simplified version of https://www.npmjs.com/package/requires-port to

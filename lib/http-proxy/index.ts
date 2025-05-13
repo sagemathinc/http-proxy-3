@@ -5,6 +5,7 @@ import { WS_PASSES } from "./passes/ws-incoming";
 import { EventEmitter } from "events";
 import type { Stream } from "stream";
 import debug from "debug";
+import { toURL } from "./common";
 
 const log = debug("http-proxy-3");
 
@@ -139,14 +140,14 @@ export class ProxyServer extends EventEmitter {
 
         for (const e of ["target", "forward"]) {
           if (typeof requestOptions[e] === "string") {
-            requestOptions[e] = new URL(requestOptions[e], "http://dummy.org");
+            requestOptions[e] = toURL(requestOptions[e]);
           }
         }
 
         if (!requestOptions.target && !requestOptions.forward) {
           this.emit(
             "error",
-            new Error("Must provide a proper URL as target or forward"),
+            new Error("Must set target or forward"),
           );
           return;
         }

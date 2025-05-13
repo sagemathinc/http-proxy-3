@@ -5,156 +5,169 @@ import {
   writeStatusCode,
   writeHeaders,
 } from "../../dist/lib/http-proxy/passes/web-outgoing";
+import * as url from "url";
 
 const state: any = { headers: {} };
 
-describe("#setRedirectHostRewrite", () => {
-  beforeEach(() => {
-    state.req = {
-      headers: {
-        host: "ext-auto.com",
-      },
-    };
-    state.proxyRes = {
-      statusCode: 301,
-      headers: {
-        location: "http://backend.com/",
-      },
-    };
-    state.options = {
-      target: "http://backend.com",
-    };
-  });
-
-  describe("rewrites location host with hostRewrite", () => {
+// NOTE: here url.parse("http://backend.com") uses the deprecated url.parse
+// function, and we're testing that we still support it.
+for (const target of ["http://backend.com", url.parse("http://backend.com")]) {
+  describe("#setRedirectHostRewrite", () => {
     beforeEach(() => {
-      state.options.hostRewrite = "ext-manual.com";
+      state.req = {
+        headers: {
+          host: "ext-auto.com",
+        },
+      };
+      state.proxyRes = {
+        statusCode: 301,
+        headers: {
+          location: "http://backend.com/",
+        },
+      };
+      state.options = {
+        target,
+      };
     });
-    [201, 301, 302, 307, 308].forEach(function (code) {
-      it("on " + code, () => {
-        state.proxyRes.statusCode = code;
+
+    describe("rewrites location host with hostRewrite", () => {
+      beforeEach(() => {
+        state.options.hostRewrite = "ext-manual.com";
+      });
+      [201, 301, 302, 307, 308].forEach(function (code) {
+        it("on " + code, () => {
+          state.proxyRes.statusCode = code;
+          setRedirectHostRewrite(state.req, {}, state.proxyRes, state.options);
+          expect(state.proxyRes.headers.location).toEqual(
+            "http://ext-manual.com/",
+          );
+        });
+      });
+
+      it("not on 200", () => {
+        state.proxyRes.statusCode = 200;
+        setRedirectHostRewrite(state.req, {}, state.proxyRes, state.options);
+        expect(state.proxyRes.headers.location).toEqual("http://backend.com/");
+      });
+
+      it("not when hostRewrite is unset", () => {
+        delete state.options.hostRewrite;
+        setRedirectHostRewrite(state.req, {}, state.proxyRes, state.options);
+        expect(state.proxyRes.headers.location).toEqual("http://backend.com/");
+      });
+
+      it("takes precedence over autoRewrite", () => {
+        state.options.autoRewrite = true;
         setRedirectHostRewrite(state.req, {}, state.proxyRes, state.options);
         expect(state.proxyRes.headers.location).toEqual(
           "http://ext-manual.com/",
         );
       });
-    });
 
-    it("not on 200", () => {
-      state.proxyRes.statusCode = 200;
-      setRedirectHostRewrite(state.req, {}, state.proxyRes, state.options);
-      expect(state.proxyRes.headers.location).toEqual("http://backend.com/");
-    });
-
-    it("not when hostRewrite is unset", () => {
-      delete state.options.hostRewrite;
-      setRedirectHostRewrite(state.req, {}, state.proxyRes, state.options);
-      expect(state.proxyRes.headers.location).toEqual("http://backend.com/");
-    });
-
-    it("takes precedence over autoRewrite", () => {
-      state.options.autoRewrite = true;
-      setRedirectHostRewrite(state.req, {}, state.proxyRes, state.options);
-      expect(state.proxyRes.headers.location).toEqual("http://ext-manual.com/");
-    });
-
-    it("not when the redirected location does not match target host", () => {
-      state.proxyRes.statusCode = 302;
-      state.proxyRes.headers.location = "http://some-other/";
-      setRedirectHostRewrite(state.req, {}, state.proxyRes, state.options);
-      expect(state.proxyRes.headers.location).toEqual("http://some-other/");
-    });
-
-    it("not when the redirected location does not match target port", () => {
-      state.proxyRes.statusCode = 302;
-      state.proxyRes.headers.location = "http://backend.com:8080/";
-      setRedirectHostRewrite(state.req, {}, state.proxyRes, state.options);
-      expect(state.proxyRes.headers.location).toEqual(
-        "http://backend.com:8080/",
-      );
-    });
-  });
-
-  describe("rewrites location host with autoRewrite", () => {
-    beforeEach(() => {
-      state.options.autoRewrite = true;
-    });
-    [201, 301, 302, 307, 308].forEach(function (code) {
-      it("on " + code, () => {
-        state.proxyRes.statusCode = code;
+      it("not when the redirected location does not match target host", () => {
+        state.proxyRes.statusCode = 302;
+        state.proxyRes.headers.location = "http://some-other/";
         setRedirectHostRewrite(state.req, {}, state.proxyRes, state.options);
-        expect(state.proxyRes.headers.location).toEqual("http://ext-auto.com/");
+        expect(state.proxyRes.headers.location).toEqual("http://some-other/");
+      });
+
+      it("not when the redirected location does not match target port", () => {
+        state.proxyRes.statusCode = 302;
+        state.proxyRes.headers.location = "http://backend.com:8080/";
+        setRedirectHostRewrite(state.req, {}, state.proxyRes, state.options);
+        expect(state.proxyRes.headers.location).toEqual(
+          "http://backend.com:8080/",
+        );
       });
     });
 
-    it("not on 200", () => {
-      state.proxyRes.statusCode = 200;
-      setRedirectHostRewrite(state.req, {}, state.proxyRes, state.options);
-      expect(state.proxyRes.headers.location).toEqual("http://backend.com/");
-    });
+    describe("rewrites location host with autoRewrite", () => {
+      beforeEach(() => {
+        state.options.autoRewrite = true;
+      });
+      [201, 301, 302, 307, 308].forEach(function (code) {
+        it("on " + code, () => {
+          state.proxyRes.statusCode = code;
+          setRedirectHostRewrite(state.req, {}, state.proxyRes, state.options);
+          expect(state.proxyRes.headers.location).toEqual(
+            "http://ext-auto.com/",
+          );
+        });
+      });
 
-    it("not when autoRewrite is unset", () => {
-      delete state.options.autoRewrite;
-      setRedirectHostRewrite(state.req, {}, state.proxyRes, state.options);
-      expect(state.proxyRes.headers.location).toEqual("http://backend.com/");
-    });
-
-    it("not when the redirected location does not match target host", () => {
-      state.proxyRes.statusCode = 302;
-      state.proxyRes.headers.location = "http://some-other/";
-      setRedirectHostRewrite(state.req, {}, state.proxyRes, state.options);
-      expect(state.proxyRes.headers.location).toEqual("http://some-other/");
-    });
-
-    it("not when the redirected location does not match target port", () => {
-      state.proxyRes.statusCode = 302;
-      state.proxyRes.headers.location = "http://backend.com:8080/";
-      setRedirectHostRewrite(state.req, {}, state.proxyRes, state.options);
-      expect(state.proxyRes.headers.location).toEqual(
-        "http://backend.com:8080/",
-      );
-    });
-  });
-
-  describe("rewrites location protocol with protocolRewrite", () => {
-    beforeEach(() => {
-      state.options.protocolRewrite = "https";
-    });
-    [201, 301, 302, 307, 308].forEach(function (code) {
-      it("on " + code, () => {
-        state.proxyRes.statusCode = code;
+      it("not on 200", () => {
+        state.proxyRes.statusCode = 200;
         setRedirectHostRewrite(state.req, {}, state.proxyRes, state.options);
-        expect(state.proxyRes.headers.location).toEqual("https://backend.com/");
+        expect(state.proxyRes.headers.location).toEqual("http://backend.com/");
+      });
+
+      it("not when autoRewrite is unset", () => {
+        delete state.options.autoRewrite;
+        setRedirectHostRewrite(state.req, {}, state.proxyRes, state.options);
+        expect(state.proxyRes.headers.location).toEqual("http://backend.com/");
+      });
+
+      it("not when the redirected location does not match target host", () => {
+        state.proxyRes.statusCode = 302;
+        state.proxyRes.headers.location = "http://some-other/";
+        setRedirectHostRewrite(state.req, {}, state.proxyRes, state.options);
+        expect(state.proxyRes.headers.location).toEqual("http://some-other/");
+      });
+
+      it("not when the redirected location does not match target port", () => {
+        state.proxyRes.statusCode = 302;
+        state.proxyRes.headers.location = "http://backend.com:8080/";
+        setRedirectHostRewrite(state.req, {}, state.proxyRes, state.options);
+        expect(state.proxyRes.headers.location).toEqual(
+          "http://backend.com:8080/",
+        );
       });
     });
 
-    it("not on 200", () => {
-      state.proxyRes.statusCode = 200;
-      setRedirectHostRewrite(state.req, {}, state.proxyRes, state.options);
-      expect(state.proxyRes.headers.location).toEqual("http://backend.com/");
-    });
+    describe("rewrites location protocol with protocolRewrite", () => {
+      beforeEach(() => {
+        state.options.protocolRewrite = "https";
+      });
+      [201, 301, 302, 307, 308].forEach(function (code) {
+        it("on " + code, () => {
+          state.proxyRes.statusCode = code;
+          setRedirectHostRewrite(state.req, {}, state.proxyRes, state.options);
+          expect(state.proxyRes.headers.location).toEqual(
+            "https://backend.com/",
+          );
+        });
+      });
 
-    it("not when protocolRewrite is unset", () => {
-      delete state.options.protocolRewrite;
-      setRedirectHostRewrite(state.req, {}, state.proxyRes, state.options);
-      expect(state.proxyRes.headers.location).toEqual("http://backend.com/");
-    });
+      it("not on 200", () => {
+        state.proxyRes.statusCode = 200;
+        setRedirectHostRewrite(state.req, {}, state.proxyRes, state.options);
+        expect(state.proxyRes.headers.location).toEqual("http://backend.com/");
+      });
 
-    it("works together with hostRewrite", () => {
-      state.options.hostRewrite = "ext-manual.com";
-      setRedirectHostRewrite(state.req, {}, state.proxyRes, state.options);
-      expect(state.proxyRes.headers.location).toEqual(
-        "https://ext-manual.com/",
-      );
-    });
+      it("not when protocolRewrite is unset", () => {
+        delete state.options.protocolRewrite;
+        setRedirectHostRewrite(state.req, {}, state.proxyRes, state.options);
+        expect(state.proxyRes.headers.location).toEqual("http://backend.com/");
+      });
 
-    it("works together with autoRewrite", () => {
-      state.options.autoRewrite = true;
-      setRedirectHostRewrite(state.req, {}, state.proxyRes, state.options);
-      expect(state.proxyRes.headers.location).toEqual("https://ext-auto.com/");
+      it("works together with hostRewrite", () => {
+        state.options.hostRewrite = "ext-manual.com";
+        setRedirectHostRewrite(state.req, {}, state.proxyRes, state.options);
+        expect(state.proxyRes.headers.location).toEqual(
+          "https://ext-manual.com/",
+        );
+      });
+
+      it("works together with autoRewrite", () => {
+        state.options.autoRewrite = true;
+        setRedirectHostRewrite(state.req, {}, state.proxyRes, state.options);
+        expect(state.proxyRes.headers.location).toEqual(
+          "https://ext-auto.com/",
+        );
+      });
     });
   });
-});
+}
 
 describe("#setConnection", () => {
   it("set the right connection with 1.0 - `close`", () => {

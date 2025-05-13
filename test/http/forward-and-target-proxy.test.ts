@@ -75,7 +75,6 @@ describe("Example of proxying over HTTP with additional forward proxy to a diffe
   it("Makes a request to the proxy and sees that counts go up", async () => {
     const before = { ...counts };
     const b = await (await fetch(`http://localhost:${ports.proxy}`)).text();
-    // This b is supposed to be empty, because the
     expect(b).toContain("request successfully proxied to");
     await wait({
       until: () =>

@@ -56,7 +56,7 @@ describe("Example of proxying over HTTP with additional forward proxy", () => {
     expect(a).toContain("request successfully forwarded to");
     const before = numRequests;
     const b = await (await fetch(`http://localhost:${proxyPort}`)).text();
-    // This b is supposed to be empty, because the
+    // This b is supposed to be empty
     expect(b).toContain("");
     // Handling of the forward on the remote server is totally decoupled, so we
     // just have to wait:
@@ -84,7 +84,6 @@ describe("Example of proxying over HTTP with additional forward proxy", () => {
 
     const before = numRequests;
     const b = await (await fetch(`http://localhost:${proxy2Port}`)).text();
-    // This b is supposed to be empty, because the
     expect(b).toContain("request successfully forwarded to");
     await wait({ until: () => numRequests >= before + 2 });
     // indeed, the remote server did get a request TWICE, once from the
