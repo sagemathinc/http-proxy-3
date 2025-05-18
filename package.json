@@ -1,6 +1,6 @@
 {
   "name": "http-proxy-3",
-  "version": "1.20.3",
+  "version": "1.20.4",
   "repository": {
     "type": "git",
     "url": "https://github.com/sagemathinc/http-proxy-3.git"
@@ -44,7 +44,6 @@
     "ws": "^8.18.2"
   },
   "scripts": {
-    "preinstall": "npx only-allow pnpm",
     "test": "NODE_TLS_REJECT_UNAUTHORIZED=0 pnpm exec jest",
     "test-all": "pnpm audit && TEST_EXTERNAL_REVERSE_PROXY=yes pnpm test --runInBand",
     "test-versions": ". \"$NVM_DIR/nvm.sh\" && nvm use 18 && pnpm test && nvm use 20 && pnpm test && nvm use 22 && pnpm test && nvm use 24 && pnpm test && nvm use 20",
