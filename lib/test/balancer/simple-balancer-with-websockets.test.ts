@@ -66,7 +66,7 @@ describe("A simple round-robin load balancer that supports websockets", () => {
     );
 
     proxyPort = await getPort();
-    servers.proxy = httpProxy.createProxyServer();
+    servers.proxy = httpProxy.createProxyServer({});
     let i = 0;
     function nextProxy() {
       i = (i + 1) % addresses.length;

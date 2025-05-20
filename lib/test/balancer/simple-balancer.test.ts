@@ -46,7 +46,7 @@ describe("A simple round-robin load balancing strategy.", () => {
   let proxyPort;
   it("creates the round robin proxy server", async () => {
     proxyPort = await getPort();
-    const proxy = httpProxy.createServer();
+    const proxy = httpProxy.createServer({});
     let i = 0;
     servers.proxy = http
       .createServer((req, res) => {

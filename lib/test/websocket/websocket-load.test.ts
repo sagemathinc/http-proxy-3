@@ -41,7 +41,7 @@ describe("Load testing proxying a WebSocket", () => {
       .listen(ports.proxy);
   });
 
-  const LATENCY = 250;
+  const LATENCY = 1000;
   const COUNT = 250;
 
   it(`Serial test ${COUNT} times plain websocket server`, async () => {

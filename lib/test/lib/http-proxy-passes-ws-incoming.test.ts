@@ -2,7 +2,15 @@
 pnpm test ./http-proxy-passes-ws-incoming.test.ts
 */
 
-import { checkMethodAndHeader, XHeaders } from "../../dist/lib/http-proxy/passes/ws-incoming";
+import {
+  checkMethodAndHeader as checkMethodAndHeader0,
+  XHeaders,
+} from "../../http-proxy/passes/ws-incoming";
+
+// disable typescript for this function
+function checkMethodAndHeader(...args) {
+  return checkMethodAndHeader0(args[0], args[1]);
+}
 
 describe("#checkMethodAndHeader", () => {
   it("should drop non-GET connections", () => {
@@ -80,6 +88,7 @@ describe("#checkMethodAndHeader", () => {
 
 describe("#XHeaders", () => {
   it("return if no forward request", () => {
+    // @ts-ignore
     let returnValue = XHeaders({}, {}, {});
     expect(returnValue).toBe(undefined);
   });
@@ -94,6 +103,7 @@ describe("#XHeaders", () => {
         host: "192.168.1.2:8080",
       },
     };
+    // @ts-ignore
     XHeaders(stubRequest, {}, { xfwd: true });
     expect(stubRequest.headers["x-forwarded-for"]).toBe("192.168.1.2");
     expect(stubRequest.headers["x-forwarded-port"]).toBe("8080");
@@ -113,6 +123,7 @@ describe("#XHeaders", () => {
         host: "192.168.1.3:8181",
       },
     };
+    // @ts-ignore
     XHeaders(stubRequest, {}, { xfwd: true });
     expect(stubRequest.headers["x-forwarded-for"]).toBe("192.168.1.3");
     expect(stubRequest.headers["x-forwarded-port"]).toBe("8181");

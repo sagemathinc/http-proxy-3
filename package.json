@@ -1,6 +1,6 @@
 {
   "name": "http-proxy-3",
-  "version": "1.20.4",
+  "version": "1.20.5",
   "repository": {
     "type": "git",
     "url": "https://github.com/sagemathinc/http-proxy-3.git"
@@ -13,7 +13,7 @@
     "jcrugzz <jcrugzz@gmail.com>"
   ],
   "main": "dist/lib/index.js",
-  "files": ["dist"],
+  "files": ["dist/lib/http-proxy", "dist/lib/index.js", "dist/lib/index.d.ts"],
   "dependencies": {
     "debug": "^4.4.0",
     "follow-redirects": "^1.15.9"
@@ -48,7 +48,8 @@
     "test-all": "pnpm audit && TEST_EXTERNAL_REVERSE_PROXY=yes pnpm test --runInBand",
     "test-versions": ". \"$NVM_DIR/nvm.sh\" && nvm use 18 && pnpm test && nvm use 20 && pnpm test && nvm use 22 && pnpm test && nvm use 24 && pnpm test && nvm use 20",
     "clean": "rm -rf dist node_modules",
-    "build": "pnpm exec tsc --build .tsconfig-bootstrap.json && pnpm exec tsc --build",
+    "build": "pnpm exec tsc --build",
+    "make": "pnpm clean && pnpm install && pnpm build && pnpm test",
     "tsc": "pnpm exec tsc --watch  --pretty --preserveWatchOutput",
     "prepublishOnly": "pnpm test-versions && pnpm test-all && rm -f dist/*.tsbuildinfo dist/.tsconfig-bootstrap* && rm -rf dist/test"
   },

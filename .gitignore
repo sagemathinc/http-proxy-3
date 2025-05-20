@@ -8,7 +8,7 @@ tes.js
 npm-debug.log
 .nyc_output
 coverage
-tsconfig.tsbuildinfo
 dist
 *.sage-chat
 *.term
+*.tsbuildinfo

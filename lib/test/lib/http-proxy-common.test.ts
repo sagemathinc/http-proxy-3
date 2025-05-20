@@ -2,7 +2,17 @@
 pnpm test ./http-proxy-common.test.ts
 */
 
-import { setupOutgoing, setupSocket } from "../../dist/lib/http-proxy/common";
+import {
+  setupOutgoing as setupOutgoing0,
+  setupSocket,
+} from "../../http-proxy/common";
+
+// wrap setupOutgoing so types aren't checked, since a lot of the tests here
+// involve partial objects that typescript doesn't view as correct, e.g., {url:'foo...'}
+// for a Request.
+function setupOutgoing(...args) {
+  setupOutgoing0(args[0], args[1], args[2], args[3]);
+}
 
 describe("#setupOutgoing", () => {
   it("should setup the correct headers", () => {
@@ -471,7 +481,7 @@ describe("#setupSocket", () => {
           socketConfig.keepalive = bol;
         },
       };
-    setupSocket(stubSocket);
+    setupSocket(stubSocket as any);
     expect(socketConfig.timeout).toEqual(0);
     expect(socketConfig.nodelay).toEqual(true);
     expect(socketConfig.keepalive).toEqual(true);

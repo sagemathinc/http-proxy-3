@@ -17,7 +17,7 @@ export { numOpenSockets } from "./http-proxy/passes/ws-incoming";
  * @api public
  */
 
-function createProxyServer(options: ServerOptions): ProxyServer {
+function createProxyServer(options: ServerOptions = {}): ProxyServer {
   return new ProxyServer(options);
 }
 

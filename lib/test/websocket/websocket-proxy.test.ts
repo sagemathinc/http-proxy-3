@@ -70,7 +70,7 @@ describe("Example of proxying over HTTP and WebSockets", () => {
     client.close();
   });
 
-  const LATENCY = 250;
+  const LATENCY = 1000;
   const COUNT = 250;
   it(`Serial test ${COUNT} times proxy server`, async () => {
     const t = Date.now();

@@ -6,7 +6,7 @@ import {
   deleteLength,
   timeout,
   XHeaders,
-} from "../../dist/lib/http-proxy/passes/web-incoming";
+} from "../../http-proxy/passes/web-incoming";
 import * as httpProxy from "../..";
 import * as http from "http";
 import concat from "concat-stream";
@@ -18,8 +18,8 @@ describe("#deleteLength", () => {
     const stubRequest = {
       method: "DELETE",
       headers: {},
-    };
-    deleteLength(stubRequest, {}, {});
+    } as any;
+    deleteLength(stubRequest);
     expect(stubRequest.headers["content-length"]).toEqual("0");
   });
 
@@ -27,8 +27,8 @@ describe("#deleteLength", () => {
     const stubRequest = {
       method: "OPTIONS",
       headers: {},
-    };
-    deleteLength(stubRequest, {}, {});
+    } as any;
+    deleteLength(stubRequest);
     expect(stubRequest.headers["content-length"]).toEqual("0");
   });
 
@@ -38,8 +38,8 @@ describe("#deleteLength", () => {
       headers: {
         "transfer-encoding": "chunked",
       },
-    };
-    deleteLength(stubRequest, {}, {});
+    } as any;
+    deleteLength(stubRequest);
     expect(stubRequest.headers["content-length"]).toEqual("0");
     expect(stubRequest.headers).not.toHaveProperty("transfer-encoding");
   });
@@ -55,7 +55,7 @@ describe("#timeout", () => {
         },
       },
     };
-
+    // @ts-ignore
     timeout(stubRequest, {}, { timeout: 5000 });
     expect(done).toEqual(5000);
   });
@@ -73,6 +73,7 @@ describe("#XHeaders", () => {
   };
 
   it("set the correct x-forwarded-* headers", () => {
+    // @ts-ignore
     XHeaders(stubRequest, {}, { xfwd: true });
     expect(stubRequest.headers["x-forwarded-for"]).toEqual("192.168.1.2");
     expect(stubRequest.headers["x-forwarded-port"]).toEqual("8080");

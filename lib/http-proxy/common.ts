@@ -15,7 +15,9 @@ export interface Outgoing extends Outgoing0 {
   method?: any;
   rejectUnauthorized?: boolean;
   path?: string;
-  headers: { [header: string]: string | string[] | undefined };
+  headers: { [header: string]: string | string[] | undefined } & {
+    overwritten?: boolean;
+  };
 }
 
 // If we allow this header and a user sends it with a request,

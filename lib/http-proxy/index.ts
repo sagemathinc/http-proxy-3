@@ -25,7 +25,7 @@ export interface ProxyTargetDetailed {
 }
 export type ProxyType = "ws" | "web";
 export type ProxyTarget = ProxyTargetUrl | ProxyTargetDetailed;
-export type ProxyTargetUrl = URL | string;
+export type ProxyTargetUrl = URL | string | { port: number; host: string };
 
 export interface ServerOptions {
   // NOTE: `options.target and `options.forward` cannot be both missing when the
@@ -145,10 +145,7 @@ export class ProxyServer extends EventEmitter {
         }
 
         if (!requestOptions.target && !requestOptions.forward) {
-          this.emit(
-            "error",
-            new Error("Must set target or forward"),
-          );
+          this.emit("error", new Error("Must set target or forward"));
           return;
         }
 

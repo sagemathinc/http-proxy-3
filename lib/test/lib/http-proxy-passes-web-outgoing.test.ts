@@ -1,13 +1,24 @@
 import {
   removeChunked,
-  setRedirectHostRewrite,
-  setConnection,
+  setRedirectHostRewrite as setRedirectHostRewrite0,
+  setConnection as setConnection0,
   writeStatusCode,
-  writeHeaders,
-} from "../../dist/lib/http-proxy/passes/web-outgoing";
+  writeHeaders as writeHeaders0,
+} from "../../http-proxy/passes/web-outgoing";
 import * as url from "url";
 
 const state: any = { headers: {} };
+
+// disable typescript
+function writeHeaders(...args) {
+  return writeHeaders0(args[0], args[1], args[2], args[3]);
+}
+function setConnection(...args) {
+  return setConnection0(args[0], args[1], args[2]);
+}
+function setRedirectHostRewrite(...args) {
+  return setRedirectHostRewrite0(args[0], args[1], args[2], args[3]);
+}
 
 // NOTE: here url.parse("http://backend.com") uses the deprecated url.parse
 // function, and we're testing that we still support it.
@@ -273,6 +284,7 @@ describe("#writeStatusCode", () => {
       },
     };
 
+    // @ts-ignore
     writeStatusCode({}, res, { statusCode: 200 });
   });
 });
@@ -477,6 +489,7 @@ describe("#removeChunked", () => {
     },
   };
 
+  // @ts-ignore
   removeChunked({ httpVersion: "1.0" }, {}, proxyRes);
 
   expect(proxyRes.headers["transfer-encoding"]).toEqual(undefined);

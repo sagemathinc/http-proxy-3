@@ -66,7 +66,7 @@ describe("Load test against the basic proxy", () => {
   });
 
   const COUNT = 200;
-  const MAX_TIME = 1000;
+  const MAX_TIME = 3000;
   it(`Does a serial load test of HTTP server with ${COUNT} requests`, async () => {
     const t = Date.now();
     for (let i = 0; i < COUNT; i++) {

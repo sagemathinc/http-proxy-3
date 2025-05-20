@@ -4,6 +4,7 @@
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "strictNullChecks": true,
+    "declaration": true,
     "downlevelIteration": true,
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
@@ -16,7 +17,7 @@
     "target": "es2020",
     "module": "commonjs",
     "rootDir": "./",
-    "outDir": "dist"
+    "outDir": "./dist"
   },
   "watchOptions": {
     "fallbackPolling": "dynamicPriority",
@@ -24,5 +25,5 @@
     "watchDirectory": "useFsEvents",
     "watchFile": "useFsEvents"
   },
-  "exclude": ["node_modules", "dist", "test-todo", "examples"]
+  "exclude": ["node_modules", "dist", "benchmark"]
 }
