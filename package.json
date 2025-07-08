@@ -1,6 +1,6 @@
 {
   "name": "http-proxy-3",
-  "version": "1.20.5",
+  "version": "1.20.6",
   "repository": {
     "type": "git",
     "url": "https://github.com/sagemathinc/http-proxy-3.git"
@@ -13,7 +13,11 @@
     "jcrugzz <jcrugzz@gmail.com>"
   ],
   "main": "dist/lib/index.js",
-  "files": ["dist/lib/http-proxy", "dist/lib/index.js", "dist/lib/index.d.ts"],
+  "files": [
+    "dist/lib/http-proxy",
+    "dist/lib/index.js",
+    "dist/lib/index.d.ts"
+  ],
   "dependencies": {
     "debug": "^4.4.0",
     "follow-redirects": "^1.15.9"
@@ -32,6 +36,7 @@
     "connect": "^3.7.0",
     "eventsource": "^3.0.7",
     "expect.js": "~0.3.1",
+    "express": "^5.1.0",
     "get-port": "^7.1.0",
     "https-proxy-agent": "^7.0.6",
     "jest": "^29.7.0",

@@ -169,7 +169,6 @@ export function urlJoin(...args: string[]): string {
   // join url and merge all query string.
   const queryParams: string[] = [];
   let queryParamRaw = "";
-  let retSegs;
 
   args.forEach((url, index) => {
     const qpStart = url.indexOf("?");
@@ -181,13 +180,34 @@ export function urlJoin(...args: string[]): string {
   queryParamRaw = queryParams.filter(Boolean).join("&");
 
   // Join all strings, but remove empty strings so we don't get extra slashes from
-  // joining e.g. ['', 'am']
-  retSegs = args
-    .filter(Boolean)
-    .join("/")
-    .replace(/\/+/g, "/")
-    .replace("http:/", "http://")
-    .replace("https:/", "https://");
+  // joining e.g. ['', 'am'].
+  // Also we respect strings that start and end in multiple slashes, e.g., so
+  //  ['/', '//test', '///foo'] --> '//test'
+  // since e.g., http://localhost//test///foo is a valid URL. See
+  // lib/test/http/double-slashes.test.ts
+  // The algorithm for joining is just straightforward and simple, instead
+  // of the complicated "too clever" code from http-proxy. This just concats
+  // the strings together, not adding any slashes, and also combining adjacent
+  // slashes in two segments, e.g., ['/foo/','/bar'] --> '/foo/bar'
+  let retSegs = "";
+  for (const seg of args) {
+    if (!seg) {
+      continue;
+    }
+    if (retSegs.endsWith("/")) {
+      if (seg.startsWith("/")) {
+        retSegs += seg.slice(1);
+      } else {
+        retSegs += seg;
+      }
+    } else {
+      if (seg.startsWith("/")) {
+        retSegs += seg;
+      } else {
+        retSegs += "/" + seg;
+      }
+    }
+  }
 
   // Only join the query string if it exists so we don't have trailing a '?'
   // on every request
@@ -244,11 +264,22 @@ export function toURL(url: URL | urllib.Url | string | undefined): URL {
   if (url instanceof URL) {
     return url;
   } else if (typeof url === "object" && typeof url.href === "string") {
-    // urllib.Url is deprecated but we support it by converting to URL
-    return new URL(url.href, "http://dummy.org");
-  } else {
-    return new URL(url ?? "", "http://dummy.org");
+    url = url.href;
   }
+  if (!url) {
+    url = "";
+  }
+  if (typeof url != "string") {
+    // it has to be a string at this point, but to keep typescript happy:
+    url = `${url}`;
+  }
+  if (url.startsWith("//")) {
+    // special case -- this would be viewed as a this is a "network-path reference",
+    // so we explicitly prefix with our http schema.  See 
+    url = `http://dummy.org${url}`;
+  }
+  // urllib.Url is deprecated but we support it by converting to URL
+  return new URL(url, "http://dummy.org");
 }
 
 // vendor simplified version of https://www.npmjs.com/package/requires-port to
