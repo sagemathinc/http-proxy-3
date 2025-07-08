@@ -115,6 +115,19 @@ export class ProxyServer extends EventEmitter {
         log("proxy: ", { type, path: req.url });
         const res = args[1];
         const passes = type === "ws" ? this.wsPasses : this.webPasses;
+        if (type == "ws") {
+          // socket -- proxy websocket errors to our error handler;
+          // see https://github.com/sagemathinc/http-proxy-3/issues/5
+          // NOTE: as mentioned below, res is the socket in this case.
+          // One of the passes does add an error handler, but there's no
+          // guarantee we even get to that pass before something bad happens,
+          // and there's no way for a user of http-proxy-3 to get ahold
+          // of this res object and attach their own error handler until
+          // after the passes. So we better attach one ASAP right here:
+          res.on("error", (...args) => {
+            this.emit("error", ...args);
+          });
+        }
         let counter = args.length - 1;
         let head;
         let cb;
