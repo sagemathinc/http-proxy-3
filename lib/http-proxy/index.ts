@@ -85,7 +85,20 @@ export interface ServerOptions {
 }
 
 export class ProxyServer extends EventEmitter {
+  /**
+   * Used for proxying WS(S) requests
+   * @param req - Client request.
+   * @param socket - Client socket.
+   * @param head - Client head.
+   * @param options - Additional options.
+   */
   public readonly ws;
+  /**
+   * Used for proxying regular HTTP(S) requests
+   * @param req - Client request.
+   * @param res - Client response.
+   * @param options - Additional options.
+   */
   public readonly web;
 
   private options: ServerOptions;
@@ -93,6 +106,10 @@ export class ProxyServer extends EventEmitter {
   private wsPasses;
   private _server?;
 
+  /**
+   * Creates the proxy server with specified options.
+   * @param options - Config object passed to the proxy
+   */
   constructor(options: ServerOptions = {}) {
     super();
     log("creating a ProxyServer", options);
@@ -187,6 +204,11 @@ export class ProxyServer extends EventEmitter {
     }
   };
 
+  /**
+   * A function that wraps the object in a webserver, for your convenience
+   * @param port - Port to listen on
+   * @param hostname - The hostname to listen on
+   */
   listen = (port: number, hostname?: string) => {
     log("listen", { port, hostname });
 
@@ -210,6 +232,9 @@ export class ProxyServer extends EventEmitter {
     return this._server?.address();
   };
 
+  /**
+   * A function that closes the inner webserver and stops listening on given port
+   */
   close = (cb?: Function) => {
     if (this._server == null) {
       cb?.();
