@@ -1,5 +1,6 @@
 import * as http from "http";
 import * as https from "https";
+import * as net from "net";
 import { WEB_PASSES } from "./passes/web-incoming";
 import { WS_PASSES } from "./passes/ws-incoming";
 import { EventEmitter } from "events";
@@ -84,6 +85,14 @@ export interface ServerOptions {
   buffer?: Stream;
 }
 
+export type ErrorCallback =
+  (
+    err: Error,
+    req: http.IncomingMessage,
+    res: http.ServerResponse | net.Socket,
+    target?: ProxyTargetUrl,
+  ) => void;
+
 export class ProxyServer extends EventEmitter {
   /**
    * Used for proxying WS(S) requests
@@ -92,14 +101,43 @@ export class ProxyServer extends EventEmitter {
    * @param head - Client head.
    * @param options - Additional options.
    */
-  public readonly ws;
+  public readonly ws: (
+    ...args:
+      [
+        req: http.IncomingMessage,
+        socket: any,
+        head: any,
+        options?: ServerOptions,
+        callback?: ErrorCallback,
+      ]
+    | [
+        req: http.IncomingMessage,
+        socket: any,
+        head: any,
+        callback?: ErrorCallback,
+      ]
+  ) => void;
+
   /**
    * Used for proxying regular HTTP(S) requests
    * @param req - Client request.
    * @param res - Client response.
    * @param options - Additional options.
    */
-  public readonly web;
+  public readonly web: (
+    ...args:
+      [
+        req: http.IncomingMessage,
+        res: http.ServerResponse,
+        options: ServerOptions,
+        callback?: ErrorCallback,
+      ]
+    | [
+        req: http.IncomingMessage,
+        res: http.ServerResponse,
+        callback?: ErrorCallback
+      ]
+  ) => void;
 
   private options: ServerOptions;
   private webPasses;

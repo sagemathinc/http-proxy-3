@@ -213,7 +213,7 @@ describe("#createProxyServer.web() using own http server", () => {
     function requestHandler(req, res) {
       proxy.web(req, res, (err) => {
         proxyServer.close();
-        expect(err.code).toEqual("ECONNREFUSED");
+        expect((err as NodeJS.ErrnoException).code).toEqual("ECONNREFUSED");
         done();
       });
     }
