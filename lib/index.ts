@@ -1,5 +1,5 @@
-import { ProxyServer, type ServerOptions } from "./http-proxy/index";
-export { ProxyServer };
+import { ProxyServer, type ServerOptions, type ProxyTarget, type ProxyTargetUrl } from "./http-proxy/index";
+export { ProxyServer, type ServerOptions, type ProxyTarget, type ProxyTargetUrl };
 export { numOpenSockets } from "./http-proxy/passes/ws-incoming";
 
 /**
