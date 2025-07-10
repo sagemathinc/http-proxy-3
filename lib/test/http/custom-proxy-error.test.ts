@@ -1,10 +1,11 @@
 /*
   custom-proxy-error.test.ts: Example of using the custom `proxyError` event.
-  
+
 pnpm test ./custom-proxy-error.test.ts
 */
 
 import * as httpProxy from "../..";
+import * as http from "http";
 import getPort from "../get-port";
 import fetch from "node-fetch";
 
@@ -27,7 +28,7 @@ describe("Test proxying over HTTP with latency", () => {
       .listen(ports.proxy);
 
     proxy.on("error", (_err, _req, res) => {
-      res.writeHead(500, {
+      (res as http.ServerResponse).writeHead(500, {
         "Content-Type": "text/plain",
       });
       res.end(CUSTOM_ERROR);

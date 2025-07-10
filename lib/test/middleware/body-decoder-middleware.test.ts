@@ -34,7 +34,8 @@ describe("connect.bodyParser() middleware in http-proxy-3", () => {
     });
 
     // re-serialize parsed body before proxying.
-    proxy.on("proxyReq", (proxyReq, req, _res, _options) => {
+    proxy.on("proxyReq", (proxyReq, rawReq, _res, _options) => {
+      const req = rawReq as http.IncomingMessage & { body?: any };
       if (!req.body || !Object.keys(req.body).length) {
         return;
       }

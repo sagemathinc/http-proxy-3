@@ -93,7 +93,51 @@ export type ErrorCallback =
     target?: ProxyTargetUrl,
   ) => void;
 
-export class ProxyServer extends EventEmitter {
+type ProxyServerEventMap = {
+  error: Parameters<ErrorCallback>;
+  start: [
+    req: http.IncomingMessage,
+    res: http.ServerResponse,
+    target: ProxyTargetUrl,
+  ];
+  open: [socket: net.Socket];
+  proxyReq: [
+    proxyReq: http.ClientRequest,
+    req: http.IncomingMessage,
+    res: http.ServerResponse,
+    options: ServerOptions,
+  ];
+  proxyRes: [
+    proxyRes: http.IncomingMessage,
+    req: http.IncomingMessage,
+    res: http.ServerResponse,
+  ];
+  proxyReqWs: [
+    proxyReq: http.ClientRequest,
+    req: http.IncomingMessage,
+    socket: net.Socket,
+    options: ServerOptions,
+    head: any,
+  ];
+  econnreset: [
+    err: Error,
+    req: http.IncomingMessage,
+    res: http.ServerResponse,
+    target: ProxyTargetUrl,
+  ];
+  end: [
+    req: http.IncomingMessage,
+    res: http.ServerResponse,
+    proxyRes: http.IncomingMessage,
+  ];
+  close: [
+    proxyRes: http.IncomingMessage,
+    proxySocket: net.Socket,
+    proxyHead: any,
+  ];
+}
+
+export class ProxyServer extends EventEmitter<ProxyServerEventMap> {
   /**
    * Used for proxying WS(S) requests
    * @param req - Client request.
@@ -206,8 +250,8 @@ export class ProxyServer extends EventEmitter {
           // and there's no way for a user of http-proxy-3 to get ahold
           // of this res object and attach their own error handler until
           // after the passes. So we better attach one ASAP right here:
-          res.on("error", (...args) => {
-            this.emit("error", ...args);
+          (res as net.Socket).on("error", (err) => {
+            this.emit("error", err, req, res);
           });
         }
         let counter = args.length - 1;
@@ -240,7 +284,7 @@ export class ProxyServer extends EventEmitter {
         }
 
         if (!requestOptions.target && !requestOptions.forward) {
-          this.emit("error", new Error("Must set target or forward"));
+          this.emit("error", new Error("Must set target or forward"), req, res);
           return;
         }
 

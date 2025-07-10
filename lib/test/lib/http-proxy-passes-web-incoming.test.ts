@@ -245,7 +245,7 @@ describe("#createProxyServer.web() using own http server", () => {
         proxyServer.close();
         expect(errReq).toEqual(req);
         expect(errRes).toEqual(res);
-        expect(err.code).toEqual("ECONNREFUSED");
+        expect((err as NodeJS.ErrnoException).code).toEqual("ECONNREFUSED");
         done();
       });
 
@@ -279,7 +279,7 @@ describe("#createProxyServer.web() using own http server", () => {
         proxyServer.close();
         expect(errReq).toEqual(req);
         expect(errRes).toEqual(res);
-        expect(err.code).toEqual("ECONNREFUSED");
+        expect((err as NodeJS.ErrnoException).code).toEqual("ECONNREFUSED");
         done();
       });
 
@@ -317,7 +317,7 @@ describe("#createProxyServer.web() using own http server", () => {
         expect(errReq).toEqual(req);
         expect(errRes).toEqual(res);
         expect(Date.now() - started).toBeGreaterThan(99);
-        expect(err.code).toEqual("ECONNRESET");
+        expect((err as NodeJS.ErrnoException).code).toEqual("ECONNRESET");
         done();
       });
 
@@ -362,7 +362,7 @@ describe("#createProxyServer.web() using own http server", () => {
         server.close();
         expect(errReq).toEqual(req);
         expect(errRes).toEqual(res);
-        expect(err.code).toEqual("ECONNRESET");
+        expect((err as NodeJS.ErrnoException).code).toEqual("ECONNRESET");
         doneOne();
       });
 
