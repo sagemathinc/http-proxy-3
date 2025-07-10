@@ -122,6 +122,33 @@ export class ProxyServer extends EventEmitter {
     this.on("error", this.onError);
   }
 
+  /**
+   * Creates the proxy server with specified options.
+   * @param options Config object passed to the proxy
+   * @returns Proxy object with handlers for `ws` and `web` requests
+   */
+  static createProxyServer(options?: ServerOptions): ProxyServer {
+    return new ProxyServer(options);
+  }
+
+  /**
+   * Creates the proxy server with specified options.
+   * @param options Config object passed to the proxy
+   * @returns Proxy object with handlers for `ws` and `web` requests
+   */
+  static createServer(options?: ServerOptions): ProxyServer {
+    return new ProxyServer(options);
+  }
+
+  /**
+   * Creates the proxy server with specified options.
+   * @param options Config object passed to the proxy
+   * @returns Proxy object with handlers for `ws` and `web` requests
+   */
+  static createProxy(options?: ServerOptions): ProxyServer {
+    return new ProxyServer(options);
+  }
+
   // createRightProxy - Returns a function that when called creates the loader for
   // either `ws` or `web`'s passes.
   createRightProxy = (type: ProxyType): Function => {
