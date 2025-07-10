@@ -32,55 +32,55 @@ export interface ServerOptions {
   // actually proxying is called.  However, they can be missing when creating the
   // proxy server in the first place!  E.g., you could make a proxy server P with
   // no options, then use P.web(req,res, {target:...}).
-  // URL string to be parsed with the url module.
+  /** URL string to be parsed with the url module. */
   target?: ProxyTarget;
-  // URL string to be parsed with the url module or a URL object.
+  /** URL string to be parsed with the url module or a URL object. */
   forward?: ProxyTargetUrl;
-  // Object to be passed to http(s).request.
+  /** Object to be passed to http(s).request. */
   agent?: any;
-  // Object to be passed to https.createServer().
+  /** Object to be passed to https.createServer(). */
   ssl?: any;
-  // If you want to proxy websockets.
+  /** If you want to proxy websockets. */
   ws?: boolean;
-  // Adds x- forward headers.
+  /** Adds x- forward headers. */
   xfwd?: boolean;
-  // Verify SSL certificate.
+  /** Verify SSL certificate. */
   secure?: boolean;
-  // Explicitly specify if we are proxying to another proxy.
+  /** Explicitly specify if we are proxying to another proxy. */
   toProxy?: boolean;
-  // Specify whether you want to prepend the target's path to the proxy path.
+  /** Specify whether you want to prepend the target's path to the proxy path. */
   prependPath?: boolean;
-  // Specify whether you want to ignore the proxy path of the incoming request.
+  /** Specify whether you want to ignore the proxy path of the incoming request. */
   ignorePath?: boolean;
-  // Local interface string to bind for outgoing connections.
+  /** Local interface string to bind for outgoing connections. */
   localAddress?: string;
-  // Changes the origin of the host header to the target URL.
+  /** Changes the origin of the host header to the target URL. */
   changeOrigin?: boolean;
-  // specify whether you want to keep letter case of response header key
+  /** specify whether you want to keep letter case of response header key */
   preserveHeaderKeyCase?: boolean;
-  // Basic authentication i.e. 'user:password' to compute an Authorization header.
+  /** Basic authentication i.e. 'user:password' to compute an Authorization header. */
   auth?: string;
-  // Rewrites the location hostname on (301 / 302 / 307 / 308) redirects, Default: null.
+  /** Rewrites the location hostname on (301 / 302 / 307 / 308) redirects, Default: null. */
   hostRewrite?: string;
-  // Rewrites the location host/ port on (301 / 302 / 307 / 308) redirects based on requested host/ port.Default: false.
+  /** Rewrites the location host/ port on (301 / 302 / 307 / 308) redirects based on requested host/ port.Default: false. */
   autoRewrite?: boolean;
-  // Rewrites the location protocol on (301 / 302 / 307 / 308) redirects to 'http' or 'https'.Default: null.
+  /** Rewrites the location protocol on (301 / 302 / 307 / 308) redirects to 'http' or 'https'.Default: null. */
   protocolRewrite?: string;
-  // rewrites domain of set-cookie headers.
+  /** rewrites domain of set-cookie headers. */
   cookieDomainRewrite?: false | string | { [oldDomain: string]: string };
-  // rewrites path of set-cookie headers. Default: false
+  /** rewrites path of set-cookie headers. Default: false */
   cookiePathRewrite?: false | string | { [oldPath: string]: string };
-  // object with extra headers to be added to target requests.
+  /** object with extra headers to be added to target requests. */
   headers?: { [header: string]: string | string[] | undefined };
-  // Timeout (in milliseconds) when proxy receives no response from target. Default: 120000 (2 minutes)
+  /** Timeout (in milliseconds) when proxy receives no response from target. Default: 120000 (2 minutes) */
   proxyTimeout?: number;
-  // Timeout (in milliseconds) for incoming requests
+  /** Timeout (in milliseconds) for incoming requests */
   timeout?: number;
-  // Specify whether you want to follow redirects. Default: false
+  /** Specify whether you want to follow redirects. Default: false */
   followRedirects?: boolean;
-  // If set to true, none of the webOutgoing passes are called and it's your responsibility to appropriately return the response by listening and acting on the proxyRes event
+  /** If set to true, none of the webOutgoing passes are called and it's your responsibility to appropriately return the response by listening and acting on the proxyRes event */
   selfHandleResponse?: boolean;
-  // Buffer
+  /** Buffer */
   buffer?: Stream;
 }
 
