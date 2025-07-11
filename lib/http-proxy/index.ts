@@ -1,5 +1,6 @@
 import * as http from "http";
 import * as https from "https";
+import * as net from "net";
 import { WEB_PASSES } from "./passes/web-incoming";
 import { WS_PASSES } from "./passes/ws-incoming";
 import { EventEmitter } from "events";
@@ -32,67 +33,165 @@ export interface ServerOptions {
   // actually proxying is called.  However, they can be missing when creating the
   // proxy server in the first place!  E.g., you could make a proxy server P with
   // no options, then use P.web(req,res, {target:...}).
-  // URL string to be parsed with the url module.
+  /** URL string to be parsed with the url module. */
   target?: ProxyTarget;
-  // URL string to be parsed with the url module or a URL object.
+  /** URL string to be parsed with the url module or a URL object. */
   forward?: ProxyTargetUrl;
-  // Object to be passed to http(s).request.
+  /** Object to be passed to http(s).request. */
   agent?: any;
-  // Object to be passed to https.createServer().
+  /** Object to be passed to https.createServer(). */
   ssl?: any;
-  // If you want to proxy websockets.
+  /** If you want to proxy websockets. */
   ws?: boolean;
-  // Adds x- forward headers.
+  /** Adds x- forward headers. */
   xfwd?: boolean;
-  // Verify SSL certificate.
+  /** Verify SSL certificate. */
   secure?: boolean;
-  // Explicitly specify if we are proxying to another proxy.
+  /** Explicitly specify if we are proxying to another proxy. */
   toProxy?: boolean;
-  // Specify whether you want to prepend the target's path to the proxy path.
+  /** Specify whether you want to prepend the target's path to the proxy path. */
   prependPath?: boolean;
-  // Specify whether you want to ignore the proxy path of the incoming request.
+  /** Specify whether you want to ignore the proxy path of the incoming request. */
   ignorePath?: boolean;
-  // Local interface string to bind for outgoing connections.
+  /** Local interface string to bind for outgoing connections. */
   localAddress?: string;
-  // Changes the origin of the host header to the target URL.
+  /** Changes the origin of the host header to the target URL. */
   changeOrigin?: boolean;
-  // specify whether you want to keep letter case of response header key
+  /** specify whether you want to keep letter case of response header key */
   preserveHeaderKeyCase?: boolean;
-  // Basic authentication i.e. 'user:password' to compute an Authorization header.
+  /** Basic authentication i.e. 'user:password' to compute an Authorization header. */
   auth?: string;
-  // Rewrites the location hostname on (301 / 302 / 307 / 308) redirects, Default: null.
+  /** Rewrites the location hostname on (301 / 302 / 307 / 308) redirects, Default: null. */
   hostRewrite?: string;
-  // Rewrites the location host/ port on (301 / 302 / 307 / 308) redirects based on requested host/ port.Default: false.
+  /** Rewrites the location host/ port on (301 / 302 / 307 / 308) redirects based on requested host/ port.Default: false. */
   autoRewrite?: boolean;
-  // Rewrites the location protocol on (301 / 302 / 307 / 308) redirects to 'http' or 'https'.Default: null.
+  /** Rewrites the location protocol on (301 / 302 / 307 / 308) redirects to 'http' or 'https'.Default: null. */
   protocolRewrite?: string;
-  // rewrites domain of set-cookie headers.
+  /** rewrites domain of set-cookie headers. */
   cookieDomainRewrite?: false | string | { [oldDomain: string]: string };
-  // rewrites path of set-cookie headers. Default: false
+  /** rewrites path of set-cookie headers. Default: false */
   cookiePathRewrite?: false | string | { [oldPath: string]: string };
-  // object with extra headers to be added to target requests.
+  /** object with extra headers to be added to target requests. */
   headers?: { [header: string]: string | string[] | undefined };
-  // Timeout (in milliseconds) when proxy receives no response from target. Default: 120000 (2 minutes)
+  /** Timeout (in milliseconds) when proxy receives no response from target. Default: 120000 (2 minutes) */
   proxyTimeout?: number;
-  // Timeout (in milliseconds) for incoming requests
+  /** Timeout (in milliseconds) for incoming requests */
   timeout?: number;
-  // Specify whether you want to follow redirects. Default: false
+  /** Specify whether you want to follow redirects. Default: false */
   followRedirects?: boolean;
-  // If set to true, none of the webOutgoing passes are called and it's your responsibility to appropriately return the response by listening and acting on the proxyRes event
+  /** If set to true, none of the webOutgoing passes are called and it's your responsibility to appropriately return the response by listening and acting on the proxyRes event */
   selfHandleResponse?: boolean;
-  // Buffer
+  /** Buffer */
   buffer?: Stream;
 }
 
-export class ProxyServer extends EventEmitter {
-  public readonly ws;
-  public readonly web;
+export type ErrorCallback =
+  (
+    err: Error,
+    req: http.IncomingMessage,
+    res: http.ServerResponse | net.Socket,
+    target?: ProxyTargetUrl,
+  ) => void;
+
+type ProxyServerEventMap = {
+  error: Parameters<ErrorCallback>;
+  start: [
+    req: http.IncomingMessage,
+    res: http.ServerResponse,
+    target: ProxyTargetUrl,
+  ];
+  open: [socket: net.Socket];
+  proxyReq: [
+    proxyReq: http.ClientRequest,
+    req: http.IncomingMessage,
+    res: http.ServerResponse,
+    options: ServerOptions,
+  ];
+  proxyRes: [
+    proxyRes: http.IncomingMessage,
+    req: http.IncomingMessage,
+    res: http.ServerResponse,
+  ];
+  proxyReqWs: [
+    proxyReq: http.ClientRequest,
+    req: http.IncomingMessage,
+    socket: net.Socket,
+    options: ServerOptions,
+    head: any,
+  ];
+  econnreset: [
+    err: Error,
+    req: http.IncomingMessage,
+    res: http.ServerResponse,
+    target: ProxyTargetUrl,
+  ];
+  end: [
+    req: http.IncomingMessage,
+    res: http.ServerResponse,
+    proxyRes: http.IncomingMessage,
+  ];
+  close: [
+    proxyRes: http.IncomingMessage,
+    proxySocket: net.Socket,
+    proxyHead: any,
+  ];
+}
+
+export class ProxyServer extends EventEmitter<ProxyServerEventMap> {
+  /**
+   * Used for proxying WS(S) requests
+   * @param req - Client request.
+   * @param socket - Client socket.
+   * @param head - Client head.
+   * @param options - Additional options.
+   */
+  public readonly ws: (
+    ...args:
+      [
+        req: http.IncomingMessage,
+        socket: any,
+        head: any,
+        options?: ServerOptions,
+        callback?: ErrorCallback,
+      ]
+    | [
+        req: http.IncomingMessage,
+        socket: any,
+        head: any,
+        callback?: ErrorCallback,
+      ]
+  ) => void;
+
+  /**
+   * Used for proxying regular HTTP(S) requests
+   * @param req - Client request.
+   * @param res - Client response.
+   * @param options - Additional options.
+   */
+  public readonly web: (
+    ...args:
+      [
+        req: http.IncomingMessage,
+        res: http.ServerResponse,
+        options: ServerOptions,
+        callback?: ErrorCallback,
+      ]
+    | [
+        req: http.IncomingMessage,
+        res: http.ServerResponse,
+        callback?: ErrorCallback
+      ]
+  ) => void;
 
   private options: ServerOptions;
   private webPasses;
   private wsPasses;
   private _server?;
 
+  /**
+   * Creates the proxy server with specified options.
+   * @param options - Config object passed to the proxy
+   */
   constructor(options: ServerOptions = {}) {
     super();
     log("creating a ProxyServer", options);
@@ -103,6 +202,33 @@ export class ProxyServer extends EventEmitter {
     this.webPasses = Object.values(WEB_PASSES);
     this.wsPasses = Object.values(WS_PASSES);
     this.on("error", this.onError);
+  }
+
+  /**
+   * Creates the proxy server with specified options.
+   * @param options Config object passed to the proxy
+   * @returns Proxy object with handlers for `ws` and `web` requests
+   */
+  static createProxyServer(options?: ServerOptions): ProxyServer {
+    return new ProxyServer(options);
+  }
+
+  /**
+   * Creates the proxy server with specified options.
+   * @param options Config object passed to the proxy
+   * @returns Proxy object with handlers for `ws` and `web` requests
+   */
+  static createServer(options?: ServerOptions): ProxyServer {
+    return new ProxyServer(options);
+  }
+
+  /**
+   * Creates the proxy server with specified options.
+   * @param options Config object passed to the proxy
+   * @returns Proxy object with handlers for `ws` and `web` requests
+   */
+  static createProxy(options?: ServerOptions): ProxyServer {
+    return new ProxyServer(options);
   }
 
   // createRightProxy - Returns a function that when called creates the loader for
@@ -124,8 +250,8 @@ export class ProxyServer extends EventEmitter {
           // and there's no way for a user of http-proxy-3 to get ahold
           // of this res object and attach their own error handler until
           // after the passes. So we better attach one ASAP right here:
-          res.on("error", (...args) => {
-            this.emit("error", ...args);
+          (res as net.Socket).on("error", (err) => {
+            this.emit("error", err, req, res);
           });
         }
         let counter = args.length - 1;
@@ -158,7 +284,7 @@ export class ProxyServer extends EventEmitter {
         }
 
         if (!requestOptions.target && !requestOptions.forward) {
-          this.emit("error", new Error("Must set target or forward"));
+          this.emit("error", new Error("Must set target or forward"), req, res);
           return;
         }
 
@@ -187,6 +313,11 @@ export class ProxyServer extends EventEmitter {
     }
   };
 
+  /**
+   * A function that wraps the object in a webserver, for your convenience
+   * @param port - Port to listen on
+   * @param hostname - The hostname to listen on
+   */
   listen = (port: number, hostname?: string) => {
     log("listen", { port, hostname });
 
@@ -210,6 +341,9 @@ export class ProxyServer extends EventEmitter {
     return this._server?.address();
   };
 
+  /**
+   * A function that closes the inner webserver and stops listening on given port
+   */
   close = (cb?: Function) => {
     if (this._server == null) {
       cb?.();

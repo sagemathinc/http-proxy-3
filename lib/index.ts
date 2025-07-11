@@ -1,6 +1,18 @@
-import { ProxyServer, type ServerOptions } from "./http-proxy/index";
-export { ProxyServer };
-export { numOpenSockets } from "./http-proxy/passes/ws-incoming";
+import {
+  ProxyServer,
+  type ServerOptions,
+  type ProxyTarget,
+  type ProxyTargetUrl,
+  type ErrorCallback,
+} from './http-proxy/index';
+export {
+  ProxyServer,
+  type ServerOptions,
+  type ProxyTarget,
+  type ProxyTargetUrl,
+  type ErrorCallback,
+};
+export { numOpenSockets } from './http-proxy/passes/ws-incoming';
 
 /**
  * Creates the proxy server.

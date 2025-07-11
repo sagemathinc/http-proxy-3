@@ -168,7 +168,7 @@ describe("#createProxyServer() method with error response", () => {
 
     proxy
       .on("error", (err) => {
-        expect(err.code).toEqual("ECONNREFUSED");
+        expect((err as NodeJS.ErrnoException).code).toEqual("ECONNREFUSED");
         proxy.close();
         done();
       })
@@ -198,7 +198,7 @@ describe("#createProxyServer setting the correct timeout value", () => {
       .listen(ports.proxy);
 
     proxy.on("error", (e) => {
-      expect(e.code).toEqual("ECONNRESET");
+      expect((e as NodeJS.ErrnoException).code).toEqual("ECONNRESET");
     });
 
     const source = http.createServer((_req, res) => {
@@ -327,7 +327,7 @@ describe("#createProxyServer using the ws-incoming passes", () => {
     });
 
     proxy.on("error", (err) => {
-      expect(err.code).toEqual("ECONNREFUSED");
+      expect((err as NodeJS.ErrnoException).code).toEqual("ECONNREFUSED");
       proxyServer.close();
       maybe_done();
     });
