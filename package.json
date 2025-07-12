@@ -37,7 +37,6 @@
     "@types/ws": "^8.18.1",
     "async": "^3.2.6",
     "auto-changelog": "^2.5.0",
-    "awaiting": "^3.0.0",
     "better-sse": "^0.14.1",
     "body-parser": "^2.2.0",
     "compression": "^1.8.0",

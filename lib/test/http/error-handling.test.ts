@@ -6,7 +6,6 @@ import * as httpProxy from "../..";
 import * as http from "http";
 import getPort from "../get-port";
 import log from "../log";
-import { callback } from "awaiting";
 import fetch from "node-fetch";
 
 const CUSTOM_ERROR = "There was an error proxying your request";
@@ -68,15 +67,14 @@ describe("Test proxying over HTTP with latency", () => {
         Upgrade: "websocket",
       },
     };
-    const f = (cb: any) => {
+    const err = await new Promise<Error>((resolve) => {
       const req = http.request(options);
       req.end();
       req.on("error", (err) => {
         log(`request error -- ${err}`);
-        cb(undefined, err);
+        resolve(err);
       });
-    };
-    const err = await callback(f);
+    });
     expect(err.message).toContain("socket hang up");
     expect(customWSErrorCalled).toBe(true);
   });
