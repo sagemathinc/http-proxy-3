@@ -6,11 +6,12 @@ import {
   setupOutgoing as setupOutgoing0,
   setupSocket,
 } from "../../http-proxy/common";
+import net from 'net';
 
 // wrap setupOutgoing so types aren't checked, since a lot of the tests here
 // involve partial objects that typescript doesn't view as correct, e.g., {url:'foo...'}
 // for a Request.
-function setupOutgoing(...args) {
+function setupOutgoing(...args: any[]) {
   setupOutgoing0(args[0], args[1], args[2], args[3]);
 }
 
@@ -25,7 +26,7 @@ describe("#setupOutgoing", () => {
           host: "hey",
           hostname: "how",
           socketPath: "are",
-          port: "you",
+          port: 3000,
         },
         headers: { fizz: "bang", overwritten: true },
         localAddress: "local.address",
@@ -41,7 +42,7 @@ describe("#setupOutgoing", () => {
     expect(outgoing.host).toEqual("hey");
     expect(outgoing.hostname).toEqual("how");
     expect(outgoing.socketPath).toEqual("are");
-    expect(outgoing.port).toEqual("you");
+    expect(outgoing.port).toEqual(3000);
     expect(outgoing.agent).toEqual("?");
 
     expect(outgoing.method).toEqual("i");
@@ -154,7 +155,7 @@ describe("#setupOutgoing", () => {
 
   it("should set the agent to false if none is given", () => {
     const outgoing: any = {};
-    setupOutgoing(outgoing, { target: "http://localhost" }, { url: "/" });
+    setupOutgoing(outgoing, { target: new URL("http://localhost") }, { url: "/" });
     expect(outgoing.agent).toEqual(false);
   });
 
@@ -466,22 +467,25 @@ describe("#setupOutgoing", () => {
 describe("#setupSocket", () => {
   it("should setup a socket", () => {
     const socketConfig = {
-        timeout: null,
-        nodelay: false,
-        keepalive: false,
+        timeout: null as null | number,
+        nodelay: false as boolean | undefined,
+        keepalive: false as boolean | undefined,
       },
       stubSocket = {
-        setTimeout: (num) => {
+        setTimeout: (num: number) => {
           socketConfig.timeout = num;
+          return stubSocket;
         },
-        setNoDelay: (bol) => {
+        setNoDelay: (bol: boolean) => {
           socketConfig.nodelay = bol;
+          return stubSocket;
         },
-        setKeepAlive: (bol) => {
+        setKeepAlive: (bol: boolean) => {
           socketConfig.keepalive = bol;
+          return stubSocket;
         },
-      };
-    setupSocket(stubSocket as any);
+      } satisfies Pick<net.Socket, 'setTimeout' | 'setNoDelay' | 'setKeepAlive'> as net.Socket;
+    setupSocket(stubSocket);
     expect(socketConfig.timeout).toEqual(0);
     expect(socketConfig.nodelay).toEqual(true);
     expect(socketConfig.keepalive).toEqual(true);

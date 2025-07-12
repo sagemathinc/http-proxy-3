@@ -17,6 +17,7 @@ import {
   type ServerResponse as Response,
 } from "http";
 import { type Socket } from "net";
+import type { ErrorCallback, NormalizedServerOptions, NormalizeProxyTarget, ProxyServer, ProxyTarget, ProxyTargetUrl, ServerOptions } from "..";
 
 export type ProxyResponse = Request & {
   headers: { [key: string]: string | string[] };
@@ -39,14 +40,14 @@ export function deleteLength(req: Request) {
 }
 
 // Sets timeout in request socket if it was specified in options.
-export function timeout(req: Request, _res, options) {
+export function timeout(req: Request, _res: Response, options: ServerOptions) {
   if (options.timeout) {
     req.socket.setTimeout(options.timeout);
   }
 }
 
 // Sets `x-forwarded-*` headers if specified in config.
-export function XHeaders(req: Request, _res, options) {
+export function XHeaders(req: Request, _res: Response, options: ServerOptions) {
   if (!options.xfwd) {
     return;
   }
@@ -58,7 +59,7 @@ export function XHeaders(req: Request, _res, options) {
     proto: encrypted ? "https" : "http",
   };
 
-  for (const header of ["for", "port", "proto"]) {
+  for (const header of ["for", "port", "proto"] as const) {
     req.headers["x-forwarded-" + header] =
       (req.headers["x-forwarded-" + header] || "") +
       (req.headers["x-forwarded-" + header] ? "," : "") +
@@ -72,13 +73,13 @@ export function XHeaders(req: Request, _res, options) {
 // Does the actual proxying. If `forward` is enabled fires up
 // a ForwardStream (there is NO RESPONSE), same happens for ProxyStream. The request
 // just dies otherwise.
-export function stream(req: Request, res: Response, options, _, server, cb) {
+export function stream(req: Request, res: Response, options: NormalizedServerOptions, _: Buffer | undefined, server: ProxyServer, cb: ErrorCallback | undefined) {
   // And we begin!
-  server.emit("start", req, res, options.target || options.forward);
+  server.emit("start", req, res, options.target || options.forward!);
 
   const agents = options.followRedirects ? followRedirects : nativeAgents;
-  const http = agents.http;
-  const https = agents.https;
+  const http = agents.http as typeof import('http');
+  const https = agents.https as typeof import('https');
 
   if (options.forward) {
     // forward enabled, so just pipe the request
@@ -107,7 +108,7 @@ export function stream(req: Request, res: Response, options, _, server, cb) {
   }
 
   // Request initalization
-  const proto = options.target.protocol === "https:" ? https : http;
+  const proto = options.target!.protocol === "https:" ? https : http;
   const outgoingOptions = common.setupOutgoing(options.ssl || {}, options, req);
   const proxyReq = proto.request(outgoingOptions);
 
@@ -135,13 +136,13 @@ export function stream(req: Request, res: Response, options, _, server, cb) {
   });
 
   // handle errors in proxy and incoming request, just like for forward proxy
-  const proxyError = createErrorHandler(proxyReq, options.target);
+  const proxyError = createErrorHandler(proxyReq, options.target!);
   req.on("error", proxyError);
   proxyReq.on("error", proxyError);
 
-  function createErrorHandler(proxyReq, url) {
-    return (err) => {
-      if (req.socket.destroyed && err.code === "ECONNRESET") {
+  function createErrorHandler(proxyReq: http.ClientRequest, url: NormalizeProxyTarget<ProxyTargetUrl>) {
+    return (err: Error) => {
+      if (req.socket.destroyed && (err as NodeJS.ErrnoException).code === "ECONNRESET") {
         server.emit("econnreset", err, req, res, url);
         proxyReq.destroy();
         return;
@@ -163,7 +164,7 @@ export function stream(req: Request, res: Response, options, _, server, cb) {
     if (!res.headersSent && !options.selfHandleResponse) {
       for (const pass of web_o) {
         // note: none of these return anything
-        pass(req, res, proxyRes, options);
+        pass(req, res, proxyRes, options as NormalizedServerOptions & { target: NormalizeProxyTarget<ProxyTarget> });
       }
     }
 

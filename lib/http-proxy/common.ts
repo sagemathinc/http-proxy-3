@@ -1,4 +1,4 @@
-import type { ProxyTargetDetailed, ServerOptions } from "./index";
+import type { NormalizedServerOptions, ProxyTargetDetailed, ServerOptions } from "./index";
 import { type IncomingMessage as Request } from "http";
 import { TLSSocket } from "tls";
 import type { Socket } from "net";
@@ -12,7 +12,6 @@ export const isSSL = /^https|wss/;
 type Outgoing0 = ProxyTargetDetailed & ServerOptions;
 
 export interface Outgoing extends Outgoing0 {
-  method?: any;
   rejectUnauthorized?: boolean;
   path?: string;
   headers: { [header: string]: string | string[] | undefined } & {
@@ -36,15 +35,17 @@ export function setupOutgoing(
   // Base object to be filled with required properties
   outgoing: Outgoing,
   // Config object passed to the proxy
-  options,
+  options: NormalizedServerOptions,
   // Request Object
   req: Request,
   // String to select forward or target
-  forward?: string,
+  forward?: "forward",
 ) {
+  // the final path is target path + relative path requested by user:
+  const target = options[forward || "target"]!;
+
   outgoing.port =
-    options[forward || "target"].port ??
-    (isSSL.test(options[forward || "target"].protocol) ? 443 : 80);
+    +(target.port ?? (target.protocol !== undefined && isSSL.test(target.protocol) ? 443 : 80));
 
   for (const e of [
     "host",
@@ -57,8 +58,9 @@ export function setupOutgoing(
     "ca",
     "ciphers",
     "secureProtocol",
-  ]) {
-    outgoing[e] = options[forward || "target"][e];
+  ] as const) {
+    // @ts-expect-error -- this mapping is valid
+    outgoing[e] = target[e];
   }
 
   outgoing.method = options.method || req.method;
@@ -87,7 +89,7 @@ export function setupOutgoing(
     outgoing.ca = options.ca;
   }
 
-  if (isSSL.test(options[forward || "target"].protocol)) {
+  if (target.protocol !== undefined && isSSL.test(target.protocol)) {
     outgoing.rejectUnauthorized =
       typeof options.secure === "undefined" ? true : options.secure;
   }
@@ -107,11 +109,9 @@ export function setupOutgoing(
     }
   }
 
-  // the final path is target path + relative path requested by user:
-  const target = options[forward || "target"];
   // target if defined is a URL object so has attribute "pathname", not "path".
   const targetPath =
-    target && options.prependPath !== false ? getPath(target.pathname) : "/";
+    target && options.prependPath !== false && 'pathname' in target ? getPath(target.pathname) : "/";
 
   let outgoingPath = options.toProxy ? req.url : getPath(req.url);
 
@@ -124,7 +124,8 @@ export function setupOutgoing(
 
   if (options.changeOrigin) {
     outgoing.headers.host =
-      required(outgoing.port, options[forward || "target"].protocol) &&
+      target.protocol !== undefined &&
+      required(outgoing.port, target.protocol) &&
       !hasPort(outgoing.host)
         ? outgoing.host + ":" + outgoing.port
         : outgoing.host;
@@ -216,12 +217,22 @@ export function urlJoin(...args: string[]): string {
 
 // Rewrites or removes the domain of a cookie header
 export function rewriteCookieProperty(
-  header: string | any[],
+  header: string,
+  config: Record<string, string>,
+  property: string,
+): string;
+export function rewriteCookieProperty(
+  header: string | string[],
+  config: Record<string, string>,
+  property: string,
+): string | string[];
+export function rewriteCookieProperty(
+  header: string | string[],
   // config = mapping of domain to rewritten domain.
   //         '*' key to match any domain, null value to remove the domain.
-  config: object,
+  config: Record<string, string>,
   property: string,
-) {
+): string | string[] {
   if (Array.isArray(header)) {
     return header.map((headerElement) => {
       return rewriteCookieProperty(headerElement, config, property);
@@ -260,10 +271,10 @@ function getPath(url?: string): string {
   return `${u.pathname ?? ""}${u.search ?? ""}`;
 }
 
-export function toURL(url: URL | urllib.Url | string | undefined): URL {
+export function toURL(url: URL | urllib.Url | ProxyTargetDetailed | string | undefined): URL {
   if (url instanceof URL) {
     return url;
-  } else if (typeof url === "object" && typeof url.href === "string") {
+  } else if (typeof url === "object" && 'href' in url && typeof url.href === "string") {
     url = url.href;
   }
   if (!url) {
@@ -275,7 +286,7 @@ export function toURL(url: URL | urllib.Url | string | undefined): URL {
   }
   if (url.startsWith("//")) {
     // special case -- this would be viewed as a this is a "network-path reference",
-    // so we explicitly prefix with our http schema.  See 
+    // so we explicitly prefix with our http schema.  See
     url = `http://dummy.org${url}`;
   }
   // urllib.Url is deprecated but we support it by converting to URL

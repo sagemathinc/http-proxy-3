@@ -322,7 +322,7 @@ describe("#createProxyServer using the ws-incoming passes", () => {
     }
 
     client.on("error", (err) => {
-      expect(err.code).toEqual("ECONNRESET");
+      expect((err as NodeJS.ErrnoException).code).toEqual("ECONNRESET");
       maybe_done();
     });
 

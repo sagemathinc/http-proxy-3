@@ -13,7 +13,7 @@ import { callback } from "awaiting";
 import fetch from "node-fetch";
 
 describe("proxying server sent events over HTTP", () => {
-  let ports;
+  let ports: Record<'http' | 'proxy', number>;
   it("gets ports", async () => {
     ports = { http: await getPort(), proxy: await getPort() };
   });
@@ -58,9 +58,9 @@ describe("proxying server sent events over HTTP", () => {
 
   if (!process.version.startsWith("v18.")) {
     // These two tests leave open handles on node v18, so we disable them ONLY
-    // with node v18. 
+    // with node v18.
     it("test receiving an SSE WITHOUT using the proxy", async () => {
-      const f = (cb) => {
+      const f = (cb: any) => {
         const sse = new EventSource(`http://localhost:${ports.http}/sse`);
         sse.addEventListener("message", ({ data }) => {
           sse.close();
@@ -72,7 +72,7 @@ describe("proxying server sent events over HTTP", () => {
     });
 
     it("test receiving an SSE USING the proxy", async () => {
-      const f = (cb) => {
+      const f = (cb: any) => {
         const sse = new EventSource(`http://localhost:${ports.proxy}/sse`);
         sse.addEventListener("message", ({ data }) => {
           sse.close();

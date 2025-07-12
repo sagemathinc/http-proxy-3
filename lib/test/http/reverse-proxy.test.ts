@@ -13,12 +13,12 @@ import { HttpsProxyAgent } from "https-proxy-agent";
 import fetch from "node-fetch";
 
 describe("Reverse proxying -- create a server that...", () => {
-  let port;
+  let port: number;
   it("allocates a port", async () => {
     port = await getPort();
   });
 
-  let server;
+  let server: http.Server;
   it("creates reverse proxy server", async () => {
     const proxy = httpProxy.createServer();
     server = http

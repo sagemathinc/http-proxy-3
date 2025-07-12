@@ -8,7 +8,7 @@ See https://nodejs.org/api/http.html#event-upgrade
 
 DEVELOPMENT:
 
- pnpm test simple-websocket-proxy.test.ts 
+ pnpm test simple-websocket-proxy.test.ts
 */
 
 import * as http from "http";
@@ -18,7 +18,7 @@ import getPort from "../get-port";
 import { once } from "../wait";
 
 describe("Example of simple proxying of a WebSocket", () => {
-  let ports;
+  let ports: Record<'ws' | 'proxy', number>;
   it("assigns ports", async () => {
     ports = { ws: await getPort(), proxy: await getPort() };
   });

@@ -6,7 +6,7 @@ response and return it to the browser.
 
 DEVELOPMENT:
 
-pnpm test forward-proxy.test.ts 
+pnpm test forward-proxy.test.ts
 */
 
 import * as http from "http";
@@ -17,8 +17,8 @@ import wait from "../wait";
 import fetch from "node-fetch";
 
 describe("Example of proxying over HTTP with additional forward proxy", () => {
-  let forwardingServer,
-    httpPort,
+  let forwardingServer: http.Server,
+    httpPort: number,
     numRequests = 0;
   it("Setup Target Http Forwarding Server", async () => {
     httpPort = await getPort();
@@ -38,7 +38,7 @@ describe("Example of proxying over HTTP with additional forward proxy", () => {
     log(`http server started on port ${httpPort}`);
   });
 
-  let proxyServer, proxyPort;
+  let proxyServer: httpProxy.ProxyServer, proxyPort: number;
   it("Setup proxy server with forwarding", async () => {
     proxyPort = await getPort();
     proxyServer = httpProxy.createServer({
@@ -65,7 +65,7 @@ describe("Example of proxying over HTTP with additional forward proxy", () => {
     expect(numRequests).toBe(before + 1);
   });
 
-  let proxy2Server, proxy2Port;
+  let proxy2Server: httpProxy.ProxyServer, proxy2Port: number;
   it("Setup proxy server with forwarding **and** target", async () => {
     proxy2Port = await getPort();
     proxy2Server = httpProxy.createServer({

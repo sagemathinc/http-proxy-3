@@ -11,7 +11,7 @@ import { once } from "../wait";
 import fetch from "node-fetch";
 
 describe("A simple round-robin load balancer that supports websockets", () => {
-  let addresses;
+  let addresses: Array<{ host: string, port: number }>;
   it("lists the servers to use in our rotation.", async () => {
     addresses = [
       {
@@ -25,10 +25,10 @@ describe("A simple round-robin load balancer that supports websockets", () => {
     ];
   });
 
-  const servers: any = {};
+  const servers: Record<string, http.Server> = {};
 
   it("creates the servers", () => {
-    const createServer = (i) => {
+    const createServer = (i: number) => {
       const { host, port } = addresses[i];
       const server = http
         .createServer((_req, res) => {
@@ -58,7 +58,7 @@ describe("A simple round-robin load balancer that supports websockets", () => {
     }
   });
 
-  let proxyPort;
+  let proxyPort: number;
   it("creates the round robin proxy server", async () => {
     // create one proxy for each backend server
     const proxies = addresses.map((target) =>
@@ -66,7 +66,6 @@ describe("A simple round-robin load balancer that supports websockets", () => {
     );
 
     proxyPort = await getPort();
-    servers.proxy = httpProxy.createProxyServer({});
     let i = 0;
     function nextProxy() {
       i = (i + 1) % addresses.length;

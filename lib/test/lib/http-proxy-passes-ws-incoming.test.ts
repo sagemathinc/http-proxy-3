@@ -8,7 +8,7 @@ import {
 } from "../../http-proxy/passes/ws-incoming";
 
 // disable typescript for this function
-function checkMethodAndHeader(...args) {
+function checkMethodAndHeader(...args: any[]) {
   return checkMethodAndHeader0(args[0], args[1]);
 }
 
@@ -101,7 +101,7 @@ describe("#XHeaders", () => {
       },
       headers: {
         host: "192.168.1.2:8080",
-      },
+      } as Record<string, string>,
     };
     // @ts-ignore
     XHeaders(stubRequest, {}, { xfwd: true });
@@ -121,7 +121,7 @@ describe("#XHeaders", () => {
       },
       headers: {
         host: "192.168.1.3:8181",
-      },
+      } as Record<string, string>,
     };
     // @ts-ignore
     XHeaders(stubRequest, {}, { xfwd: true });

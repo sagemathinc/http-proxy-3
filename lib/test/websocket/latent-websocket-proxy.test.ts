@@ -7,17 +7,17 @@ pnpm test latent-websocket-proxy.test.ts
 import * as httpProxy from "../..";
 import getPort from "../get-port";
 import { once } from "../wait";
-import { createServer } from "http";
+import http, { createServer } from "http";
 import { Server } from "socket.io";
 import { io as socketioClient } from "socket.io-client";
 
 describe("Proxying websockets over HTTP with a standalone HTTP server.", () => {
-  let ports;
+  let ports: Record<'ws' | 'proxy', number>;
   it("assigns ports", async () => {
     ports = { ws: await getPort(), proxy: await getPort() };
   });
 
-  let servers: any = {};
+  let servers: { ws: Server, proxyServer: http.Server } = {} as any;
 
   it("Create the target websocket server", async () => {
     const io = new Server();
@@ -30,7 +30,7 @@ describe("Proxying websockets over HTTP with a standalone HTTP server.", () => {
     io.listen(ports.ws);
   });
 
-  let proxy;
+  let proxy: httpProxy.ProxyServer;
   it("Setup our proxy server to proxy standard HTTP requests", async () => {
     proxy = httpProxy.createProxyServer({
       target: {
@@ -42,17 +42,17 @@ describe("Proxying websockets over HTTP with a standalone HTTP server.", () => {
       proxy.web(req, res);
     });
   });
-  
+
   const LATENCY = 200;
 
   it("Listen to the `upgrade` event and proxy the WebSocket requests as well.", async () => {
-    servers.proxyServer.on("upgrade", (req, socket, head) => {
+    servers.proxyServer!.on("upgrade", (req, socket, head) => {
       if (hangForever) return;
       setTimeout(() => {
         proxy.ws(req, socket, head);
       }, LATENCY);
     });
-    servers.proxyServer.listen(ports.proxy);
+    servers.proxyServer!.listen(ports.proxy);
   });
 
   it("Create client and test the proxy server directly", async () => {

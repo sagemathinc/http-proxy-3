@@ -9,7 +9,7 @@ import * as http from "http";
 import getPort from "../get-port";
 
 describe("blacklisting the Trailer header", () => {
-  let ports;
+  let ports: Record<'http' | 'proxy', number>;
   it("gets ports", async () => {
     ports = { http: await getPort(), proxy: await getPort() };
   });

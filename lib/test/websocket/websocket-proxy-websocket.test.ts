@@ -1,13 +1,13 @@
 /*
 pnpm test ./websocket-proxy-websocket.test.ts
 
-Proxying a websocket connection to a server, which itself proxies a websocket 
+Proxying a websocket connection to a server, which itself proxies a websocket
 connection to another server.
 
 [Client] --> [Outer Proxy] --> [Inner Proxy] --> [Websocket Server]
 
-We have this architecture when developing CoCalc inside a CoCalc project, e.g., to get a websocket 
-connection to NATS, the browser connect to the big main cocalc server which proxies the connection to the dev cocalc 
+We have this architecture when developing CoCalc inside a CoCalc project, e.g., to get a websocket
+connection to NATS, the browser connect to the big main cocalc server which proxies the connection to the dev cocalc
 server which proxies that connection to NATS.
 
 We use socket-io in this example just to keep things interesting and more complicated.
@@ -20,7 +20,7 @@ import { io as socketioClient } from "socket.io-client";
 import { once } from "../wait";
 
 describe("Multilevel Proxying of a Websocket using Socket.io", () => {
-  let ports;
+  let ports: Record<'socketio' | 'inner' | 'outer', number>;
   it("assigns ports", async () => {
     ports = {
       socketio: await getPort(),
