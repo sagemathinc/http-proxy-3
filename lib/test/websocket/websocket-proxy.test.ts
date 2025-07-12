@@ -19,7 +19,7 @@ import { Server } from "socket.io";
 import { io as socketioClient } from "socket.io-client";
 
 describe("Example of proxying over HTTP and WebSockets", () => {
-  let ports;
+  let ports: Record<'socketio' | 'proxy', number>;
   it("assigns ports", async () => {
     ports = { socketio: await getPort(), proxy: await getPort() };
   });

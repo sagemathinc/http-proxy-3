@@ -1,12 +1,12 @@
 import express from "express";
 import getPort from "../get-port";
-import { createServer } from "../..";
+import ProxyServer, { createServer } from "../..";
 import http from "http";
 
 // See https://github.com/sagemathinc/http-proxy-3/issues/6
 
 describe("test multiple forward slashes in a URL", () => {
-  let port, server;
+  let port: number, server: http.Server;
 
   it("create a simple http server", async () => {
     port = await getPort();
@@ -35,7 +35,7 @@ describe("test multiple forward slashes in a URL", () => {
     server = app.listen(port);
   });
 
-  const get = async (url) => {
+  const get = async (url: string) => {
     return await (await fetch(`http://localhost:${port}${url}`)).text();
   };
 
@@ -48,8 +48,8 @@ describe("test multiple forward slashes in a URL", () => {
     expect(await get("///test/crazy//slasher")).toBe("crazy slasher");
   });
 
-  let proxy, httpServer;
-  let proxyPort;
+  let proxy: ProxyServer, httpServer: http.Server;
+  let proxyPort: number;
   it("create a proxy server", async () => {
     proxy = createServer();
     proxy.on("error", (err, _req, res) => {
@@ -65,7 +65,7 @@ describe("test multiple forward slashes in a URL", () => {
     httpServer.listen(proxyPort);
   });
 
-  const getProxy = async (url) => {
+  const getProxy = async (url: string) => {
     return await (await fetch(`http://localhost:${proxyPort}${url}`)).text();
   };
 

@@ -13,7 +13,7 @@ const CUSTOM_ERROR =
   "Something went wrong. And we are reporting a custom error message.";
 
 describe("Test proxying over HTTP with latency", () => {
-  let ports;
+  let ports: Record<'bad' | 'proxy', number>;
   it("gets ports", async () => {
     ports = { bad: await getPort(), proxy: await getPort() };
   });

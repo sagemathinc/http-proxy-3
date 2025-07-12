@@ -12,7 +12,7 @@ import fetch from "node-fetch";
 const fixturesDir = join(__dirname, "..", "fixtures");
 
 describe("Basic example of proxying over HTTPS to a target HTTP server", () => {
-  let ports;
+  let ports: Record<'http' | 'proxy', number>;
   it("Gets ports", async () => {
     ports = { http: await getPort(), proxy: await getPort() };
   });

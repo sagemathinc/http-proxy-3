@@ -47,10 +47,10 @@ describe("#deleteLength", () => {
 
 describe("#timeout", () => {
   it("should set timeout on the socket", () => {
-    let done = false;
+    let done: number | false = false;
     let stubRequest = {
       socket: {
-        setTimeout: (value) => {
+        setTimeout: (value: number) => {
           done = value;
         },
       },
@@ -69,7 +69,7 @@ describe("#XHeaders", () => {
     },
     headers: {
       host: "192.168.1.2:8080",
-    },
+    } as Record<string, string>,
   };
 
   it("set the correct x-forwarded-* headers", () => {
@@ -105,7 +105,7 @@ describe("#createProxyServer.web() using own http server", () => {
       target: address(8080),
     });
 
-    function requestHandler(req, res) {
+    function requestHandler(req: http.IncomingMessage, res: http.ServerResponse) {
       proxy.web(req, res);
     }
 
@@ -137,7 +137,7 @@ describe("#createProxyServer.web() using own http server", () => {
       proxyReq.setHeader("X-Special-Proxy-Header", "foobar");
     });
 
-    function requestHandler(req, res) {
+    function requestHandler(req: http.IncomingMessage, res: http.ServerResponse) {
       proxy.web(req, res);
     }
 
@@ -166,7 +166,7 @@ describe("#createProxyServer.web() using own http server", () => {
       proxyReq.setHeader("X-Special-Proxy-Header", "foobar");
     });
 
-    function requestHandler(req, res) {
+    function requestHandler(req: http.IncomingMessage, res: http.ServerResponse) {
       proxy.web(req, res);
     }
 
@@ -210,7 +210,7 @@ describe("#createProxyServer.web() using own http server", () => {
 
     const proxyServer = http.createServer(requestHandler);
 
-    function requestHandler(req, res) {
+    function requestHandler(req: http.IncomingMessage, res: http.ServerResponse) {
       proxy.web(req, res, (err) => {
         proxyServer.close();
         expect((err as NodeJS.ErrnoException).code).toEqual("ECONNREFUSED");
@@ -240,7 +240,7 @@ describe("#createProxyServer.web() using own http server", () => {
 
     const proxyServer = http.createServer(requestHandler);
 
-    function requestHandler(req, res) {
+    function requestHandler(req: http.IncomingMessage, res: http.ServerResponse) {
       proxy.once("error", (err, errReq, errRes) => {
         proxyServer.close();
         expect(errReq).toEqual(req);
@@ -274,7 +274,7 @@ describe("#createProxyServer.web() using own http server", () => {
 
     const proxyServer = http.createServer(requestHandler);
 
-    function requestHandler(req, res) {
+    function requestHandler(req: http.IncomingMessage, res: http.ServerResponse) {
       proxy.once("error", (err, errReq, errRes) => {
         proxyServer.close();
         expect(errReq).toEqual(req);
@@ -310,7 +310,7 @@ describe("#createProxyServer.web() using own http server", () => {
     const server = require("net").createServer().listen(ports["8083"]);
 
     const started = Date.now();
-    function requestHandler(req, res) {
+    function requestHandler(req: http.IncomingMessage, res: http.ServerResponse) {
       proxy.once("error", (err, errReq, errRes) => {
         proxyServer.close();
         server.close();
@@ -356,7 +356,7 @@ describe("#createProxyServer.web() using own http server", () => {
     };
 
     const started = Date.now();
-    function requestHandler(req, res) {
+    function requestHandler(req: http.IncomingMessage, res: http.ServerResponse) {
       proxy.once("econnreset", (err, errReq, errRes) => {
         proxyServer.close();
         server.close();
@@ -394,7 +394,7 @@ describe("#createProxyServer.web() using own http server", () => {
       target: address(8080),
     });
 
-    function requestHandler(req, res) {
+    function requestHandler(req: http.IncomingMessage, res: http.ServerResponse) {
       proxy.once("proxyRes", (proxyRes, pReq, pRes) => {
         source.close();
         proxyServer.close();
@@ -424,7 +424,7 @@ describe("#createProxyServer.web() using own http server", () => {
       selfHandleResponse: true,
     });
 
-    function requestHandler(req, res) {
+    function requestHandler(req: http.IncomingMessage, res: http.ServerResponse) {
       proxy.once("proxyRes", (proxyRes, _pReq, pRes) => {
         proxyRes.pipe(
           concat((body) => {
@@ -525,9 +525,9 @@ describe("#createProxyServer.web() using own http server", () => {
     // proxies to two servers depending on url, rewriting the url as well
     // http://127.0.0.1:8080/s1/ -> http://127.0.0.1:8081/
     // http://127.0.0.1:8080/ -> http://127.0.0.1:8082/
-    function requestHandler(req, res) {
-      if (req.url.startsWith("/s1/")) {
-        const target = address(8081) + req.url.substring(3);
+    function requestHandler(req: http.IncomingMessage, res: http.ServerResponse) {
+      if (req.url!.startsWith("/s1/")) {
+        const target = address(8081) + req.url!.substring(3);
         proxy.web(req, res, {
           ignorePath: true,
           target,

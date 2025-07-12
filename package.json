@@ -23,9 +23,18 @@
     "follow-redirects": "^1.15.9"
   },
   "devDependencies": {
+    "@types/async": "^3.2.24",
+    "@types/body-parser": "^1.19.6",
+    "@types/compression": "^1.8.1",
+    "@types/concat-stream": "^2.0.3",
+    "@types/connect": "^3.4.38",
     "@types/debug": "^4.1.12",
+    "@types/express": "^5.0.3",
+    "@types/follow-redirects": "^1.14.4",
     "@types/jest": "^29.5.14",
     "@types/node": "^22.15.12",
+    "@types/node-fetch": "^2.6.12",
+    "@types/ws": "^8.18.1",
     "async": "^3.2.6",
     "auto-changelog": "^2.5.0",
     "awaiting": "^3.0.0",

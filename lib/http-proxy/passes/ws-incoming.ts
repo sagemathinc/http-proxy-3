@@ -14,10 +14,11 @@ import * as common from "../common";
 import type { Request } from "./web-incoming";
 import type { Socket } from "net";
 import debug from "debug";
+import type { NormalizedServerOptions, ProxyServer } from "..";
 
 const log = debug("http-proxy-3:ws-incoming");
 
-function createSocketCounter(name) {
+function createSocketCounter(name: string) {
   let sockets = new Set<number>();
   return ({
     add,
@@ -77,7 +78,7 @@ export function checkMethodAndHeader(
 }
 
 // Sets `x-forwarded-*` headers if specified in config.
-export function XHeaders(req: Request, _socket: Socket, options) {
+export function XHeaders(req: Request, _socket: Socket, options: NormalizedServerOptions) {
   if (!options.xfwd) return;
   log("websocket: XHeaders");
 
@@ -87,7 +88,7 @@ export function XHeaders(req: Request, _socket: Socket, options) {
     proto: common.hasEncryptedConnection(req) ? "wss" : "ws",
   };
 
-  for (const header of ["for", "port", "proto"]) {
+  for (const header of ["for", "port", "proto"] as const) {
     req.headers["x-forwarded-" + header] =
       (req.headers["x-forwarded-" + header] || "") +
       (req.headers["x-forwarded-" + header] ? "," : "") +
@@ -100,9 +101,9 @@ export function XHeaders(req: Request, _socket: Socket, options) {
 export function stream(
   req: Request,
   socket: Socket,
-  options,
-  head: Buffer,
-  server,
+  options: NormalizedServerOptions,
+  head: Buffer | undefined,
+  server: ProxyServer,
   cb?: Function,
 ) {
   log("websocket: new stream");
@@ -123,7 +124,7 @@ export function stream(
   // EHOSTUNREACH). We need to do that explicitly.
   socket.on("error", cleanUpProxySockets);
 
-  const createHttpHeader = (line, headers) => {
+  const createHttpHeader = (line: string, headers: http.IncomingHttpHeaders) => {
     return (
       Object.keys(headers)
         .reduce(
@@ -152,6 +153,7 @@ export function stream(
     socket.unshift(head);
   }
 
+  // @ts-expect-error FIXME: options.target may be undefined
   const proto = common.isSSL.test(options.target.protocol) ? https : http;
 
   const outgoingOptions = common.setupOutgoing(options.ssl || {}, options, req);
@@ -205,7 +207,7 @@ export function stream(
     },
   );
 
-  function onOutgoingError(err) {
+  function onOutgoingError(err: Error) {
     if (cb) {
       cb(err, req, socket);
     } else {

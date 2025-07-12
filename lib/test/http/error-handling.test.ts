@@ -12,12 +12,12 @@ import fetch from "node-fetch";
 const CUSTOM_ERROR = "There was an error proxying your request";
 
 describe("Test proxying over HTTP with latency", () => {
-  let ports;
+  let ports: Record<'bad' | 'proxy', number>;
   it("gets ports", async () => {
     ports = { bad: await getPort(), proxy: await getPort() };
   });
 
-  let servers: any = {};
+  let servers: Record<string, http.Server> = {};
   let customWSErrorCalled = false;
   let customHttpErrorCalled = false;
   it("creates servers with bad target", () => {
@@ -68,7 +68,7 @@ describe("Test proxying over HTTP with latency", () => {
         Upgrade: "websocket",
       },
     };
-    const f = (cb) => {
+    const f = (cb: any) => {
       const req = http.request(options);
       req.end();
       req.on("error", (err) => {

@@ -26,7 +26,9 @@ export interface ProxyTargetDetailed {
 }
 export type ProxyType = "ws" | "web";
 export type ProxyTarget = ProxyTargetUrl | ProxyTargetDetailed;
-export type ProxyTargetUrl = URL | string | { port: number; host: string };
+export type ProxyTargetUrl = URL | string | { port: number; host: string; protocol?: string };
+
+export type NormalizeProxyTarget<T extends ProxyTargetUrl> = Exclude<T, string> | URL;
 
 export interface ServerOptions {
   // NOTE: `options.target and `options.forward` cannot be both missing when the
@@ -83,6 +85,18 @@ export interface ServerOptions {
   selfHandleResponse?: boolean;
   /** Buffer */
   buffer?: Stream;
+  /** Explicitly set the method type of the ProxyReq */
+  method?: string;
+  /**
+   * Optionally override the trusted CA certificates.
+   * This is passed to https.request.
+   */
+  ca?: string;
+}
+
+export interface NormalizedServerOptions extends ServerOptions {
+  target?: NormalizeProxyTarget<ProxyTarget>;
+  forward?: NormalizeProxyTarget<ProxyTargetUrl>;
 }
 
 export type ErrorCallback =
@@ -106,6 +120,7 @@ type ProxyServerEventMap = {
     req: http.IncomingMessage,
     res: http.ServerResponse,
     options: ServerOptions,
+    socket: net.Socket,
   ];
   proxyRes: [
     proxyRes: http.IncomingMessage,
@@ -137,6 +152,53 @@ type ProxyServerEventMap = {
   ];
 }
 
+type ProxyMethodArgs = {
+  ws: [
+    req: http.IncomingMessage,
+    socket: any,
+    head: any,
+    ...args:
+      [
+        options?: ServerOptions,
+        callback?: ErrorCallback,
+      ]
+    | [
+        callback?: ErrorCallback,
+      ]
+  ]
+  web: [
+    req: http.IncomingMessage,
+    res: http.ServerResponse,
+    ...args:
+        [
+          options: ServerOptions,
+          callback?: ErrorCallback,
+        ]
+      | [
+          callback?: ErrorCallback
+        ]
+  ]
+}
+
+type PassFunctions = {
+  ws: (
+    req: http.IncomingMessage,
+    socket: net.Socket,
+    options: NormalizedServerOptions,
+    head: Buffer | undefined,
+    server: ProxyServer,
+    cb?: ErrorCallback
+  ) => unknown
+  web: (
+    req: http.IncomingMessage,
+    res: http.ServerResponse,
+    options: NormalizedServerOptions,
+    head: Buffer | undefined,
+    server: ProxyServer,
+    cb?: ErrorCallback
+  ) => unknown
+}
+
 export class ProxyServer extends EventEmitter<ProxyServerEventMap> {
   /**
    * Used for proxying WS(S) requests
@@ -145,22 +207,7 @@ export class ProxyServer extends EventEmitter<ProxyServerEventMap> {
    * @param head - Client head.
    * @param options - Additional options.
    */
-  public readonly ws: (
-    ...args:
-      [
-        req: http.IncomingMessage,
-        socket: any,
-        head: any,
-        options?: ServerOptions,
-        callback?: ErrorCallback,
-      ]
-    | [
-        req: http.IncomingMessage,
-        socket: any,
-        head: any,
-        callback?: ErrorCallback,
-      ]
-  ) => void;
+  public readonly ws: (...args: ProxyMethodArgs["ws"]) => void;
 
   /**
    * Used for proxying regular HTTP(S) requests
@@ -168,25 +215,12 @@ export class ProxyServer extends EventEmitter<ProxyServerEventMap> {
    * @param res - Client response.
    * @param options - Additional options.
    */
-  public readonly web: (
-    ...args:
-      [
-        req: http.IncomingMessage,
-        res: http.ServerResponse,
-        options: ServerOptions,
-        callback?: ErrorCallback,
-      ]
-    | [
-        req: http.IncomingMessage,
-        res: http.ServerResponse,
-        callback?: ErrorCallback
-      ]
-  ) => void;
+  public readonly web: (...args: ProxyMethodArgs["web"]) => void;
 
   private options: ServerOptions;
-  private webPasses;
-  private wsPasses;
-  private _server?;
+  private webPasses: Array<PassFunctions['web']>;
+  private wsPasses: Array<PassFunctions['ws']>;
+  private _server?: http.Server | https.Server | null;
 
   /**
    * Creates the proxy server with specified options.
@@ -233,10 +267,10 @@ export class ProxyServer extends EventEmitter<ProxyServerEventMap> {
 
   // createRightProxy - Returns a function that when called creates the loader for
   // either `ws` or `web`'s passes.
-  createRightProxy = (type: ProxyType): Function => {
+  createRightProxy = <PT extends ProxyType>(type: PT): Function => {
     log("createRightProxy", { type });
-    return (options) => {
-      return (...args: any[] /* req, res, [head], [opts] */) => {
+    return (options: ServerOptions) => {
+      return (...args: ProxyMethodArgs[PT] /* req, res, [head], [opts] */) => {
         const req = args[0];
         log("proxy: ", { type, path: req.url });
         const res = args[1];
@@ -255,8 +289,8 @@ export class ProxyServer extends EventEmitter<ProxyServerEventMap> {
           });
         }
         let counter = args.length - 1;
-        let head;
-        let cb;
+        let head: Buffer | undefined;
+        let cb: ErrorCallback | undefined;
 
         // optional args parse begin
         if (typeof args[counter] === "function") {
@@ -264,7 +298,7 @@ export class ProxyServer extends EventEmitter<ProxyServerEventMap> {
           counter--;
         }
 
-        let requestOptions;
+        let requestOptions: ServerOptions;
         if (!(args[counter] instanceof Buffer) && args[counter] !== res) {
           // Copy global options, and overwrite with request options
           requestOptions = { ...options, ...args[counter] };
@@ -277,7 +311,7 @@ export class ProxyServer extends EventEmitter<ProxyServerEventMap> {
           head = args[counter];
         }
 
-        for (const e of ["target", "forward"]) {
+        for (const e of ["target", "forward"] as const) {
           if (typeof requestOptions[e] === "string") {
             requestOptions[e] = toURL(requestOptions[e]);
           }
@@ -297,7 +331,7 @@ export class ProxyServer extends EventEmitter<ProxyServerEventMap> {
            * refer to the connection socket
            *    pass(req, socket, options, head)
            */
-          if (pass(req, res, requestOptions, head, this, cb)) {
+          if (pass(req, res, requestOptions as NormalizedServerOptions, head, this, cb)) {
             // passes can return a truthy value to halt the loop
             break;
           }
@@ -356,12 +390,12 @@ export class ProxyServer extends EventEmitter<ProxyServerEventMap> {
     });
   };
 
-  before = (type: ProxyType, passName: string, cb: Function) => {
+  before = <PT extends ProxyType>(type: PT, passName: string, cb: PassFunctions[PT]) => {
     if (type !== "ws" && type !== "web") {
       throw new Error("type must be `web` or `ws`");
     }
-    const passes = type === "ws" ? this.wsPasses : this.webPasses;
-    let i = false;
+    const passes = (type === "ws" ? this.wsPasses : this.webPasses) as PassFunctions[PT][];
+    let i: false | number = false;
 
     passes.forEach((v, idx) => {
       if (v.name === passName) {
@@ -376,12 +410,12 @@ export class ProxyServer extends EventEmitter<ProxyServerEventMap> {
     passes.splice(i, 0, cb);
   };
 
-  after = (type: ProxyType, passName: string, cb: Function) => {
+  after = <PT extends ProxyType>(type: PT, passName: string, cb: PassFunctions[PT]) => {
     if (type !== "ws" && type !== "web") {
       throw new Error("type must be `web` or `ws`");
     }
-    const passes = type === "ws" ? this.wsPasses : this.webPasses;
-    let i = false;
+    const passes = (type === "ws" ? this.wsPasses : this.webPasses) as PassFunctions[PT][];
+    let i: false | number = false;
 
     passes.forEach((v, idx) => {
       if (v.name === passName) {

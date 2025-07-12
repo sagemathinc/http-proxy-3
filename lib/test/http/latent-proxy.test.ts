@@ -7,7 +7,7 @@ import * as httpProxy from "../..";
 import getPort from "../get-port";
 
 describe("Test proxying over HTTP with latency", () => {
-  let ports;
+  let ports: Record<'http' | 'proxy', number>;
   it("gets ports", async () => {
     ports = { http: await getPort(), proxy: await getPort() };
   });

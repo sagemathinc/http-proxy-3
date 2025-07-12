@@ -6,17 +6,18 @@ import {
   writeHeaders as writeHeaders0,
 } from "../../http-proxy/passes/web-outgoing";
 import * as url from "url";
+import http from "http";
 
 const state: any = { headers: {} };
 
 // disable typescript
-function writeHeaders(...args) {
+function writeHeaders(...args: any[]) {
   return writeHeaders0(args[0], args[1], args[2], args[3]);
 }
-function setConnection(...args) {
+function setConnection(...args: any[]) {
   return setConnection0(args[0], args[1], args[2]);
 }
-function setRedirectHostRewrite(...args) {
+function setRedirectHostRewrite(...args: any[]) {
   return setRedirectHostRewrite0(args[0], args[1], args[2], args[3]);
 }
 
@@ -182,7 +183,7 @@ for (const target of ["http://backend.com", url.parse("http://backend.com")]) {
 
 describe("#setConnection", () => {
   it("set the right connection with 1.0 - `close`", () => {
-    const proxyRes = { headers: {} };
+    const proxyRes = { headers: {} as Record<string, string> };
     setConnection(
       {
         httpVersion: "1.0",
@@ -198,7 +199,7 @@ describe("#setConnection", () => {
   });
 
   it("set the right connection with 1.0 - req.connection", () => {
-    const proxyRes = { headers: {} };
+    const proxyRes = { headers: {} as Record<string, string> };
     setConnection(
       {
         httpVersion: "1.0",
@@ -214,7 +215,7 @@ describe("#setConnection", () => {
   });
 
   it("set the right connection - req.connection", () => {
-    const proxyRes = { headers: {} };
+    const proxyRes = { headers: {} as Record<string, string> };
     setConnection(
       {
         httpVersion: null,
@@ -230,7 +231,7 @@ describe("#setConnection", () => {
   });
 
   it("set the right connection - `keep-alive`", () => {
-    const proxyRes = { headers: {} };
+    const proxyRes = { headers: {} as Record<string, string> };
     setConnection(
       {
         httpVersion: null,
@@ -246,7 +247,7 @@ describe("#setConnection", () => {
   });
 
   it("don`t set connection with 2.0 if exist", () => {
-    const proxyRes = { headers: {} };
+    const proxyRes = { headers: {} as Record<string, string> };
     setConnection(
       {
         httpVersion: "2.0",
@@ -262,7 +263,7 @@ describe("#setConnection", () => {
   });
 
   it("don`t set connection with 2.0 if doesn`t exist", () => {
-    const proxyRes = { headers: {} };
+    const proxyRes = { headers: {} as Record<string, string> };
     setConnection(
       {
         httpVersion: "2.0",
@@ -279,10 +280,11 @@ describe("#setConnection", () => {
 describe("#writeStatusCode", () => {
   it("should write status code", () => {
     const res = {
-      writeHead: function (n) {
+      writeHead: function (n: number) {
         expect(n).toEqual(200);
+        return res
       },
-    };
+    } satisfies Pick<http.ServerResponse, 'writeHead'> as http.ServerResponse;
 
     // @ts-ignore
     writeStatusCode({}, res, { statusCode: 200 });
@@ -322,13 +324,14 @@ describe("#writeHeaders", () => {
       ],
     };
     state.res = {
-      setHeader: (k, v) => {
+      setHeader: ((k, v) => {
         // https://nodejs.org/api/http.html#http_message_headers
         // Header names are lower-cased
         state.res.headers[k.toLowerCase()] = v;
-      },
+        return state.res
+      }) satisfies http.ServerResponse['setHeader'],
       headers: {},
-    };
+    } as http.ServerResponse & { headers: Record<string, string> };
   });
 
   it("writes headers", () => {

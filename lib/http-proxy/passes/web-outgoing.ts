@@ -9,6 +9,7 @@ NOTE: The function in OUTGOING_PASSES are called. They are assumed
 to not return anything.
 */
 
+import type { NormalizedServerOptions, NormalizeProxyTarget, ProxyTarget } from "..";
 import * as common from "../common";
 import type { Request, Response, ProxyResponse } from "./web-incoming";
 
@@ -47,7 +48,7 @@ export function setRedirectHostRewrite(
   req: Request,
   _res: Response,
   proxyRes: ProxyResponse,
-  options,
+  options: NormalizedServerOptions & { target: NormalizeProxyTarget<ProxyTarget> },
 ) {
   if (
     (options.hostRewrite || options.autoRewrite || options.protocolRewrite) &&
@@ -87,12 +88,21 @@ export function writeHeaders(
   // Response object from the proxy request
   proxyRes: ProxyResponse,
   // options.cookieDomainRewrite: Config to rewrite cookie domain
-  options,
+  options: NormalizedServerOptions & { target: NormalizeProxyTarget<ProxyTarget> },
 ) {
-  let rewriteCookieDomainConfig = options.cookieDomainRewrite;
-  let rewriteCookiePathConfig = options.cookiePathRewrite;
+  const rewriteCookieDomainConfig =
+    typeof options.cookieDomainRewrite === "string"
+      ? // also test for ''
+        { "*": options.cookieDomainRewrite }
+      : options.cookieDomainRewrite;
+  const rewriteCookiePathConfig =
+    typeof options.cookiePathRewrite === "string"
+      ? // also test for ''
+        { "*": options.cookiePathRewrite }
+      : options.cookiePathRewrite;
+
   const preserveHeaderKeyCase = options.preserveHeaderKeyCase;
-  const setHeader = (key: string, header) => {
+  const setHeader = (key: string, header: string | string[]) => {
     if (header == undefined) {
       return;
     }
@@ -112,16 +122,6 @@ export function writeHeaders(
     }
     res.setHeader(String(key).trim(), header);
   };
-
-  if (typeof rewriteCookieDomainConfig === "string") {
-    //also test for ''
-    rewriteCookieDomainConfig = { "*": rewriteCookieDomainConfig };
-  }
-
-  if (typeof rewriteCookiePathConfig === "string") {
-    //also test for ''
-    rewriteCookiePathConfig = { "*": rewriteCookiePathConfig };
-  }
 
   // message.rawHeaders is added in: v0.11.6
   // https://nodejs.org/api/http.html#http_message_rawheaders

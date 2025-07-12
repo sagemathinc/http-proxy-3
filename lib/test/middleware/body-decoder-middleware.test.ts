@@ -12,7 +12,7 @@ import bodyParser from "body-parser";
 import fetch from "node-fetch";
 
 describe("connect.bodyParser() middleware in http-proxy-3", () => {
-  let ports;
+  let ports: Record<'http' | 'proxy', number>;
   it("gets ports", async () => {
     ports = { http: await getPort(), proxy: await getPort() };
   });
@@ -21,7 +21,8 @@ describe("connect.bodyParser() middleware in http-proxy-3", () => {
   it("creates target http server that returns the contents of the body", () => {
     const app1 = connect()
       .use(bodyParser.json())
-      .use((req, res) => {
+      .use((rawReq, res) => {
+        const req = rawReq as http.IncomingMessage & { body?: any };
         res.end(`received ${JSON.stringify(req.body)}`);
       });
 

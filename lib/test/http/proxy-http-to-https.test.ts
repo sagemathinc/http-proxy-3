@@ -10,7 +10,7 @@ import getPort from "../get-port";
 import fetch from "node-fetch";
 
 describe(" Basic example of proxying over HTTP to a target HTTPS server", () => {
-  let port, server;
+  let port: number, server: httpProxy.ProxyServer;
   it("creates the proxy server with HTTPS target", async () => {
     port = await getPort();
     server = httpProxy

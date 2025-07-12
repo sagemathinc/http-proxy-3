@@ -10,7 +10,7 @@ import getPort from "../get-port";
 import wait, { once } from "../wait";
 
 describe("Load testing proxying a WebSocket", () => {
-  let ports;
+  let ports: Record<'ws' | 'proxy', number>;
   it("assigns ports", async () => {
     ports = { ws: await getPort(), proxy: await getPort() };
   });

@@ -13,13 +13,13 @@ import fetch from "node-fetch";
 const fixturesDir = join(__dirname, "..", "fixtures");
 
 describe("Basic example of proxying over HTTPS to a target HTTPS server", () => {
-  let ports;
+  let ports: Record<'https' | 'proxy', number>;
   it("Gets ports", async () => {
     ports = { https: await getPort(), proxy: await getPort() };
   });
 
   const servers: any = {};
-  let ssl;
+  let ssl: { key: string; cert: string };
 
   it("Create the target HTTPS server", async () => {
     ssl = {

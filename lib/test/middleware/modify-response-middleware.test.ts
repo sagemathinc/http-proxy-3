@@ -7,11 +7,11 @@ pnpm test modify-response-middleware.test.ts
 import * as httpProxy from "../..";
 import * as http from "http";
 import getPort from "../get-port";
-import connect from "connect";
+import connect, { type NextFunction } from "connect";
 import fetch from "node-fetch";
 
 describe("Using the connect-gzip middleware from connect with http-proxy-3", () => {
-  let ports;
+  let ports: Record<'http' | 'proxy', number>;
   it("gets ports", async () => {
     ports = { http: await getPort(), proxy: await getPort() };
   });
@@ -30,10 +30,11 @@ describe("Using the connect-gzip middleware from connect with http-proxy-3", () 
     const proxy = httpProxy.createProxyServer({
       target: `http://localhost:${ports.http}`,
     });
-    const rewrite = (_req, res, next) => {
+    const rewrite = (_req: http.IncomingMessage, res: http.ServerResponse, next: NextFunction) => {
       const _write = res.write;
       res.write = (data) => {
-        _write.call(res, data.toString().replace("http-party", "cocalc"));
+        // @ts-expect-error write allows 2 args
+        return _write.call(res, data.toString().replace("http-party", "cocalc"))
       };
       next();
     };

@@ -17,7 +17,8 @@
     "target": "es2020",
     "module": "commonjs",
     "rootDir": "./",
-    "outDir": "./dist"
+    "outDir": "./dist",
+    "strict": true
   },
   "watchOptions": {
     "fallbackPolling": "dynamicPriority",

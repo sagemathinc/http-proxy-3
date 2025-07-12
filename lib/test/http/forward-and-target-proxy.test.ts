@@ -1,10 +1,10 @@
 /*
-  forward-and-target-proxy.js: Example of proxying over HTTP with 
+  forward-and-target-proxy.js: Example of proxying over HTTP with
   additional forward proxy to a different server.
-  
+
   See also forward-proxy.test.ts.
-  
-  pnpm test forward-and-target-proxy.test.ts 
+
+  pnpm test forward-and-target-proxy.test.ts
 */
 
 import * as http from "http";
@@ -15,7 +15,7 @@ import wait from "../wait";
 import fetch from "node-fetch";
 
 describe("Example of proxying over HTTP with additional forward proxy to a different server", () => {
-  let ports;
+  let ports: Record<'target' | 'forward' | 'proxy', number>;
   it("gets ports", async () => {
     ports = {
       target: await getPort(),

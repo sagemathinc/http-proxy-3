@@ -7,17 +7,17 @@ pnpm test ./standalone-websocket-proxy.test.ts
 import * as httpProxy from "../..";
 import getPort from "../get-port";
 import { once } from "../wait";
-import { createServer } from "http";
+import http, { createServer } from "http";
 import { Server } from "socket.io";
 import { io as socketioClient } from "socket.io-client";
 
 describe("Proxying websockets over HTTP with a standalone HTTP server.", () => {
-  let ports;
+  let ports: Record<'ws' | 'proxy', number>;
   it("assigns ports", async () => {
     ports = { ws: await getPort(), proxy: await getPort() };
   });
 
-  let servers: any = {};
+  let servers: { ws: Server, proxyServer: http.Server } = {} as any;
 
   it("Create the target websocket server", async () => {
     const io = new Server();
@@ -30,7 +30,7 @@ describe("Proxying websockets over HTTP with a standalone HTTP server.", () => {
     io.listen(ports.ws);
   });
 
-  let proxy;
+  let proxy: httpProxy.ProxyServer;
   it("Setup our proxy server to proxy standard HTTP requests", async () => {
     proxy = httpProxy.createProxyServer({
       target: {

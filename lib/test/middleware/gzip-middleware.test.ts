@@ -12,7 +12,7 @@ import compression from "compression";
 import fetch from "node-fetch";
 
 describe("Using the connect-gzip middleware from connect with http-proxy-3", () => {
-  let ports;
+  let ports: Record<'http' | 'proxy', number>;
   it("gets ports", async () => {
     ports = { http: await getPort(), proxy: await getPort() };
   });
@@ -32,6 +32,7 @@ describe("Using the connect-gzip middleware from connect with http-proxy-3", () 
       target: `http://localhost:${ports.http}`,
     });
     servers.connect = connect()
+      // @ts-expect-error type compatibility
       .use(compression({ threshold: 1 }))
       .use(proxy.web)
       .listen(ports.proxy);

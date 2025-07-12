@@ -3,7 +3,7 @@ Test basic example of proxying over HTTP
 
 DEVELOPMENT:
 
-pnpm test basic-proxy.test.ts 
+pnpm test basic-proxy.test.ts
 */
 
 import * as http from "http";
@@ -60,7 +60,7 @@ describe("tests proxying a basic http server", () => {
 });
 
 describe("Load test against the basic proxy", () => {
-  let x;
+  let x: { proxy: httpProxy.ProxyServer; target: http.Server; httpPort: number; proxyPort: number };
   it("creates servers", async () => {
     x = await server();
   });
