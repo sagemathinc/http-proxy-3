@@ -2,7 +2,7 @@
 
 [![Build package and run tests](https://github.com/sagemathinc/http-proxy-3/actions/workflows/test.yml/badge.svg)](https://github.com/sagemathinc/http-proxy-3/actions/workflows/test.yml)
 
-**THIS IS READY TO USE IN PRODUCTION.**
+**THIS IS FULLY READY TO USE IN PRODUCTION. Please use it!**
 
 http\-proxy\-3 is a modern API compatible rewrite of
 [http\-proxy](https://github.com/http-party/node-http-proxy), the original nodejs
@@ -13,15 +13,24 @@ can be done using nginx or haproxy.
 
 **PR's welcome!**
 
-May 11, 2025 STATUS compared to [http-proxy](https://www.npmjs.com/package/http-proxy) and [httpxy](https://www.npmjs.com/package/httpxy):
+Contributors:
 
-- Library entirely rewritten in Typescript in a modern style, with many typings added internally.
+- [William](https://wstein.org/) [Stein](https://github.com/williamstein) -- lead dev; started this fork and did the initial Typescript rewrite, etc.
+- [sapphi-red](https://green.sapphi.red/about) -- greatly improved Typescript support to prepare http-proxy-3 for use in [Vite](https://vite.dev/)
+- [ImranR-TI](https://github.com/ImranR-TI) -- very helpful bug reports
+- Everybody who ever contributed to [http-proxy](https://www.npmjs.com/package/http-proxy)
+
+**Status:**
+
+July 12, 2025 STATUS compared to [http-proxy](https://www.npmjs.com/package/http-proxy) and [httpxy](https://www.npmjs.com/package/httpxy):
+
+- Library entirely rewritten in Typescript in a modern style, with many typings added internally and strict mode enabled.
 - All dependent packages updated to latest versions, addressing all security vulnerabilities according to `pnpm audit`.
 - Code rewritten to not use deprecated/insecure API's, e.g., using `URL` instead of `parse`.
-- Fixed socket leaks in the Websocket proxy code, going beyond [http-proxy-node16](https://www.npmjs.com/package/http-proxy-node16) to also instrument and logging socket counts.
+- Fixed socket leaks in the Websocket proxy code, going beyond [http-proxy-node16](https://www.npmjs.com/package/http-proxy-node16) to also instrument and logging socket counts. Also fixed an issue with uncatchable errors when using websockets.
 - Switch to pnpm for development.
 - More jest unit tests than both http-proxy and httpxy: converted all the http-proxy examples into working unit tests that they actually work (http-proxy's unit tests just setup the examples in many cases, but didn't test that they actually work). Also httpxy seems to have almost no tests. These tests should make contributing PR's much easier.
-- Used in production on https://CoCalc.com
+- Used in production on https://CoCalc.com and JupyterHub.
 - Addressed [this vulnerability](https://github.com/http-party/node-http-proxy/issues/1647).
 
 **Motivation:** http-proxy is one of the oldest and most famous nodejs modules, and it gets downloaded around 15 million times a week, and I've loved using it for years. Unfortunately, it is [unmaintained](https://github.com/http-party/node-http-proxy/issues/1687), it has significant leaks that [regularly crash production servers](https://github.com/jupyterhub/configurable-http-proxy/issues/434), and is written in ancient untyped Javascript. The maintainers have long since stopped responding, so there is no choice but to fork and start over. I wanted to do my part to help maintain the open source ecosystem, hence this library. I hope you find it useful.
@@ -424,7 +433,6 @@ proxyServer.listen(8015);
 - **protocolRewrite**: rewrites the location protocol on \(201/301/302/307/308\) redirects to 'http' or 'https'. Default: null.
 
 - **cookieDomainRewrite**: rewrites domain of `set-cookie` headers. Possible values:
-
   - `false` \(default\): disable cookie rewriting
   - String: new domain, for example `cookieDomainRewrite: "new.domain"`. To remove the domain, use `cookieDomainRewrite: ""`.
   - Object: mapping of domains to new domains, use `"*"` to match all domains.
@@ -438,7 +446,6 @@ proxyServer.listen(8015);
     ```
 
 - **cookiePathRewrite**: rewrites path of `set-cookie` headers. Possible values:
-
   - `false` \(default\): disable cookie rewriting
   - String: new path, for example `cookiePathRewrite: "/newPath/"`. To remove the path, use `cookiePathRewrite: ""`. To set path to root use `cookiePathRewrite: "/"`.
   - Object: mapping of paths to new paths, use `"*"` to match all paths.
@@ -634,4 +641,3 @@ pnpm test
 > LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 > OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 > THE SOFTWARE.
-

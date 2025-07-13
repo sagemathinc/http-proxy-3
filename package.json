@@ -1,6 +1,6 @@
 {
   "name": "http-proxy-3",
-  "version": "1.20.9",
+  "version": "1.20.10",
   "repository": {
     "type": "git",
     "url": "https://github.com/sagemathinc/http-proxy-3.git"
