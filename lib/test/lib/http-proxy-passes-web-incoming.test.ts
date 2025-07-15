@@ -568,6 +568,45 @@ describe("#createProxyServer.web() using own http server", () => {
   });
 });
 
+describe("with authorization request header", () => {
+  const headers = {
+    authorization: `Bearer ${Buffer.from("dummy-oauth-token").toString(
+      "base64"
+    )}`,
+  };
+
+  it("should proxy the request with the Authorization header set", (done) => {
+    const auth = "user:pass";
+    const proxy = httpProxy.createProxyServer({
+      target: address(8080),
+      auth,
+    });
+    const proxyServer = http.createServer(proxy.web);
+
+    const source = http.createServer((req, res) => {
+      source.close();
+      proxyServer.close();
+      expect(req).toEqual(
+        expect.objectContaining({
+          method: "GET",
+          headers: expect.objectContaining({
+            authorization: `Basic ${Buffer.from(auth).toString("base64")}`,
+          }),
+        })
+      );
+      res.end();
+      done();
+    });
+
+    proxyServer.listen(port(8081));
+    source.listen(port(8080));
+
+    http.request(address(8081), {
+      headers
+    }).end();
+  });
+});
+
 describe("#followRedirects", () => {
   it("gets some ports", async () => {
     for (let n = 8080; n < 8082; n++) {
