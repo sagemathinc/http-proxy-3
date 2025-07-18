@@ -82,6 +82,7 @@ export function setupOutgoing(
   }
 
   if (options.auth) {
+    delete outgoing.headers.authorization;
     outgoing.auth = options.auth;
   }
 
