@@ -13,7 +13,8 @@ that no sockets leak.
 import * as httpProxy from "../..";
 import log from "../log";
 import getPort from "../get-port";
-import wait, { once } from "../wait";
+import wait from "../wait";
+import { once } from "events";
 import { createServer } from "http";
 import { Server } from "socket.io";
 import { io as socketioClient } from "socket.io-client";

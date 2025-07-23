@@ -6,7 +6,7 @@ pnpm test ./standalone-websocket-proxy.test.ts
 
 import * as httpProxy from "../..";
 import getPort from "../get-port";
-import { once } from "../wait";
+import { once } from "events";
 import http, { createServer } from "http";
 import { Server } from "socket.io";
 import { io as socketioClient } from "socket.io-client";

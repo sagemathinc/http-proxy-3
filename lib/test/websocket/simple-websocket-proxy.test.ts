@@ -15,7 +15,7 @@ import * as http from "http";
 import * as httpProxy from "../..";
 import log from "../log";
 import getPort from "../get-port";
-import { once } from "../wait";
+import { once } from "events";
 
 describe("Example of simple proxying of a WebSocket", () => {
   let ports: Record<'ws' | 'proxy', number>;

@@ -11,7 +11,8 @@ import * as net from "net";
 import WebSocket, { WebSocketServer } from "ws";
 import { Server } from "socket.io";
 import { io as socketioClient } from "socket.io-client";
-import wait, { once } from "../wait";
+import wait from "../wait";
+import { once } from "events";
 
 const ports: { [port: string]: number } = {};
 let portIndex = -1;

@@ -9,7 +9,6 @@ import * as http from "http";
 import getPort from "../get-port";
 import { createSession } from "better-sse";
 import { EventSource } from "eventsource";
-import { callback } from "awaiting";
 import fetch from "node-fetch";
 
 describe("proxying server sent events over HTTP", () => {
@@ -60,26 +59,24 @@ describe("proxying server sent events over HTTP", () => {
     // These two tests leave open handles on node v18, so we disable them ONLY
     // with node v18.
     it("test receiving an SSE WITHOUT using the proxy", async () => {
-      const f = (cb: any) => {
+      const resp = await new Promise(resolve => {
         const sse = new EventSource(`http://localhost:${ports.http}/sse`);
         sse.addEventListener("message", ({ data }) => {
           sse.close();
-          cb(undefined, JSON.parse(data));
+          resolve(JSON.parse(data));
         });
-      };
-      const resp = await callback(f);
+      })
       expect(resp).toEqual("Hello world! - 1");
     });
 
     it("test receiving an SSE USING the proxy", async () => {
-      const f = (cb: any) => {
+      const resp = await new Promise(resolve => {
         const sse = new EventSource(`http://localhost:${ports.proxy}/sse`);
         sse.addEventListener("message", ({ data }) => {
           sse.close();
-          cb(undefined, JSON.parse(data));
+          resolve(JSON.parse(data));
         });
-      };
-      const resp = await callback(f);
+      });
       expect(resp).toEqual("Hello world! - 2");
     });
   }
