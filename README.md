@@ -162,7 +162,7 @@ the tests subdirectory.
 #### Setup a basic stand-alone proxy server
 
 ```js
-import * as http from "http";
+import * as http from "node:http";
 import { createProxyServer } from "http-proxy-3";
 
 // Create your proxy server and set the target in the options.
@@ -192,7 +192,7 @@ This example shows how you can proxy a request using your own HTTP server
 and also you can put your own logic to handle the request.
 
 ```js
-import * as http from "http";
+import * as http from "node:http";
 import { createProxyServer } from "http-proxy-3";
 
 // Create a proxy server with custom application logic
@@ -219,7 +219,7 @@ This example shows how you can proxy a request using your own HTTP server that
 modifies the outgoing proxy request by adding a special header.
 
 ```js
-import * as http from "http";
+import * as http from "node:http";
 import { createProxyServer } from "http-proxy-3";
 
 // Create a proxy server with custom application logic
@@ -261,7 +261,7 @@ Sometimes when you have received a HTML/XML document from the server of origin y
 #### Setup a stand-alone proxy server with latency
 
 ```js
-import * as http from "http";
+import * as http from "node:http";
 import { createProxyServer } from "http-proxy-3";
 
 // Create a proxy server with latency
@@ -372,7 +372,7 @@ httpProxy
 Also you can proxy the websocket requests just calling the `ws(req, socket, head)` method.
 
 ```js
-import * as http from "http";
+import * as http from "node:http";
 import { createProxyServer } from "http-proxy-3";
 
 // Setup our server to proxy standard HTTP requests

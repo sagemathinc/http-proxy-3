@@ -5,7 +5,7 @@ pnpm test ./custom-proxy-error.test.ts
 */
 
 import * as httpProxy from "../..";
-import * as http from "http";
+import * as http from "node:http";
 import getPort from "../get-port";
 import fetch from "node-fetch";
 

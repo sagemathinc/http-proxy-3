@@ -11,11 +11,11 @@ DEVELOPMENT:
  pnpm test simple-websocket-proxy.test.ts
 */
 
-import * as http from "http";
+import * as http from "node:http";
 import * as httpProxy from "../..";
 import log from "../log";
 import getPort from "../get-port";
-import { once } from "events";
+import { once } from "node:events";
 
 describe("Example of simple proxying of a WebSocket", () => {
   let ports: Record<'ws' | 'proxy', number>;

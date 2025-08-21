@@ -8,11 +8,11 @@ flexible.
 The names of passes are exported as WS_PASSES from this module.
 */
 
-import * as http from "http";
-import * as https from "https";
+import * as http from "node:http";
+import * as https from "node:https";
 import * as common from "../common";
 import type { Request } from "./web-incoming";
-import type { Socket } from "net";
+import type { Socket } from "node:net";
 import debug from "debug";
 import type { NormalizedServerOptions, ProxyServer } from "..";
 

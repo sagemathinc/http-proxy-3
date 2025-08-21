@@ -8,7 +8,7 @@ import {
   XHeaders,
 } from "../../http-proxy/passes/web-incoming";
 import * as httpProxy from "../..";
-import * as http from "http";
+import * as http from "node:http";
 import concat from "concat-stream";
 import * as async from "async";
 import getPort from "../get-port";

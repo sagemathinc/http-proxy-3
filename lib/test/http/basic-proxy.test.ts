@@ -6,7 +6,7 @@ DEVELOPMENT:
 pnpm test basic-proxy.test.ts
 */
 
-import * as http from "http";
+import * as http from "node:http";
 import * as httpProxy from "../..";
 import log from "../log";
 import getPort from "../get-port";

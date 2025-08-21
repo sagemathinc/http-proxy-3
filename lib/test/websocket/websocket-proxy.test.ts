@@ -14,8 +14,8 @@ import * as httpProxy from "../..";
 import log from "../log";
 import getPort from "../get-port";
 import wait from "../wait";
-import { once } from "events";
-import { createServer } from "http";
+import { once } from "node:events";
+import { createServer } from "node:http";
 import { Server } from "socket.io";
 import { io as socketioClient } from "socket.io-client";
 

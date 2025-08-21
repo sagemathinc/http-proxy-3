@@ -5,7 +5,7 @@ pnpm test modify-response-middleware.test.ts
 */
 
 import * as httpProxy from "../..";
-import * as http from "http";
+import * as http from "node:http";
 import getPort from "../get-port";
 import connect, { type NextFunction } from "connect";
 import fetch from "node-fetch";

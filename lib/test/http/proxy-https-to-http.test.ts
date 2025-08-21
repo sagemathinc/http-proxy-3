@@ -2,11 +2,11 @@
 pnpm test proxy-https-to-http.test.ts
 */
 
-import * as http from "http";
+import * as http from "node:http";
 import * as httpProxy from "../..";
 import getPort from "../get-port";
-import { join } from "path";
-import { readFile } from "fs/promises";
+import { join } from "node:path";
+import { readFile } from "node:fs/promises";
 import fetch from "node-fetch";
 
 const fixturesDir = join(__dirname, "..", "fixtures");
