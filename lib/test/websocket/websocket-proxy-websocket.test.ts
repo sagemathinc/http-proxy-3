@@ -17,7 +17,7 @@ import * as httpProxy from "../..";
 import getPort from "../get-port";
 import { Server } from "socket.io";
 import { io as socketioClient } from "socket.io-client";
-import { once } from "../wait";
+import { once } from "events";
 
 describe("Multilevel Proxying of a Websocket using Socket.io", () => {
   let ports: Record<'socketio' | 'inner' | 'outer', number>;
