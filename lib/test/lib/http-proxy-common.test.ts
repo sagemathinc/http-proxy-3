@@ -292,6 +292,33 @@ describe("#setupOutgoing", () => {
     expect(outgoing.path).toEqual("/forward/src?f=1&s=1");
   });
 
+  it("target path is URL and has query string", () => {
+    const outgoing: any = {};
+    setupOutgoing(
+      outgoing,
+      {
+        target: new URL("http://dummy.org/some-path?a=1&b=2"),
+      },
+      { url: "/src?s=1" },
+    );
+
+    expect(outgoing.path).toEqual("/some-path/src?a=1&b=2&s=1");
+  });
+
+  it("target path is URL and has query string with ignorePath", () => {
+    const outgoing: any = {};
+    setupOutgoing(
+      outgoing,
+      {
+        target: new URL("http://dummy.org/some-path?a=1&b=2"),
+        ignorePath: true,
+      },
+      { url: "/src?s=1" },
+    );
+
+    expect(outgoing.path).toEqual("/some-path?a=1&b=2");
+  });
+
   //
   // This is the proper failing test case for the common.join problem
   //

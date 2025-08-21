@@ -112,7 +112,7 @@ export function setupOutgoing(
 
   // target if defined is a URL object so has attribute "pathname", not "path".
   const targetPath =
-    target && options.prependPath !== false && 'pathname' in target ? getPath(target.pathname) : "/";
+    target && options.prependPath !== false && 'pathname' in target ? getPath(`${target.pathname}${target.search ?? ""}`) : "/";
 
   let outgoingPath = options.toProxy ? req.url : getPath(req.url);
 
