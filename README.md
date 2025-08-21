@@ -2,7 +2,12 @@
 
 [![Build package and run tests](https://github.com/sagemathinc/http-proxy-3/actions/workflows/test.yml/badge.svg)](https://github.com/sagemathinc/http-proxy-3/actions/workflows/test.yml)
 
-**THIS IS FULLY READY TO USE IN PRODUCTION. Please use it!**
+**THIS IS MAINTAINED AND READY TO USE IN PRODUCTION. Please use it!**
+
+- Used in production by:
+  - [CoCalc](https://cocalc.com)
+  - [JupyterHub](https://jupyter.org/hub)
+  - [Vite](https://vite.dev/)
 
 http\-proxy\-3 is a modern API compatible rewrite of
 [http\-proxy](https://github.com/http-party/node-http-proxy), the original nodejs
@@ -22,7 +27,7 @@ Contributors:
 
 **Status:**
 
-July 12, 2025 STATUS compared to [http-proxy](https://www.npmjs.com/package/http-proxy) and [httpxy](https://www.npmjs.com/package/httpxy):
+August 21, 2025 STATUS compared to [http-proxy](https://www.npmjs.com/package/http-proxy) and [httpxy](https://www.npmjs.com/package/httpxy):
 
 - Library entirely rewritten in Typescript in a modern style, with many typings added internally and strict mode enabled.
 - All dependent packages updated to latest versions, addressing all security vulnerabilities according to `pnpm audit`.
@@ -30,7 +35,6 @@ July 12, 2025 STATUS compared to [http-proxy](https://www.npmjs.com/package/http
 - Fixed socket leaks in the Websocket proxy code, going beyond [http-proxy-node16](https://www.npmjs.com/package/http-proxy-node16) to also instrument and logging socket counts. Also fixed an issue with uncatchable errors when using websockets.
 - Switch to pnpm for development.
 - More jest unit tests than both http-proxy and httpxy: converted all the http-proxy examples into working unit tests that they actually work (http-proxy's unit tests just setup the examples in many cases, but didn't test that they actually work). Also httpxy seems to have almost no tests. These tests should make contributing PR's much easier.
-- Used in production on https://CoCalc.com and JupyterHub.
 - Addressed [this vulnerability](https://github.com/http-party/node-http-proxy/issues/1647).
 
 **Motivation:** http-proxy is one of the oldest and most famous nodejs modules, and it gets downloaded around 15 million times a week, and I've loved using it for years. Unfortunately, it is [unmaintained](https://github.com/http-party/node-http-proxy/issues/1687), it has significant leaks that [regularly crash production servers](https://github.com/jupyterhub/configurable-http-proxy/issues/434), and is written in ancient untyped Javascript. The maintainers have long since stopped responding, so there is no choice but to fork and start over. I wanted to do my part to help maintain the open source ecosystem, hence this library. I hope you find it useful.
@@ -104,7 +108,7 @@ This is the original user's guide, but with various updates.
 ### Core Concept
 
 A new proxy is created by calling `createProxyServer` and passing
-an `options` object as argument ([valid properties are available here](lib/http-proxy.js#L26-L42))
+an `options` object as argument ([valid properties are available here](lib/http-proxy/index.ts))
 
 ```js
 import { createProxyServer } from "http-proxy-3";
@@ -410,7 +414,7 @@ proxyServer.listen(8015);
 
 - **xfwd**: true/false, adds x\-forward headers
 
-- **secure**: true/false, if you want to verify the SSL Certs. Set this to false if you're proxying another server that has a self-signed cert, e.g., [test/examples/http/proxy-https-to-https.test.ts](test/examples/http/proxy-https-to-https.test.ts).
+- **secure**: true/false, if you want to verify the SSL Certs. Set this to false if you're proxying another server that has a self-signed cert, e.g., [test/examples/http/proxy-https-to-https.test.ts](lib/test/http/proxy-https-to-https.test.ts).
 
 - **toProxy**: true/false, passes the absolute URL as the `path` \(useful for proxying to proxies\)
 
@@ -614,7 +618,7 @@ pnpm test
 
 ### Contributing and Issues
 
-- Submit a PR! I want this project to be active again! Port ideas from [https://github.com/http\-party/node\-http\-proxy/pulls](https://github.com/http-party/node-http-proxy/pulls) and [https://github.com/http\-party/node\-http\-proxy/issues](https://github.com/http-party/node-http-proxy/issues). Email me at [wstein@sagemath.com](mailto:wstein@sagemath.com).
+- Submit a PR! Port ideas from [https://github.com/http\-party/node\-http\-proxy/pulls](https://github.com/http-party/node-http-proxy/pulls) and [https://github.com/http\-party/node\-http\-proxy/issues](https://github.com/http-party/node-http-proxy/issues). Email me at [wstein@sagemath.com](mailto:wstein@sagemath.com).
 
 **[Back to top](#table-of-contents)**
 
