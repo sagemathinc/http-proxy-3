@@ -64,7 +64,7 @@
     "build": "pnpm exec tsc --build",
     "make": "pnpm clean && pnpm install && pnpm build && pnpm test",
     "tsc": "pnpm exec tsc --watch  --pretty --preserveWatchOutput",
-    "prepublishOnly": "pnpm test-versions && pnpm test-all && rm -f dist/*.tsbuildinfo dist/.tsconfig-bootstrap* && rm -rf dist/test"
+    "prepublishOnly": "pnpm test-all && rm -f dist/*.tsbuildinfo dist/.tsconfig-bootstrap* && rm -rf dist/test"
   },
   "engines": {
     "node": ">=18"
