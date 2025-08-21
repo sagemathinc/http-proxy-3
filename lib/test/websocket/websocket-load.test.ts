@@ -116,7 +116,15 @@ async function loadTestWebsocketServerSerial({
   async function connectToProxy() {
     const req = http.request(options);
     req.end();
-    const [res] = await once(req, "upgrade");
+    const [event, [res]] = await Promise.race([
+      once(req, "upgrade").then(v => ['upgrade', v] as const),
+      once(req, "error").then(v => ['error', v] as const),
+    ])
+    if (event === 'error') {
+      // ignore ECONNREFUSED errors
+      if (res.code == 'ECONNREFUSED') return;
+      throw Error(res);
+    }
     res.socket.end();
   }
 
