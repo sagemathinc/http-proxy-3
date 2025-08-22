@@ -9,7 +9,7 @@ import * as httpProxy from "../..";
 import getPort from "../get-port";
 import * as net from "node:net";
 import log from "../log";
-import { HttpsProxyAgent } from "node:https-proxy-agent";
+import { HttpsProxyAgent } from "https-proxy-agent";
 import fetch from "node-fetch";
 
 describe("Reverse proxying -- create a server that...", () => {
