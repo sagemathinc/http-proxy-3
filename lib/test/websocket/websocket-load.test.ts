@@ -4,11 +4,11 @@ pnpm test websocket-load.test.ts
 
 */
 
-import * as http from "http";
+import * as http from "node:http";
 import * as httpProxy from "../..";
 import getPort from "../get-port";
 import wait from "../wait";
-import { once } from "events";
+import { once } from "node:events";
 
 describe("Load testing proxying a WebSocket", () => {
   let ports: Record<'ws' | 'proxy', number>;

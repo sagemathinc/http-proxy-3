@@ -4,10 +4,10 @@ reverse-proxy.test.ts: Example of reverse proxying (with HTTPS support)
 pnpm test ./reverse-proxy.test.ts
 */
 
-import * as http from "http";
+import * as http from "node:http";
 import * as httpProxy from "../..";
 import getPort from "../get-port";
-import * as net from "net";
+import * as net from "node:net";
 import log from "../log";
 import { HttpsProxyAgent } from "https-proxy-agent";
 import fetch from "node-fetch";

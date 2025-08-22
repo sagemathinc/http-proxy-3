@@ -6,7 +6,7 @@ import {
   writeHeaders as writeHeaders0,
 } from "../../http-proxy/passes/web-outgoing";
 import * as url from "url";
-import http from "http";
+import http from "node:http";
 
 const state: any = { headers: {} };
 

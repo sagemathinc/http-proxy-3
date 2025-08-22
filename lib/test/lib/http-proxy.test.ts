@@ -5,14 +5,14 @@ pnpm test ./http-proxy.test.ts
 */
 
 import * as httpProxy from "../..";
-import * as http from "http";
+import * as http from "node:http";
 import getPort from "../get-port";
-import * as net from "net";
+import * as net from "node:net";
 import WebSocket, { WebSocketServer } from "ws";
 import { Server } from "socket.io";
 import { io as socketioClient } from "socket.io-client";
 import wait from "../wait";
-import { once } from "events";
+import { once } from "node:events";
 
 const ports: { [port: string]: number } = {};
 let portIndex = -1;

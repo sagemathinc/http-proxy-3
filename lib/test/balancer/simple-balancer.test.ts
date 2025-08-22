@@ -4,7 +4,7 @@ simple-balancer.test.ts: Example of a simple round robin HTTP load balancer
 pnpm test simple-balancer.test.ts
 */
 
-import * as http from "http";
+import * as http from "node:http";
 import * as httpProxy from "../..";
 import getPort from "../get-port";
 import fetch from "node-fetch";

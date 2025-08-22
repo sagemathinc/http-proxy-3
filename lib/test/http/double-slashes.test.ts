@@ -1,7 +1,7 @@
 import express from "express";
 import getPort from "../get-port";
 import ProxyServer, { createServer } from "../..";
-import http from "http";
+import http from "node:http";
 
 // See https://github.com/sagemathinc/http-proxy-3/issues/6
 

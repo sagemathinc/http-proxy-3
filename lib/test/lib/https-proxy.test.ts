@@ -1,9 +1,9 @@
 import * as httpProxy from "../..";
-import * as http from "http";
-import * as https from "https";
+import * as http from "node:http";
+import * as https from "node:https";
 import getPort from "../get-port";
-import { join } from "path";
-import { readFileSync } from "fs";
+import { join } from "node:path";
+import { readFileSync } from "node:fs";
 
 const ports: { [port: string]: number } = {};
 let portIndex = -1;

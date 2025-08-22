@@ -1,10 +1,10 @@
-import * as http from "http";
-import * as https from "https";
-import * as net from "net";
+import * as http from "node:http";
+import * as https from "node:https";
+import * as net from "node:net";
 import { WEB_PASSES } from "./passes/web-incoming";
 import { WS_PASSES } from "./passes/ws-incoming";
-import { EventEmitter } from "events";
-import type { Stream } from "stream";
+import { EventEmitter } from "node:events";
+import type { Stream } from "node:stream";
 import debug from "debug";
 import { toURL } from "./common";
 

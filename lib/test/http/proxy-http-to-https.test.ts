@@ -4,7 +4,7 @@ pnpm test proxy-http-to-https.test.ts
 We proxy https://google.com via a local non-https http server.
 */
 
-import * as https from "https";
+import * as https from "node:https";
 import * as httpProxy from "../..";
 import getPort from "../get-port";
 import fetch from "node-fetch";

@@ -4,10 +4,10 @@ Simple round robin load balancer for websockets
 pnpm test ./simple-balancer-with-websockets.test.ts
 */
 
-import * as http from "http";
+import * as http from "node:http";
 import * as httpProxy from "../..";
 import getPort from "../get-port";
-import { once } from "events";
+import { once } from "node:events";
 import fetch from "node-fetch";
 
 describe("A simple round-robin load balancer that supports websockets", () => {

@@ -1,8 +1,8 @@
 import type { NormalizedServerOptions, ProxyTargetDetailed, ServerOptions } from "./index";
-import { type IncomingMessage as Request } from "http";
-import { TLSSocket } from "tls";
-import type { Socket } from "net";
-import * as urllib from "url";
+import { type IncomingMessage as Request } from "node:http";
+import { TLSSocket } from "node:tls";
+import type { Socket } from "node:net";
+import * as urllib from "node:url";
 
 const upgradeHeader = /(^|,)\s*upgrade\s*($|,)/i;
 
@@ -149,16 +149,16 @@ export function setupSocket(socket: Socket): Socket {
 export function getPort(
   // Incoming HTTP request.
   req: Request,
-): // Retjurn the port number, as a string.
-string {
+  // Return the port number, as a string.
+): string {
   const res = req.headers.host ? req.headers.host.match(/:(\d+)/) : "";
   return res ? res[1] : hasEncryptedConnection(req) ? "443" : "80";
 }
 
 // Check if the request has an encrypted connection.
 export function hasEncryptedConnection(
-  req: // Incoming HTTP request.
-  Request,
+  // Incoming HTTP request.
+  req: Request,
 ): boolean {
   const conn = req.connection;
   return (

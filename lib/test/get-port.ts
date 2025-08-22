@@ -1,4 +1,4 @@
-import { createServer } from "http";
+import { createServer } from "node:http";
 
 export default async function getPort(): Promise<number> {
   return new Promise((resolve, reject) => {

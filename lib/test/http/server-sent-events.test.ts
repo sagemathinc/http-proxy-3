@@ -5,7 +5,7 @@ pnpm test ./server-sent-events.test.ts
 */
 
 import * as httpProxy from "../..";
-import * as http from "http";
+import * as http from "node:http";
 import getPort from "../get-port";
 import { createSession } from "better-sse";
 import { EventSource } from "eventsource";

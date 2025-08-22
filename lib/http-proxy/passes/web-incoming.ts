@@ -7,16 +7,16 @@ The names of passes are exported as WEB_PASSES from this module.
 
 */
 
-import * as http from "http";
-import * as https from "https";
+import * as http from "node:http";
+import * as https from "node:https";
 import { OUTGOING_PASSES } from "./web-outgoing";
 import * as common from "../common";
 import * as followRedirects from "follow-redirects";
 import {
   type IncomingMessage as Request,
   type ServerResponse as Response,
-} from "http";
-import { type Socket } from "net";
+} from "node:http";
+import { type Socket } from "node:net";
 import type { ErrorCallback, NormalizedServerOptions, NormalizeProxyTarget, ProxyServer, ProxyTarget, ProxyTargetUrl, ServerOptions } from "..";
 
 export type ProxyResponse = Request & {

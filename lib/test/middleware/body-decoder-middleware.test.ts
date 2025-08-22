@@ -5,7 +5,7 @@ pnpm test body-decoder-middleware.test.ts
 */
 
 import * as httpProxy from "../..";
-import * as http from "http";
+import * as http from "node:http";
 import getPort from "../get-port";
 import connect from "connect";
 import bodyParser from "body-parser";

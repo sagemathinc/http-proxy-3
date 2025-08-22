@@ -3,7 +3,7 @@
 */
 
 import * as httpProxy from "../..";
-import * as http from "http";
+import * as http from "node:http";
 import getPort from "../get-port";
 import log from "../log";
 import fetch from "node-fetch";
