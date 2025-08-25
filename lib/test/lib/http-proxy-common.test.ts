@@ -487,7 +487,7 @@ describe("#setupOutgoing", () => {
     const outgoing: any = {};
     setupOutgoing(outgoing, { target: { pathname: "" } }, { url: "" });
 
-    expect(outgoing.path).toEqual("/");
+    expect(outgoing.path).toEqual("");
   });
 });
 
