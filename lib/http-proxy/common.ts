@@ -268,6 +268,9 @@ function hasPort(host: string): boolean {
 }
 
 function getPath(url?: string): string {
+  if (url === '' || url?.startsWith('?')) {
+    return url
+  }
   const u = toURL(url);
   return `${u.pathname ?? ""}${u.search ?? ""}`;
 }
