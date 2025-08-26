@@ -16,10 +16,12 @@ import * as httpProxy from "../..";
 import log from "../log";
 import getPort from "../get-port";
 import { once } from "node:events";
+import {describe, it, beforeAll, afterAll} from 'vitest';
 
 describe("Example of simple proxying of a WebSocket", () => {
   let ports: Record<'ws' | 'proxy', number>;
-  it("assigns ports", async () => {
+  beforeAll(async () => {
+    // assigns ports
     ports = { ws: await getPort(), proxy: await getPort() };
   });
 
@@ -83,7 +85,8 @@ describe("Example of simple proxying of a WebSocket", () => {
     );
   });
 
-  it("cleans up", () => {
+  afterAll(async () => {
+    // cleans up
     Object.values(servers).map((x: any) => x?.close());
   });
 });

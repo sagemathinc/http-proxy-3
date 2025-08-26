@@ -7,6 +7,7 @@ import {
   setupSocket,
 } from "../../http-proxy/common";
 import net from 'net';
+import {describe, it, expect} from 'vitest';
 
 // wrap setupOutgoing so types aren't checked, since a lot of the tests here
 // involve partial objects that typescript doesn't view as correct, e.g., {url:'foo...'}

@@ -8,12 +8,13 @@ import getPort from "../get-port";
 import { join } from "node:path";
 import { readFile } from "node:fs/promises";
 import fetch from "node-fetch";
+import {describe, it, expect, beforeAll, afterAll} from 'vitest';
 
 const fixturesDir = join(__dirname, "..", "fixtures");
 
 describe("Basic example of proxying over HTTPS to a target HTTP server", () => {
   let ports: Record<'http' | 'proxy', number>;
-  it("Gets ports", async () => {
+  beforeAll(async () => {
     ports = { http: await getPort(), proxy: await getPort() };
   });
 
@@ -54,7 +55,8 @@ describe("Basic example of proxying over HTTPS to a target HTTP server", () => {
     expect(r).toContain("hello http over https");
   });
 
-  it("cleans up", () => {
+  afterAll(async () => {
+    // cleans up
     Object.values(servers).map((x: any) => x?.close());
   });
 });

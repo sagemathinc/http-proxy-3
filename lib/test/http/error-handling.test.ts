@@ -7,6 +7,7 @@ import * as http from "node:http";
 import getPort from "../get-port";
 import log from "../log";
 import fetch from "node-fetch";
+import {describe, it, expect} from 'vitest';
 
 const CUSTOM_ERROR = "There was an error proxying your request";
 

@@ -6,6 +6,7 @@ import {
   checkMethodAndHeader as checkMethodAndHeader0,
   XHeaders,
 } from "../../http-proxy/passes/ws-incoming";
+import {describe, it, expect} from 'vitest';
 
 // disable typescript for this function
 function checkMethodAndHeader(...args: any[]) {

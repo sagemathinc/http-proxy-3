@@ -15,12 +15,14 @@ import log from "../log";
 import getPort from "../get-port";
 import wait from "../wait";
 import fetch from "node-fetch";
+import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 
 describe("Example of proxying over HTTP with additional forward proxy", () => {
   let forwardingServer: http.Server,
     httpPort: number,
     numRequests = 0;
-  it("Setup Target Http Forwarding Server", async () => {
+  beforeAll(async () => {
+    // Setup Target Http Forwarding Server
     httpPort = await getPort();
     forwardingServer = http.createServer((req, res) => {
       log("Receiving forward for: " + req.url);
@@ -28,9 +30,9 @@ describe("Example of proxying over HTTP with additional forward proxy", () => {
       res.writeHead(200, { "Content-Type": "text/plain" });
       res.write(
         "request successfully forwarded to: " +
-          req.url +
-          "\n" +
-          JSON.stringify(req.headers, undefined, 2),
+        req.url +
+        "\n" +
+        JSON.stringify(req.headers, undefined, 2),
       );
       res.end();
     });
@@ -91,7 +93,8 @@ describe("Example of proxying over HTTP with additional forward proxy", () => {
     expect(numRequests).toBe(before + 2);
   });
 
-  it("Cleans up", () => {
+  afterAll(async () => {
+    // Cleans up
     forwardingServer.close();
     proxyServer.close();
     proxy2Server.close();

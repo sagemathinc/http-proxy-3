@@ -7,6 +7,7 @@ import {
 } from "../../http-proxy/passes/web-outgoing";
 import * as url from "url";
 import http from "node:http";
+import {describe, it, expect, beforeEach} from 'vitest';
 
 const state: any = { headers: {} };
 
@@ -23,8 +24,7 @@ function setRedirectHostRewrite(...args: any[]) {
 
 // NOTE: here url.parse("http://backend.com") uses the deprecated url.parse
 // function, and we're testing that we still support it.
-for (const target of ["http://backend.com", url.parse("http://backend.com")]) {
-  describe("#setRedirectHostRewrite", () => {
+describe.each( ["http://backend.com", url.parse("http://backend.com")])("#setRedirectHostRewrite", (target) => {
     beforeEach(() => {
       state.req = {
         headers: {
@@ -179,7 +179,6 @@ for (const target of ["http://backend.com", url.parse("http://backend.com")]) {
       });
     });
   });
-}
 
 describe("#setConnection", () => {
   it("set the right connection with 1.0 - `close`", () => {
@@ -494,6 +493,7 @@ describe("#removeChunked", () => {
 
   // @ts-ignore
   removeChunked({ httpVersion: "1.0" }, {}, proxyRes);
-
-  expect(proxyRes.headers["transfer-encoding"]).toEqual(undefined);
+  it('should remove chunked', ()=> {
+    expect(proxyRes.headers["transfer-encoding"]).toEqual(undefined);
+  });
 });

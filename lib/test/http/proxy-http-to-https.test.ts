@@ -8,10 +8,12 @@ import * as https from "node:https";
 import * as httpProxy from "../..";
 import getPort from "../get-port";
 import fetch from "node-fetch";
+import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 
 describe(" Basic example of proxying over HTTP to a target HTTPS server", () => {
   let port: number, server: httpProxy.ProxyServer;
-  it("creates the proxy server with HTTPS target", async () => {
+  beforeAll(async () => {
+    // creates the proxy server with HTTPS target
     port = await getPort();
     server = httpProxy
       .createProxyServer({
@@ -33,7 +35,8 @@ describe(" Basic example of proxying over HTTP to a target HTTPS server", () => 
     expect(r).toContain("Search the world");
   });
 
-  it("clean up", () => {
+  afterAll(async () => {
+    // clean up
     server.close();
   });
 });

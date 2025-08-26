@@ -12,6 +12,7 @@ import * as http from "node:http";
 import concat from "concat-stream";
 import * as async from "async";
 import getPort from "../get-port";
+import {describe, it, expect} from 'vitest';
 
 describe("#deleteLength", () => {
   it("should change `content-length` for DELETE requests", () => {
@@ -100,7 +101,7 @@ describe("#createProxyServer.web() using own http server", () => {
     }
   });
 
-  it("should proxy the request using the web proxy handler", (done) => {
+  it("should proxy the request using the web proxy handler", () => new Promise<void>(done => {
     const proxy = httpProxy.createProxyServer({
       target: address(8080),
     });
@@ -126,9 +127,9 @@ describe("#createProxyServer.web() using own http server", () => {
         done();
       })
       .end();
-  });
+  }));
 
-  it("should detect a proxyReq event and modify headers", (done) => {
+  it("should detect a proxyReq event and modify headers", () => new Promise<void>(done => {
     const proxy = httpProxy.createProxyServer({
       target: address(8080),
     });
@@ -155,9 +156,9 @@ describe("#createProxyServer.web() using own http server", () => {
     source.listen(ports["8080"]);
 
     http.request(address(8081), () => {}).end();
-  });
+  }));
 
-  it('should skip proxyReq event when handling a request with header "expect: 100-continue" [https://www.npmjs.com/advisories/1486]', (done) => {
+  it('should skip proxyReq event when handling a request with header "expect: 100-continue" [https://www.npmjs.com/advisories/1486]', () => new Promise<void>(done => { 
     const proxy = httpProxy.createProxyServer({
       target: address(8080),
     });
@@ -200,9 +201,9 @@ describe("#createProxyServer.web() using own http server", () => {
     const req = http.request(postOptions, () => {});
     req.write(postData);
     req.end();
-  });
+  }));
 
-  it("should proxy the request and handle error via callback", (done) => {
+  it("should proxy the request and handle error via callback", () => new Promise<void>(done => { 
     const proxy = httpProxy.createProxyServer({
       target: address(8080),
       timeout: 100,
@@ -230,9 +231,9 @@ describe("#createProxyServer.web() using own http server", () => {
     );
     client.on("error", () => {});
     client.end();
-  });
+  }));
 
-  it("should proxy the request and handle error via event listener", (done) => {
+  it("should proxy the request and handle error via event listener", () => new Promise<void>(done => { 
     const proxy = httpProxy.createProxyServer({
       target: address(8080),
       timeout: 100,
@@ -264,9 +265,9 @@ describe("#createProxyServer.web() using own http server", () => {
     );
     client.on("error", () => {});
     client.end();
-  });
+  }));
 
-  it("should forward the request and handle error via event listener", (done) => {
+  it("should forward the request and handle error via event listener", () => new Promise<void>(done => {
     const proxy = httpProxy.createProxyServer({
       forward: "http://127.0.0.1:8080",
       timeout: 100,
@@ -298,9 +299,9 @@ describe("#createProxyServer.web() using own http server", () => {
     );
     client.on("error", () => {});
     client.end();
-  });
+  }));
 
-  it("should proxy the request and handle timeout error (proxyTimeout)", (done) => {
+  it("should proxy the request and handle timeout error (proxyTimeout)", () => new Promise<void>(done => {
     const proxy = httpProxy.createProxyServer({
       target: address(8083),
       proxyTimeout: 100,
@@ -337,9 +338,9 @@ describe("#createProxyServer.web() using own http server", () => {
     );
     client.on("error", () => {});
     client.end();
-  });
+  }));
 
-  it("should proxy the request and handle timeout error", (done) => {
+  it("should proxy the request and handle timeout error", () => new Promise<void>(done => {
     const proxy = httpProxy.createProxyServer({
       target: address(8083),
       timeout: 100,
@@ -387,9 +388,9 @@ describe("#createProxyServer.web() using own http server", () => {
       doneOne();
     });
     req.end();
-  });
+  }));
 
-  it("should proxy the request and provide a proxyRes event with the request and response parameters", (done) => {
+  it("should proxy the request and provide a proxyRes event with the request and response parameters", () => new Promise<void>(done => {
     const proxy = httpProxy.createProxyServer({
       target: address(8080),
     });
@@ -416,9 +417,9 @@ describe("#createProxyServer.web() using own http server", () => {
     proxyServer.listen(port(8086));
     source.listen(port(8080));
     http.request(address(8086), () => {}).end();
-  });
+  }));
 
-  it("should proxy the request and provide and respond to manual user response when using modifyResponse", (done) => {
+  it("should proxy the request and provide and respond to manual user response when using modifyResponse", () => new Promise(done => {
     const proxy = httpProxy.createProxyServer({
       target: address(8080),
       selfHandleResponse: true,
@@ -456,7 +457,7 @@ describe("#createProxyServer.web() using own http server", () => {
                 expect(body.toString("utf8")).toEqual("my-custom-response");
                 source.close();
                 proxyServer.close();
-                done();
+                done(undefined);
               }),
             );
           })
@@ -467,9 +468,9 @@ describe("#createProxyServer.web() using own http server", () => {
           });
       },
     );
-  });
+  }));
 
-  it("should proxy the request and handle changeOrigin option", (done) => {
+  it("should proxy the request and handle changeOrigin option", () => new Promise<void>(done => {
     const proxy = httpProxy
       .createProxyServer({
         target: address(8080),
@@ -491,9 +492,9 @@ describe("#createProxyServer.web() using own http server", () => {
     const client = http.request(address(8081), () => {});
     client.on("error", () => {});
     client.end();
-  });
+  }));
 
-  it("should proxy the request with the Authorization header set", (done) => {
+  it("should proxy the request with the Authorization header set", () => new Promise<void>(done => {
     const proxy = httpProxy.createProxyServer({
       target: address(8080),
       auth: "user:pass",
@@ -517,9 +518,9 @@ describe("#createProxyServer.web() using own http server", () => {
     source.listen(port(8080));
 
     http.request(address(8081), () => {}).end();
-  });
+  }));
 
-  it("should proxy requests to multiple servers with different options", (done) => {
+  it("should proxy requests to multiple servers with different options", () => new Promise<void>(done => {
     const proxy = httpProxy.createProxyServer();
 
     // proxies to two servers depending on url, rewriting the url as well
@@ -565,7 +566,7 @@ describe("#createProxyServer.web() using own http server", () => {
 
     http.request(`${address(8080)}/s1/test1`, () => {}).end();
     http.request(`${address(8080)}/test2`, () => {}).end();
-  });
+  }));
 });
 
 describe("with authorization request header", () => {
@@ -575,7 +576,7 @@ describe("with authorization request header", () => {
     )}`,
   };
 
-  it("should proxy the request with the Authorization header set", (done) => {
+  it("should proxy the request with the Authorization header set", () => new Promise<void>(done => {
     const auth = "user:pass";
     const proxy = httpProxy.createProxyServer({
       target: address(8080),
@@ -604,7 +605,7 @@ describe("with authorization request header", () => {
     http.request(address(8081), {
       headers
     }).end();
-  });
+  }));
 });
 
 describe("#followRedirects", () => {
@@ -614,7 +615,7 @@ describe("#followRedirects", () => {
     }
   });
 
-  it("should proxy the request follow redirects", (done) => {
+  it("should proxy the request follow redirects", () => new Promise<void>(done => {
     const proxy = httpProxy
       .createProxyServer({
         target: address(8080),
@@ -643,5 +644,5 @@ describe("#followRedirects", () => {
       done();
     });
     client.end();
-  });
+  }));
 });
