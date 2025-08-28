@@ -8,6 +8,7 @@ import * as httpProxy from "../..";
 import * as http from "node:http";
 import getPort from "../get-port";
 import fetch from "node-fetch";
+import {describe, it, expect} from 'vitest';
 
 const CUSTOM_ERROR =
   "Something went wrong. And we are reporting a custom error message.";
