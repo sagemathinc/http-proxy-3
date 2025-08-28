@@ -4,6 +4,7 @@ import * as https from "node:https";
 import getPort from "../get-port";
 import { join } from "node:path";
 import { readFileSync } from "node:fs";
+import {describe, it, expect} from 'vitest';
 
 const ports: { [port: string]: number } = {};
 let portIndex = -1;
@@ -22,7 +23,7 @@ describe("HTTPS to HTTP", () => {
     }
   });
 
-  it("should proxy the request, then send back the response", (done) => {
+  it("should proxy the request, then send back the response", () => new Promise<void>(done => {
     const ports = { source: gen.port, proxy: gen.port };
     const source = http
       .createServer((req, res) => {
@@ -72,11 +73,11 @@ describe("HTTPS to HTTP", () => {
         },
       )
       .end();
-  });
+  }));
 });
 
 describe("HTTP to HTTPS", () => {
-  it("should proxy the request, then send back the response", (done) => {
+  it("should proxy the request, then send back the response", () => new Promise<void>(done => {
     const ports = { source: gen.port, proxy: gen.port };
     const source = https
       .createServer(
@@ -128,11 +129,11 @@ describe("HTTP to HTTPS", () => {
         },
       )
       .end();
-  });
+  }));
 });
 
 describe("HTTPS to HTTPS", () => {
-  it("should proxy the request, then send back the response", (done) => {
+  it("should proxy the request, then send back the response", () => new Promise<void>(done => {
     const ports = { source: gen.port, proxy: gen.port };
     const source = https
       .createServer(
@@ -194,11 +195,11 @@ describe("HTTPS to HTTPS", () => {
         },
       )
       .end();
-  });
+  }));
 });
 
 describe("HTTPS not allow SSL self signed", () => {
-  it("should fail with error", (done) => {
+  it("should fail with error", () => new Promise<void>(done => {
     const ports = { source: gen.port, proxy: gen.port };
     const source = https
       .createServer({
@@ -234,11 +235,11 @@ describe("HTTPS not allow SSL self signed", () => {
       method: "GET",
     });
     client.end();
-  });
+  }));
 });
 
 describe("HTTPS to HTTP using own server", () => {
-  it("should proxy the request, then send back the response", (done) => {
+  it("should proxy the request, then send back the response", () => new Promise<void>(done => {
     const ports = { source: gen.port, proxy: gen.port };
     const source = http
       .createServer((req, res) => {
@@ -296,5 +297,5 @@ describe("HTTPS to HTTP using own server", () => {
         },
       )
       .end();
-  });
+  }));
 });

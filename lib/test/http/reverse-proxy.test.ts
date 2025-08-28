@@ -11,10 +11,12 @@ import * as net from "node:net";
 import log from "../log";
 import { HttpsProxyAgent } from "https-proxy-agent";
 import fetch from "node-fetch";
+import { describe, it, expect, afterAll, beforeAll } from 'vitest';
 
 describe("Reverse proxying -- create a server that...", () => {
   let port: number;
-  it("allocates a port", async () => {
+  beforeAll(async () => {
+    // allocates a port
     port = await getPort();
   });
 
@@ -77,7 +79,8 @@ describe("Reverse proxying -- create a server that...", () => {
     expect(a).toContain("Search the world");
   });
 
-  it("Cleans up", () => {
+  afterAll(async () => {
+    // Cleans up
     server.close();
   });
 });

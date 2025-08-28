@@ -9,10 +9,12 @@ import * as httpProxy from "../..";
 import getPort from "../get-port";
 import wait from "../wait";
 import { once } from "node:events";
+import { describe, it, expect, afterAll, beforeAll } from 'vitest';
 
 describe("Load testing proxying a WebSocket", () => {
   let ports: Record<'ws' | 'proxy', number>;
-  it("assigns ports", async () => {
+  beforeAll(async () => {
+    // assigns ports
     ports = { ws: await getPort(), proxy: await getPort() };
   });
 
@@ -27,9 +29,9 @@ describe("Load testing proxying a WebSocket", () => {
     server.on("upgrade", (_req, socket) => {
       socket.write(
         "HTTP/1.1 101 Web Socket Protocol Handshake\r\n" +
-          "Upgrade: WebSocket\r\n" +
-          "Connection: Upgrade\r\n" +
-          "\r\n",
+        "Upgrade: WebSocket\r\n" +
+        "Connection: Upgrade\r\n" +
+        "\r\n",
       );
       socket.pipe(socket); // echo back
     });
@@ -89,7 +91,8 @@ describe("Load testing proxying a WebSocket", () => {
     expect(httpProxy.numOpenSockets()).toBe(0);
   });
 
-  it("cleans up", () => {
+  afterAll(async () => {
+    // cleans up
     Object.values(servers).map((x: any) => x?.close());
   });
 });

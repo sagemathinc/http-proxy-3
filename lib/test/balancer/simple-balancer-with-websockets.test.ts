@@ -4,15 +4,17 @@ Simple round robin load balancer for websockets
 pnpm test ./simple-balancer-with-websockets.test.ts
 */
 
+import fetch from "node-fetch";
+import { once } from "node:events";
 import * as http from "node:http";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import * as httpProxy from "../..";
 import getPort from "../get-port";
-import { once } from "node:events";
-import fetch from "node-fetch";
 
 describe("A simple round-robin load balancer that supports websockets", () => {
   let addresses: Array<{ host: string, port: number }>;
-  it("lists the servers to use in our rotation.", async () => {
+  beforeAll(async () => {
+    // lists the servers to use in our rotation.
     addresses = [
       {
         host: "localhost",
@@ -121,7 +123,8 @@ describe("A simple round-robin load balancer that supports websockets", () => {
     ]);
   });
 
-  it("cleans up", () => {
+  afterAll(async() => {
+    // cleans up
     Object.values(servers).map((x: any) => x?.close());
   });
 });
