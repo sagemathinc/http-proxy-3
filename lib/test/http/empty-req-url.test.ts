@@ -2,6 +2,7 @@ import express from "express";
 import getPort from "../get-port";
 import ProxyServer, { createServer } from "../..";
 import http from "node:http";
+import { describe, it, expect } from "vitest";
 
 describe("test empty req.url", () => {
   let port: number, server: http.Server;
@@ -27,7 +28,7 @@ describe("test empty req.url", () => {
       res.end("Something went wrong.");
     });
     httpServer = http.createServer((req, res) => {
-      req.url = '' + new URL(`http://example.com${req.url}`).search;
+      req.url = "" + new URL(`http://example.com${req.url}`).search;
       proxy.web(req, res, { target: `http://localhost:${port}/test` });
     });
 
@@ -41,8 +42,8 @@ describe("test empty req.url", () => {
 
   it("get using the proxy", async () => {
     expect(await getProxy("")).toBe("Test Page!: {}");
-    expect(await getProxy("?foo")).toBe("Test Page!: {\"foo\":\"\"}");
-    expect(await getProxy("?foo=bar")).toBe("Test Page!: {\"foo\":\"bar\"}");
+    expect(await getProxy("?foo")).toBe('Test Page!: {"foo":""}');
+    expect(await getProxy("?foo=bar")).toBe('Test Page!: {"foo":"bar"}');
   });
 
   it("clean up", () => {

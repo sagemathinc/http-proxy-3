@@ -13,6 +13,7 @@ import log from "../log";
 import getPort from "../get-port";
 import wait from "../wait";
 import fetch from "node-fetch";
+import {describe, it, expect} from 'vitest';
 
 describe("Example of proxying over HTTP with additional forward proxy to a different server", () => {
   let ports: Record<'target' | 'forward' | 'proxy', number>;

@@ -9,6 +9,7 @@ import * as http from "node:http";
 import getPort from "../get-port";
 import connect, { type NextFunction } from "connect";
 import fetch from "node-fetch";
+import {describe, it, expect} from 'vitest';
 
 describe("Using the connect-gzip middleware from connect with http-proxy-3", () => {
   let ports: Record<'http' | 'proxy', number>;

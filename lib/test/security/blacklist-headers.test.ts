@@ -7,6 +7,7 @@ pnpm test ./blacklist-headers.test.ts
 import * as httpProxy from "../..";
 import * as http from "node:http";
 import getPort from "../get-port";
+import {describe, it, expect} from 'vitest';
 
 describe("blacklisting the Trailer header", () => {
   let ports: Record<'http' | 'proxy', number>;

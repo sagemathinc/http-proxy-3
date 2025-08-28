@@ -10,10 +10,12 @@ import { once } from "node:events";
 import http, { createServer } from "node:http";
 import { Server } from "socket.io";
 import { io as socketioClient } from "socket.io-client";
+import { describe, it, expect, afterAll, beforeAll } from 'vitest';
 
 describe("Proxying websockets over HTTP with a standalone HTTP server.", () => {
   let ports: Record<'ws' | 'proxy', number>;
-  it("assigns ports", async () => {
+  beforeAll(async () => {
+    // assigns ports
     ports = { ws: await getPort(), proxy: await getPort() };
   });
 
@@ -61,7 +63,8 @@ describe("Proxying websockets over HTTP with a standalone HTTP server.", () => {
     client.close();
   });
 
-  it("cleans up", () => {
+  afterAll(async () => {
+    // cleans up
     Object.values(servers).map((x: any) => x?.close());
   });
 });

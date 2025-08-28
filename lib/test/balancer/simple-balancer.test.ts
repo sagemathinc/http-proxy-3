@@ -8,10 +8,12 @@ import * as http from "node:http";
 import * as httpProxy from "../..";
 import getPort from "../get-port";
 import fetch from "node-fetch";
+import { describe, it, expect, afterAll, beforeAll } from "vitest";
 
 describe("A simple round-robin load balancing strategy.", () => {
   let addresses: Array<{ host: string, port: number }>;
-  it("lists the servers to use in our rotation.", async () => {
+  beforeAll(async () => {
+    // lists the servers to use in our rotation.
     addresses = [
       {
         host: "localhost",
@@ -72,7 +74,8 @@ describe("A simple round-robin load balancing strategy.", () => {
     ]);
   });
 
-  it("cleans up", () => {
+  afterAll(async () => {
+    // cleans up
     Object.values(servers).map((x: any) => x?.close());
   });
 });

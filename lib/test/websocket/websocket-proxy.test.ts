@@ -10,18 +10,20 @@ both in serial and parallel, confirming this is fast and
 that no sockets leak.
 */
 
-import * as httpProxy from "../..";
-import log from "../log";
-import getPort from "../get-port";
-import wait from "../wait";
 import { once } from "node:events";
 import { createServer } from "node:http";
 import { Server } from "socket.io";
 import { io as socketioClient } from "socket.io-client";
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import * as httpProxy from "../..";
+import getPort from "../get-port";
+import log from "../log";
+import wait from "../wait";
 
 describe("Example of proxying over HTTP and WebSockets", () => {
   let ports: Record<'socketio' | 'proxy', number>;
-  it("assigns ports", async () => {
+  beforeAll(async () => {
+    // assigns ports
     ports = { socketio: await getPort(), proxy: await getPort() };
   });
 
@@ -99,7 +101,8 @@ describe("Example of proxying over HTTP and WebSockets", () => {
     expect(httpProxy.numOpenSockets()).toBe(0);
   });
 
-  it("cleans up", () => {
+  afterAll(async () => {
+    // cleans up
     Object.values(servers).map((x: any) => x?.close());
   });
 });

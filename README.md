@@ -51,7 +51,7 @@ I've been adding load tests to the unit tests in various places. Generally speak
 
 We run GitHUB CI on the following:
 
-- nodejs versions 18, 20, 22, and 24
+- nodejs versions 20, 22, and 24
 
 **Development:**
 

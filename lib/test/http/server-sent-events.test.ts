@@ -10,6 +10,7 @@ import getPort from "../get-port";
 import { createSession } from "better-sse";
 import { EventSource } from "eventsource";
 import fetch from "node-fetch";
+import {describe, it, expect} from 'vitest';
 
 describe("proxying server sent events over HTTP", () => {
   let ports: Record<'http' | 'proxy', number>;

@@ -5,6 +5,7 @@ pnpm test latent-proxy.test.ts
 import * as http from "node:http";
 import * as httpProxy from "../..";
 import getPort from "../get-port";
+import {describe, it, expect} from 'vitest';
 
 describe("Test proxying over HTTP with latency", () => {
   let ports: Record<'http' | 'proxy', number>;

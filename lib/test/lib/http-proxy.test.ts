@@ -13,6 +13,7 @@ import { Server } from "socket.io";
 import { io as socketioClient } from "socket.io-client";
 import wait from "../wait";
 import { once } from "node:events";
+import {describe, it, expect} from 'vitest';
 
 const ports: { [port: string]: number } = {};
 let portIndex = -1;
@@ -48,7 +49,7 @@ describe("#createProxyServer", () => {
 });
 
 describe("#createProxyServer with forward options and using web-incoming passes", () => {
-  it("should pipe the request using web-incoming#stream method", (done) => {
+  it("should pipe the request using web-incoming#stream method", () => new Promise<void>(done => {
     const ports = { source: gen.port, proxy: gen.port };
     const proxy = httpProxy
       .createProxyServer({
@@ -68,13 +69,13 @@ describe("#createProxyServer with forward options and using web-incoming passes"
       .listen(ports.source);
 
     http.request("http://127.0.0.1:" + ports.proxy, () => {}).end();
-  });
+  }));
 });
 
 describe("#createProxyServer using the web-incoming passes", () => {
   // NOTE: the sse test that was here is now in http/server-sent-events.test.ts
 
-  it("should make the request on pipe and finish it", (done) => {
+  it("should make the request on pipe and finish it", () => new Promise<void>(done => {
     const ports = { source: gen.port, proxy: gen.port };
     const proxy = httpProxy
       .createProxyServer({
@@ -107,11 +108,11 @@ describe("#createProxyServer using the web-incoming passes", () => {
         () => {},
       )
       .end();
-  });
+  }));
 });
 
 describe("#createProxyServer using the web-incoming passes", () => {
-  it("should make the request, handle response and finish it", (done) => {
+  it("should make the request, handle response and finish it", () => new Promise<void>(done => {
     const ports = { source: gen.port, proxy: gen.port };
     const proxy = httpProxy
       .createProxyServer({
@@ -156,11 +157,11 @@ describe("#createProxyServer using the web-incoming passes", () => {
         },
       )
       .end();
-  });
+  }));
 });
 
 describe("#createProxyServer() method with error response", () => {
-  it("should make the request and emit the error event", (done) => {
+  it("should make the request and emit the error event", () => new Promise<void>(done => {
     const ports = { source: gen.port, proxy: gen.port };
     const proxy = httpProxy.createProxyServer({
       target: "http://127.0.0.1:" + ports.source,
@@ -185,11 +186,11 @@ describe("#createProxyServer() method with error response", () => {
     );
     client.on("error", () => {});
     client.end();
-  });
+  }));
 });
 
 describe("#createProxyServer setting the correct timeout value", () => {
-  it("should hang up the socket at the timeout", (done) => {
+  it("should hang up the socket at the timeout", () => new Promise<void>(done => {
     const ports = { source: gen.port, proxy: gen.port };
     const proxy = httpProxy
       .createProxyServer({
@@ -228,11 +229,11 @@ describe("#createProxyServer setting the correct timeout value", () => {
     });
 
     testReq.end();
-  });
+  }));
 });
 
 describe("#createProxyServer with xfwd option", () => {
-  it("should not throw on empty http host header", (done) => {
+  it("should not throw on empty http host header", () => new Promise<void>(done => {
     const ports = { source: gen.port, proxy: gen.port };
     const proxy = httpProxy
       .createProxyServer({
@@ -267,11 +268,11 @@ describe("#createProxyServer with xfwd option", () => {
     });
 
     socket.on("end", () => {});
-  });
+  }));
 });
 
 describe("#createProxyServer using the ws-incoming passes", () => {
-  it("should proxy the websockets stream", (done) => {
+  it("should proxy the websockets stream", () => new Promise<void>(done => {
     const ports = { source: gen.port, proxy: gen.port };
     const proxy = httpProxy.createProxyServer({
         target: "ws://127.0.0.1:" + ports.source,
@@ -300,9 +301,9 @@ describe("#createProxyServer using the ws-incoming passes", () => {
         socket.send("Hello over websockets");
       });
     });
-  });
+  }));
 
-  it("should emit error on proxy error", (done) => {
+  it("should emit error on proxy error", () => new Promise<void>(done => {
     const ports = { source: gen.port, proxy: gen.port };
     const proxy = httpProxy.createProxyServer({
         // note: we don't ever listen on this port
@@ -332,7 +333,7 @@ describe("#createProxyServer using the ws-incoming passes", () => {
       proxyServer.close();
       maybe_done();
     });
-  });
+  }));
 
   it("should close client socket if upstream is closed before upgrade", async () => {
     const ports = { source: gen.port, proxy: gen.port };
@@ -564,7 +565,7 @@ describe("#createProxyServer using the ws-incoming passes", () => {
     proxy.close();
   });
 
-  it("should forward frames with single frame payload", (done) => {
+  it("should forward frames with single frame payload", () => new Promise<void>(done => {
     const payload = Buffer.from(Array(65529).join("0"));
 
     const ports = { source: gen.port, proxy: gen.port };
@@ -595,9 +596,9 @@ describe("#createProxyServer using the ws-incoming passes", () => {
         socket.send("Hello over websockets");
       });
     });
-  });
+  }));
 
-  it("should forward continuation frames with big payload (including on node 4.x)", (done) => {
+  it("should forward continuation frames with big payload (including on node 4.x)", () => new Promise<void>(done => {
     const payload = Buffer.from(Array(65530).join("0"));
 
     const ports = { source: gen.port, proxy: gen.port };
@@ -628,5 +629,5 @@ describe("#createProxyServer using the ws-incoming passes", () => {
         socket.send("Hello over websockets");
       });
     });
-  });
+  }));
 });

@@ -11,6 +11,7 @@ import * as httpProxy from "../..";
 import log from "../log";
 import getPort from "../get-port";
 import fetch from "node-fetch";
+import { describe, it, expect, afterAll, beforeAll } from "vitest";
 
 export async function server() {
   const httpPort = await getPort();
@@ -20,9 +21,9 @@ export async function server() {
     res.writeHead(200, { "Content-Type": "text/plain" });
     res.write(
       "request successfully proxied to: " +
-        req.url +
-        "\n" +
-        JSON.stringify(req.headers, undefined, 2),
+      req.url +
+      "\n" +
+      JSON.stringify(req.headers, undefined, 2),
     );
     res.end();
   });
@@ -61,7 +62,8 @@ describe("tests proxying a basic http server", () => {
 
 describe("Load test against the basic proxy", () => {
   let x: { proxy: httpProxy.ProxyServer; target: http.Server; httpPort: number; proxyPort: number };
-  it("creates servers", async () => {
+  beforeAll(async () => {
+    // creates servers
     x = await server();
   });
 
@@ -108,7 +110,8 @@ describe("Load test against the basic proxy", () => {
     expect(elapsed).toBeLessThan(MAX_TIME);
   });
 
-  it("Cleans up", () => {
+  afterAll(async () => {
+    // Cleans up
     x.proxy.close();
     x.target.close();
   });

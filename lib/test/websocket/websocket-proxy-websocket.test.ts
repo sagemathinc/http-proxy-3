@@ -18,10 +18,12 @@ import getPort from "../get-port";
 import { Server } from "socket.io";
 import { io as socketioClient } from "socket.io-client";
 import { once } from "node:events";
+import { describe, it, expect, afterAll, beforeAll } from 'vitest';
 
 describe("Multilevel Proxying of a Websocket using Socket.io", () => {
   let ports: Record<'socketio' | 'inner' | 'outer', number>;
-  it("assigns ports", async () => {
+  beforeAll(async () => {
+    // assigns ports
     ports = {
       socketio: await getPort(),
       inner: await getPort(),
@@ -76,7 +78,8 @@ describe("Multilevel Proxying of a Websocket using Socket.io", () => {
     client.close();
   });
 
-  it("cleans up", () => {
+  afterAll(async () => {
+    // cleans up
     Object.values(servers).map((x: any) => x?.close());
   });
 });
