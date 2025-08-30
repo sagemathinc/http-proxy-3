@@ -99,107 +99,107 @@ export interface NormalizedServerOptions extends ServerOptions {
   forward?: NormalizeProxyTarget<ProxyTargetUrl>;
 }
 
-export type ErrorCallback =
+export type ErrorCallback<TIncomingMessage extends typeof http.IncomingMessage = typeof http.IncomingMessage, TServerResponse extends typeof http.ServerResponse = typeof http.ServerResponse, TError = Error> =
   (
-    err: Error,
-    req: http.IncomingMessage,
-    res: http.ServerResponse | net.Socket,
+    err: TError,
+    req: InstanceType<TIncomingMessage>,
+    res: InstanceType<TServerResponse> | net.Socket,
     target?: ProxyTargetUrl,
   ) => void;
 
-type ProxyServerEventMap = {
-  error: Parameters<ErrorCallback>;
+type ProxyServerEventMap<TIncomingMessage extends typeof http.IncomingMessage = typeof http.IncomingMessage, TServerResponse extends typeof http.ServerResponse = typeof http.ServerResponse, TError = Error> = {
+  error: Parameters<ErrorCallback<TIncomingMessage, TServerResponse, TError>>;
   start: [
-    req: http.IncomingMessage,
-    res: http.ServerResponse,
+    req: InstanceType<TIncomingMessage>,
+    res: InstanceType<TServerResponse>,
     target: ProxyTargetUrl,
   ];
   open: [socket: net.Socket];
   proxyReq: [
     proxyReq: http.ClientRequest,
-    req: http.IncomingMessage,
-    res: http.ServerResponse,
+    req: InstanceType<TIncomingMessage>,
+    res: InstanceType<TServerResponse>,
     options: ServerOptions,
     socket: net.Socket,
   ];
   proxyRes: [
-    proxyRes: http.IncomingMessage,
-    req: http.IncomingMessage,
-    res: http.ServerResponse,
+    proxyRes: InstanceType<TIncomingMessage>,
+    req: InstanceType<TIncomingMessage>,
+    res: InstanceType<TServerResponse>,
   ];
   proxyReqWs: [
     proxyReq: http.ClientRequest,
-    req: http.IncomingMessage,
+    req: InstanceType<TIncomingMessage>,
     socket: net.Socket,
     options: ServerOptions,
     head: any,
   ];
   econnreset: [
     err: Error,
-    req: http.IncomingMessage,
-    res: http.ServerResponse,
+    req: InstanceType<TIncomingMessage>,
+    res: InstanceType<TServerResponse>,
     target: ProxyTargetUrl,
   ];
   end: [
-    req: http.IncomingMessage,
-    res: http.ServerResponse,
-    proxyRes: http.IncomingMessage,
+    req: InstanceType<TIncomingMessage>,
+    res: InstanceType<TServerResponse>,
+    proxyRes: InstanceType<TIncomingMessage>,
   ];
   close: [
-    proxyRes: http.IncomingMessage,
+    proxyRes: InstanceType<TIncomingMessage>,
     proxySocket: net.Socket,
     proxyHead: any,
   ];
 }
 
-type ProxyMethodArgs = {
+type ProxyMethodArgs<TIncomingMessage extends typeof http.IncomingMessage = typeof http.IncomingMessage, TServerResponse extends typeof http.ServerResponse = typeof http.ServerResponse, TError = Error> = {
   ws: [
-    req: http.IncomingMessage,
+    req: InstanceType<TIncomingMessage>,
     socket: any,
     head: any,
     ...args:
-      [
-        options?: ServerOptions,
-        callback?: ErrorCallback,
-      ]
+    [
+      options?: ServerOptions,
+      callback?: ErrorCallback<TIncomingMessage, TServerResponse, TError>,
+    ]
     | [
-        callback?: ErrorCallback,
-      ]
+      callback?: ErrorCallback<TIncomingMessage, TServerResponse, TError>,
+    ]
   ]
   web: [
-    req: http.IncomingMessage,
-    res: http.ServerResponse,
+    req: InstanceType<TIncomingMessage>,
+    res: InstanceType<TServerResponse>,
     ...args:
-        [
-          options: ServerOptions,
-          callback?: ErrorCallback,
-        ]
-      | [
-          callback?: ErrorCallback
-        ]
+    [
+      options: ServerOptions,
+      callback?: ErrorCallback<TIncomingMessage, TServerResponse, TError>,
+    ]
+    | [
+      callback?: ErrorCallback<TIncomingMessage, TServerResponse, TError>
+    ]
   ]
 }
 
-type PassFunctions = {
+type PassFunctions<TIncomingMessage extends typeof http.IncomingMessage = typeof http.IncomingMessage, TServerResponse extends typeof http.ServerResponse = typeof http.ServerResponse, TError = Error> = {
   ws: (
-    req: http.IncomingMessage,
+    req: InstanceType<TIncomingMessage>,
     socket: net.Socket,
     options: NormalizedServerOptions,
     head: Buffer | undefined,
-    server: ProxyServer,
-    cb?: ErrorCallback
+    server: ProxyServer<TIncomingMessage, TServerResponse, TError>,
+    cb?: ErrorCallback<TIncomingMessage, TServerResponse, TError>
   ) => unknown
   web: (
-    req: http.IncomingMessage,
-    res: http.ServerResponse,
+    req: InstanceType<TIncomingMessage>,
+    res: InstanceType<TServerResponse>,
     options: NormalizedServerOptions,
     head: Buffer | undefined,
-    server: ProxyServer,
-    cb?: ErrorCallback
+    server: ProxyServer<TIncomingMessage, TServerResponse, TError>,
+    cb?: ErrorCallback<TIncomingMessage, TServerResponse, TError>
   ) => unknown
 }
 
-export class ProxyServer extends EventEmitter<ProxyServerEventMap> {
+export class ProxyServer<TIncomingMessage extends typeof http.IncomingMessage = typeof http.IncomingMessage, TServerResponse extends typeof http.ServerResponse = typeof http.ServerResponse, TError = Error> extends EventEmitter<ProxyServerEventMap<TIncomingMessage, TServerResponse, TError>> {
   /**
    * Used for proxying WS(S) requests
    * @param req - Client request.
@@ -207,7 +207,7 @@ export class ProxyServer extends EventEmitter<ProxyServerEventMap> {
    * @param head - Client head.
    * @param options - Additional options.
    */
-  public readonly ws: (...args: ProxyMethodArgs["ws"]) => void;
+  public readonly ws: (...args: ProxyMethodArgs<TIncomingMessage, TServerResponse, TError>["ws"]) => void;
 
   /**
    * Used for proxying regular HTTP(S) requests
@@ -215,12 +215,12 @@ export class ProxyServer extends EventEmitter<ProxyServerEventMap> {
    * @param res - Client response.
    * @param options - Additional options.
    */
-  public readonly web: (...args: ProxyMethodArgs["web"]) => void;
+  public readonly web: (...args: ProxyMethodArgs<TIncomingMessage, TServerResponse, TError>["web"]) => void;
 
   private options: ServerOptions;
-  private webPasses: Array<PassFunctions['web']>;
-  private wsPasses: Array<PassFunctions['ws']>;
-  private _server?: http.Server | https.Server | null;
+  private webPasses: Array<PassFunctions<TIncomingMessage, TServerResponse, TError>['web']>;
+  private wsPasses: Array<PassFunctions<TIncomingMessage, TServerResponse, TError>['ws']>;
+  private _server?: http.Server<TIncomingMessage, TServerResponse> | https.Server<TIncomingMessage, TServerResponse> | null;
 
   /**
    * Creates the proxy server with specified options.
@@ -233,8 +233,8 @@ export class ProxyServer extends EventEmitter<ProxyServerEventMap> {
     this.options = options;
     this.web = this.createRightProxy("web")(options);
     this.ws = this.createRightProxy("ws")(options);
-    this.webPasses = Object.values(WEB_PASSES);
-    this.wsPasses = Object.values(WS_PASSES);
+    this.webPasses = Object.values(WEB_PASSES) as Array<PassFunctions<TIncomingMessage, TServerResponse, TError>['web']>;
+    this.wsPasses = Object.values(WS_PASSES) as Array<PassFunctions<TIncomingMessage, TServerResponse, TError>['ws']>;
     this.on("error", this.onError);
   }
 
@@ -243,8 +243,12 @@ export class ProxyServer extends EventEmitter<ProxyServerEventMap> {
    * @param options Config object passed to the proxy
    * @returns Proxy object with handlers for `ws` and `web` requests
    */
-  static createProxyServer(options?: ServerOptions): ProxyServer {
-    return new ProxyServer(options);
+  static createProxyServer<
+    TIncomingMessage extends typeof http.IncomingMessage,
+    TServerResponse extends typeof http.ServerResponse,
+    TError = Error
+  >(options?: ServerOptions): ProxyServer<TIncomingMessage, TServerResponse, TError> {
+    return new ProxyServer<TIncomingMessage, TServerResponse, TError>(options);
   }
 
   /**
@@ -252,8 +256,12 @@ export class ProxyServer extends EventEmitter<ProxyServerEventMap> {
    * @param options Config object passed to the proxy
    * @returns Proxy object with handlers for `ws` and `web` requests
    */
-  static createServer(options?: ServerOptions): ProxyServer {
-    return new ProxyServer(options);
+  static createServer<
+    TIncomingMessage extends typeof http.IncomingMessage,
+    TServerResponse extends typeof http.ServerResponse,
+    TError = Error
+  >(options?: ServerOptions): ProxyServer<TIncomingMessage, TServerResponse, TError> {
+    return new ProxyServer<TIncomingMessage, TServerResponse, TError>(options);
   }
 
   /**
@@ -261,8 +269,12 @@ export class ProxyServer extends EventEmitter<ProxyServerEventMap> {
    * @param options Config object passed to the proxy
    * @returns Proxy object with handlers for `ws` and `web` requests
    */
-  static createProxy(options?: ServerOptions): ProxyServer {
-    return new ProxyServer(options);
+  static createProxy<
+    TIncomingMessage extends typeof http.IncomingMessage,
+    TServerResponse extends typeof http.ServerResponse,
+    TError = Error
+  >(options?: ServerOptions): ProxyServer<TIncomingMessage, TServerResponse, TError> {
+    return new ProxyServer<TIncomingMessage, TServerResponse, TError>(options);
   }
 
   // createRightProxy - Returns a function that when called creates the loader for
@@ -270,9 +282,9 @@ export class ProxyServer extends EventEmitter<ProxyServerEventMap> {
   createRightProxy = <PT extends ProxyType>(type: PT): Function => {
     log("createRightProxy", { type });
     return (options: ServerOptions) => {
-      return (...args: ProxyMethodArgs[PT] /* req, res, [head], [opts] */) => {
+      return (...args: ProxyMethodArgs<TIncomingMessage, TServerResponse, TError>[PT] /* req, res, [head], [opts] */) => {
         const req = args[0];
-        log("proxy: ", { type, path: req.url });
+        log("proxy: ", { type, path: (req as http.IncomingMessage).url });
         const res = args[1];
         const passes = type === "ws" ? this.wsPasses : this.webPasses;
         if (type == "ws") {
@@ -284,13 +296,13 @@ export class ProxyServer extends EventEmitter<ProxyServerEventMap> {
           // and there's no way for a user of http-proxy-3 to get ahold
           // of this res object and attach their own error handler until
           // after the passes. So we better attach one ASAP right here:
-          (res as net.Socket).on("error", (err) => {
+          (res as net.Socket).on("error", (err: TError) => {
             this.emit("error", err, req, res);
           });
         }
         let counter = args.length - 1;
         let head: Buffer | undefined;
-        let cb: ErrorCallback | undefined;
+        let cb: ErrorCallback<TIncomingMessage, TServerResponse, TError> | undefined;
 
         // optional args parse begin
         if (typeof args[counter] === "function") {
@@ -318,7 +330,7 @@ export class ProxyServer extends EventEmitter<ProxyServerEventMap> {
         }
 
         if (!requestOptions.target && !requestOptions.forward) {
-          this.emit("error", new Error("Must set target or forward"), req, res);
+          this.emit("error", new Error("Must set target or forward") as TError, req, res);
           return;
         }
 
@@ -340,7 +352,7 @@ export class ProxyServer extends EventEmitter<ProxyServerEventMap> {
     };
   };
 
-  onError = (err: Error) => {
+  onError = (err: TError) => {
     // Force people to handle their own errors
     if (this.listeners("error").length === 1) {
       throw err;
@@ -355,12 +367,16 @@ export class ProxyServer extends EventEmitter<ProxyServerEventMap> {
   listen = (port: number, hostname?: string) => {
     log("listen", { port, hostname });
 
+    const requestListener = (req: InstanceType<TIncomingMessage>, res: InstanceType<TServerResponse>) => {
+      this.web(req, res);
+    };
+
     this._server = this.options.ssl
-      ? https.createServer(this.options.ssl, this.web)
-      : http.createServer(this.web);
+      ? https.createServer<TIncomingMessage, TServerResponse>(this.options.ssl, requestListener)
+      : http.createServer<TIncomingMessage, TServerResponse>(requestListener);
 
     if (this.options.ws) {
-      this._server.on("upgrade", (req, socket, head) => {
+      this._server.on("upgrade", (req: InstanceType<TIncomingMessage>, socket, head) => {
         this.ws(req, socket, head);
       });
     }
@@ -390,11 +406,11 @@ export class ProxyServer extends EventEmitter<ProxyServerEventMap> {
     });
   };
 
-  before = <PT extends ProxyType>(type: PT, passName: string, cb: PassFunctions[PT]) => {
+  before = <PT extends ProxyType>(type: PT, passName: string, cb: PassFunctions<TIncomingMessage, TServerResponse, TError>[PT]) => {
     if (type !== "ws" && type !== "web") {
       throw new Error("type must be `web` or `ws`");
     }
-    const passes = (type === "ws" ? this.wsPasses : this.webPasses) as PassFunctions[PT][];
+    const passes = (type === "ws" ? this.wsPasses : this.webPasses) as PassFunctions<TIncomingMessage, TServerResponse, TError>[PT][];
     let i: false | number = false;
 
     passes.forEach((v, idx) => {
@@ -410,11 +426,11 @@ export class ProxyServer extends EventEmitter<ProxyServerEventMap> {
     passes.splice(i, 0, cb);
   };
 
-  after = <PT extends ProxyType>(type: PT, passName: string, cb: PassFunctions[PT]) => {
+  after = <PT extends ProxyType>(type: PT, passName: string, cb: PassFunctions<TIncomingMessage, TServerResponse, TError>[PT]) => {
     if (type !== "ws" && type !== "web") {
       throw new Error("type must be `web` or `ws`");
     }
-    const passes = (type === "ws" ? this.wsPasses : this.webPasses) as PassFunctions[PT][];
+    const passes = (type === "ws" ? this.wsPasses : this.webPasses) as PassFunctions<TIncomingMessage, TServerResponse, TError>[PT][];
     let i: false | number = false;
 
     passes.forEach((v, idx) => {
