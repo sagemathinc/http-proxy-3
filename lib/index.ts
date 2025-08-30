@@ -13,6 +13,7 @@ export {
   type ErrorCallback,
 };
 export { numOpenSockets } from './http-proxy/passes/ws-incoming';
+import * as http from 'node:http';
 
 /**
  * Creates the proxy server.
@@ -29,8 +30,8 @@ export { numOpenSockets } from './http-proxy/passes/ws-incoming';
  * @api public
  */
 
-function createProxyServer(options: ServerOptions = {}): ProxyServer {
-  return new ProxyServer(options);
+function createProxyServer<TIncomingMessage extends typeof http.IncomingMessage = typeof http.IncomingMessage, TServerResponse extends typeof http.ServerResponse = typeof http.ServerResponse, TError = Error>(options: ServerOptions = {}): ProxyServer<TIncomingMessage, TServerResponse, TError> {
+  return new ProxyServer<TIncomingMessage, TServerResponse, TError>(options);
 }
 
 export {
