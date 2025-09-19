@@ -11,7 +11,7 @@ The names of passes are exported as WS_PASSES from this module.
 import * as http from "node:http";
 import * as https from "node:https";
 import * as common from "../common";
-import type { Request } from "./web-incoming";
+import type { Request, ProxyResponse } from "./web-incoming";
 import type { Socket } from "node:net";
 import debug from "debug";
 import type { NormalizedServerOptions, ProxyServer } from "..";
@@ -219,6 +219,28 @@ export function stream(
     // which may be another leak type situation and definitely doesn't work for unit testing.
     socket.destroySoon();
   }
+  
+  // if we get a response, backend is not a websocket endpoint,
+  // relay HTTP response and close the socket
+  proxyReq.on("response", (proxyRes: ProxyResponse) => {
+    log("got non-ws HTTP response",
+        {
+          statusCode: proxyRes.statusCode,
+          statusMessage: proxyRes.statusMessage,
+        }
+    );
+    const proxyHead = createHttpHeader(
+      `HTTP/1.1 ${proxyRes.statusCode} ${proxyRes.statusMessage}`,
+      {"Connection": "close"},
+    );
+    if (!socket.destroyed) {
+      socket.write(proxyHead);
+      proxyRes.pipe(socket);
+    } else {
+      // make sure response is consumed
+      proxyRes.resume();
+    }
+  });
 
   proxyReq.end();
 }
