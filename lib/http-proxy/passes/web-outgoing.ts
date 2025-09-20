@@ -27,14 +27,13 @@ export interface EditableResponse {
 
 // If is a HTTP 1.0 request, remove chunk headers
 export function removeChunked(
-  req: Request,
+  _req: Request,
   _res: EditableResponse,
   // Response object from the proxy request
   proxyRes: ProxyResponse,
 ) {
-  if (req.httpVersion === "1.0") {
-    delete proxyRes.headers["transfer-encoding"];
-  }
+  // transfer-encoding is hop-by-hop, don't preserve it across proxy hops
+  delete proxyRes.headers["transfer-encoding"];
 }
 
 // If is a HTTP 1.0 request, set the correct connection header

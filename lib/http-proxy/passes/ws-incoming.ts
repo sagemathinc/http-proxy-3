@@ -257,8 +257,22 @@ export function stream(
       // note: none of these return anything
       pass(req, res as EditableResponse, proxyRes, options as NormalizedServerOptions & { target: NormalizeProxyTarget<ProxyTarget> });
     }
-    // avoid Invalid character error in chunk size
-    delete res.headers['transfer-encoding'];
+
+    // implement HTTP/1.1 chunked transfer unless content-length is defined
+    // matches proxyRes.pipe(res) behavior,
+    // but we are piping directly to the socket instead, so it's our job.
+    let writeChunk = (chunk: Buffer | string) => {
+      socket.write(chunk);
+    }
+    if (req.httpVersion === "1.1" && proxyRes.headers["content-length"] === undefined) {
+      res.headers["transfer-encoding"] = "chunked";
+      writeChunk = (chunk: Buffer | string) => {
+        socket.write(chunk.length.toString(16));
+        socket.write("\r\n");
+        socket.write(chunk);
+        socket.write("\r\n");
+      }
+    }
 
     const proxyHead = createHttpHeader(
       `HTTP/${req.httpVersion} ${proxyRes.statusCode} ${proxyRes.statusMessage}`,
@@ -266,7 +280,13 @@ export function stream(
     );
     if (!socket.destroyed) {
       socket.write(proxyHead);
-      proxyRes.pipe(socket);
+      proxyRes.on("data", (chunk) => {
+        writeChunk(chunk);
+      })
+      proxyRes.on("end", () => {
+        writeChunk("");
+        socket.destroySoon();
+      })
     } else {
       // make sure response is consumed
       proxyRes.resume();
