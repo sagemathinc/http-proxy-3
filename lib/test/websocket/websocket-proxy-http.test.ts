@@ -50,7 +50,8 @@ describe("Example of client requesting websocket when backend is plain http", ()
     req.end();
     const [res] = await once(req, "response");
     expect(res.statusCode).toEqual(418);
-    const body = await res.read().toString();
+    await once(res, "readable");
+    const body = res.read().toString();
     expect(body.trim()).toEqual("not a websocket!");
     log("we got an http response.");
   });
@@ -74,7 +75,8 @@ describe("Example of client requesting websocket when backend is plain http", ()
     req.end();
     const [res] = await once(req, "response");
     expect(res.statusCode).toEqual(418);
-    const body = await res.read().toString();
+    await once(res, "readable");
+    const body = res.read().toString();
     expect(body.trim()).toEqual("not a websocket!");
   });
 
