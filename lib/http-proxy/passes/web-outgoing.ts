@@ -11,16 +11,24 @@ to not return anything.
 
 import type { NormalizedServerOptions, NormalizeProxyTarget, ProxyTarget } from "..";
 import * as common from "../common";
-import type { Request, Response, ProxyResponse } from "./web-incoming";
+import type { Request, ProxyResponse } from "./web-incoming";
 
 const redirectRegex = /^201|30(1|2|7|8)$/;
+
+// interface for subset of Response that's actually used here
+// needed for running outgoing passes on MockResponse in ws-incoming
+export interface EditableResponse {
+  statusCode: number;
+  statusMessage: string;
+  setHeader(key: string, value: string | string[]): this;
+}
 
 // <--
 
 // If is a HTTP 1.0 request, remove chunk headers
 export function removeChunked(
   req: Request,
-  _res: Response,
+  _res: EditableResponse,
   // Response object from the proxy request
   proxyRes: ProxyResponse,
 ) {
@@ -33,7 +41,7 @@ export function removeChunked(
 // or if connection header not present, then use `keep-alive`
 export function setConnection(
   req: Request,
-  _res: Response,
+  _res: EditableResponse,
   // Response object from the proxy request
   proxyRes: ProxyResponse,
 ) {
@@ -46,7 +54,7 @@ export function setConnection(
 
 export function setRedirectHostRewrite(
   req: Request,
-  _res: Response,
+  _res: EditableResponse,
   proxyRes: ProxyResponse,
   options: NormalizedServerOptions & { target: NormalizeProxyTarget<ProxyTarget> },
 ) {
@@ -84,7 +92,7 @@ export function setRedirectHostRewrite(
 export function writeHeaders(
   _req: Request,
   // Response to set headers in
-  res: Response,
+  res: EditableResponse,
   // Response object from the proxy request
   proxyRes: ProxyResponse,
   // options.cookieDomainRewrite: Config to rewrite cookie domain
@@ -147,7 +155,7 @@ export function writeHeaders(
 // Set the statusCode from the proxyResponse
 export function writeStatusCode(
   _req: Request,
-  res: Response,
+  res: EditableResponse,
   proxyRes: ProxyResponse,
 ) {
   // From Node.js docs: response.writeHead(statusCode[, statusMessage][, headers])
