@@ -9,7 +9,7 @@ The names of passes are exported as WEB_PASSES from this module.
 
 import * as http from "node:http";
 import * as https from "node:https";
-import { OUTGOING_PASSES } from "./web-outgoing";
+import { OUTGOING_PASSES, EditableResponse } from "./web-outgoing";
 import * as common from "../common";
 import * as followRedirects from "follow-redirects";
 import {
@@ -164,7 +164,7 @@ export function stream(req: Request, res: Response, options: NormalizedServerOpt
     if (!res.headersSent && !options.selfHandleResponse) {
       for (const pass of web_o) {
         // note: none of these return anything
-        pass(req, res, proxyRes, options as NormalizedServerOptions & { target: NormalizeProxyTarget<ProxyTarget> });
+        pass(req, res as EditableResponse, proxyRes, options as NormalizedServerOptions & { target: NormalizeProxyTarget<ProxyTarget> });
       }
     }
 

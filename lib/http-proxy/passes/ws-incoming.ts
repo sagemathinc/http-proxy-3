@@ -11,12 +11,14 @@ The names of passes are exported as WS_PASSES from this module.
 import * as http from "node:http";
 import * as https from "node:https";
 import * as common from "../common";
-import type { Request } from "./web-incoming";
+import type { Request, ProxyResponse } from "./web-incoming";
+import { OUTGOING_PASSES, EditableResponse } from "./web-outgoing";
 import type { Socket } from "node:net";
 import debug from "debug";
-import type { NormalizedServerOptions, ProxyServer } from "..";
+import type { NormalizedServerOptions, NormalizeProxyTarget, ProxyServer, ProxyTarget } from "..";
 
 const log = debug("http-proxy-3:ws-incoming");
+const web_o = Object.values(OUTGOING_PASSES);
 
 function createSocketCounter(name: string) {
   let sockets = new Set<number>();
@@ -54,6 +56,26 @@ function createSocketCounter(name: string) {
 
 const socketCounter = createSocketCounter("socket");
 const proxySocketCounter = createSocketCounter("proxySocket");
+
+/* MockResponse
+   when a websocket gets a regular HTTP Response,
+   apply proxied headers
+*/
+class MockResponse implements EditableResponse {
+  constructor() {
+    this.headers = {};
+    this.statusCode = 200
+    this.statusMessage = "";
+  }
+  public headers: { [key: string]: string};
+  public statusCode: number;
+  public statusMessage: string;
+  
+  setHeader(key: string, value: string)  {
+    this.headers[key] = value;
+    return this;
+  };
+}
 
 export function numOpenSockets(): number {
   return socketCounter() + proxySocketCounter();
@@ -219,6 +241,57 @@ export function stream(
     // which may be another leak type situation and definitely doesn't work for unit testing.
     socket.destroySoon();
   }
+
+  // if we get a response, backend is not a websocket endpoint,
+  // relay HTTP response and close the socket
+  proxyReq.on("response", (proxyRes: ProxyResponse) => {
+    log("got non-ws HTTP response",
+        {
+          statusCode: proxyRes.statusCode,
+          statusMessage: proxyRes.statusMessage,
+        }
+    );
+
+    const res = new MockResponse();
+    for (const pass of web_o) {
+      // note: none of these return anything
+      pass(req, res as EditableResponse, proxyRes, options as NormalizedServerOptions & { target: NormalizeProxyTarget<ProxyTarget> });
+    }
+
+    // implement HTTP/1.1 chunked transfer unless content-length is defined
+    // matches proxyRes.pipe(res) behavior,
+    // but we are piping directly to the socket instead, so it's our job.
+    let writeChunk = (chunk: Buffer | string) => {
+      socket.write(chunk);
+    }
+    if (req.httpVersion === "1.1" && proxyRes.headers["content-length"] === undefined) {
+      res.headers["transfer-encoding"] = "chunked";
+      writeChunk = (chunk: Buffer | string) => {
+        socket.write(chunk.length.toString(16));
+        socket.write("\r\n");
+        socket.write(chunk);
+        socket.write("\r\n");
+      }
+    }
+
+    const proxyHead = createHttpHeader(
+      `HTTP/${req.httpVersion} ${proxyRes.statusCode} ${proxyRes.statusMessage}`,
+      res.headers,
+    );
+    if (!socket.destroyed) {
+      socket.write(proxyHead);
+      proxyRes.on("data", (chunk) => {
+        writeChunk(chunk);
+      })
+      proxyRes.on("end", () => {
+        writeChunk("");
+        socket.destroySoon();
+      })
+    } else {
+      // make sure response is consumed
+      proxyRes.resume();
+    }
+  });
 
   proxyReq.end();
 }
