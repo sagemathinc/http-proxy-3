@@ -27,6 +27,13 @@ export interface Outgoing extends Outgoing0 {
 // See https://github.com/http-party/node-http-proxy/issues/1647
 const HEADER_BLACKLIST = "trailer";
 
+const HTTP2_HEADER_BLACKLIST = [
+  ':method',
+  ':path',
+  ':scheme',
+  ':authority',
+]
+
 // setupOutgoing -- Copies the right headers from `options` and `req` to
 // `outgoing` which is then used to fire the proxied request by calling
 // http.request or https.request with outgoing as input.
@@ -78,6 +85,12 @@ export function setupOutgoing(
     if (HEADER_BLACKLIST == header.toLowerCase()) {
       delete outgoing.headers[header];
       break;
+    }
+  }
+
+  if (req.httpVersionMajor > 1) {
+    for (const header of HTTP2_HEADER_BLACKLIST) {
+      delete outgoing.headers[header];
     }
   }
 
