@@ -26,7 +26,7 @@ describe("Reverse proxying -- create a server that...", () => {
     server = http
       .createServer((req, res) => {
         log("Receiving reverse proxy request for:", req.url);
-        const urlObj = new URL(req.url ?? "", "http://dummy.org");
+        const urlObj = new URL(req.url ?? "", "http://base.invalid");
         const target = urlObj.origin;
         proxy.web(req, res, { target, secure: false });
       })

@@ -298,7 +298,7 @@ describe("#setupOutgoing", () => {
     setupOutgoing(
       outgoing,
       {
-        target: new URL("http://dummy.org/some-path?a=1&b=2"),
+        target: new URL("http://base.invalid/some-path?a=1&b=2"),
       },
       { url: "/src?s=1" },
     );
@@ -311,7 +311,7 @@ describe("#setupOutgoing", () => {
     setupOutgoing(
       outgoing,
       {
-        target: new URL("http://dummy.org/some-path?a=1&b=2"),
+        target: new URL("http://base.invalid/some-path?a=1&b=2"),
         ignorePath: true,
       },
       { url: "/src?s=1" },
@@ -329,7 +329,7 @@ describe("#setupOutgoing", () => {
     setupOutgoing(
       outgoing,
       {
-        target: new URL("http://sometarget.com:80", "http://dummy.org"),
+        target: new URL("http://sometarget.com:80", "http://base.invalid"),
         toProxy: true,
       },
       { url: google },
@@ -344,7 +344,7 @@ describe("#setupOutgoing", () => {
     setupOutgoing(
       outgoing,
       {
-        target: new URL("http://sometarget.com:80", "http://dummy.org"),
+        target: new URL("http://sometarget.com:80", "http://base.invalid"),
         toProxy: true,
       },
       { url: google },
@@ -359,7 +359,7 @@ describe("#setupOutgoing", () => {
     setupOutgoing(
       outgoing,
       {
-        target: new URL("http://sometarget.com:80", "http://dummy.org"),
+        target: new URL("http://sometarget.com:80", "http://base.invalid"),
         toProxy: true,
       },
       { url: google },
@@ -375,7 +375,7 @@ describe("#setupOutgoing", () => {
       setupOutgoing(
         outgoing,
         {
-          target: new URL(myEndpoint, "http://dummy.org"),
+          target: new URL(myEndpoint, "http://base.invalid"),
           ignorePath: true,
         },
         { url: "/more/crazy/pathness" },
@@ -390,7 +390,7 @@ describe("#setupOutgoing", () => {
       setupOutgoing(
         outgoing,
         {
-          target: new URL(myEndpoint, "http://dummy.org"),
+          target: new URL(myEndpoint, "http://base.invalid"),
           ignorePath: true,
           prependPath: false,
         },
@@ -408,7 +408,7 @@ describe("#setupOutgoing", () => {
       setupOutgoing(
         outgoing,
         {
-          target: new URL(myEndpoint, "http://dummy.org"),
+          target: new URL(myEndpoint, "http://base.invalid"),
           changeOrigin: true,
         },
         { url: "/" },
@@ -475,7 +475,7 @@ describe("#setupOutgoing", () => {
     setupOutgoing(
       outgoing,
       {
-        target: new URL("https://whooooo.com", "http://dummy.org"),
+        target: new URL("https://whooooo.com", "http://base.invalid"),
         method: "POST",
       },
       { method: "GET", url: "" },
