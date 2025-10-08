@@ -1,5 +1,5 @@
 import * as http from "node:http";
-import * as https from "node:https";
+import * as http2 from "node:http2";
 import * as net from "node:net";
 import { WEB_PASSES } from "./passes/web-incoming";
 import { WS_PASSES } from "./passes/ws-incoming";
@@ -220,7 +220,7 @@ export class ProxyServer<TIncomingMessage extends typeof http.IncomingMessage = 
   private options: ServerOptions;
   private webPasses: Array<PassFunctions<TIncomingMessage, TServerResponse, TError>['web']>;
   private wsPasses: Array<PassFunctions<TIncomingMessage, TServerResponse, TError>['ws']>;
-  private _server?: http.Server<TIncomingMessage, TServerResponse> | https.Server<TIncomingMessage, TServerResponse> | null;
+  private _server?: http.Server<TIncomingMessage, TServerResponse> | http2.Http2SecureServer<TIncomingMessage, TServerResponse> | null;
 
   /**
    * Creates the proxy server with specified options.
@@ -367,13 +367,14 @@ export class ProxyServer<TIncomingMessage extends typeof http.IncomingMessage = 
   listen = (port: number, hostname?: string) => {
     log("listen", { port, hostname });
 
-    const requestListener = (req: InstanceType<TIncomingMessage>, res: InstanceType<TServerResponse>) => {
-      this.web(req, res);
+    const requestListener = (req: InstanceType<TIncomingMessage> | http2.Http2ServerRequest, res: InstanceType<TServerResponse> |http2.Http2ServerResponse) => {
+      this.web(req as InstanceType<TIncomingMessage>, res as InstanceType<TServerResponse>);
     };
 
-    this._server = this.options.ssl
-      ? https.createServer<TIncomingMessage, TServerResponse>(this.options.ssl, requestListener)
-      : http.createServer<TIncomingMessage, TServerResponse>(requestListener);
+    this._server = this.options.ssl ? http2.createSecureServer(
+        { ...this.options.ssl, allowHTTP1: true },
+        requestListener
+      ) : http.createServer<TIncomingMessage, TServerResponse>(requestListener);
 
     if (this.options.ws) {
       this._server.on("upgrade", (req: InstanceType<TIncomingMessage>, socket, head) => {

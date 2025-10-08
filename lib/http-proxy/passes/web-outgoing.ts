@@ -143,6 +143,10 @@ export function writeHeaders(
 
   for (const key0 in proxyRes.headers) {
     let key = key0;
+    if (_req.httpVersionMajor > 1 && key === "connection") {
+      // don't send connection header to http2 client
+      continue;
+    }
     const header = proxyRes.headers[key];
     if (preserveHeaderKeyCase && rawHeaderKeyMap) {
       key = rawHeaderKeyMap[key] ?? key;
@@ -158,11 +162,10 @@ export function writeStatusCode(
   proxyRes: ProxyResponse,
 ) {
   // From Node.js docs: response.writeHead(statusCode[, statusMessage][, headers])
-  if (proxyRes.statusMessage) {
-    res.statusCode = proxyRes.statusCode!;
+  res.statusCode = proxyRes.statusCode!;
+
+  if (proxyRes.statusMessage && _req.httpVersionMajor === 1) {
     res.statusMessage = proxyRes.statusMessage;
-  } else {
-    res.statusCode = proxyRes.statusCode!;
   }
 }
 
