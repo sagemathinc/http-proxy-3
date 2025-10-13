@@ -17,7 +17,16 @@ import {
   type ServerResponse as Response,
 } from "node:http";
 import { type Socket } from "node:net";
-import type { ErrorCallback, NormalizedServerOptions, NormalizeProxyTarget, ProxyServer, ProxyTarget, ProxyTargetUrl, ServerOptions } from "..";
+import type {
+  ErrorCallback,
+  NormalizedServerOptions,
+  NormalizeProxyTarget,
+  ProxyServer,
+  ProxyTarget,
+  ProxyTargetUrl,
+  ServerOptions,
+} from "..";
+import { Dispatcher, request, stream as uStream, Client } from "undici";
 
 export type ProxyResponse = Request & {
   headers: { [key: string]: string | string[] };
@@ -73,44 +82,132 @@ export function XHeaders(req: Request, _res: Response, options: ServerOptions) {
 // Does the actual proxying. If `forward` is enabled fires up
 // a ForwardStream (there is NO RESPONSE), same happens for ProxyStream. The request
 // just dies otherwise.
-export function stream(req: Request, res: Response, options: NormalizedServerOptions, _: Buffer | undefined, server: ProxyServer, cb: ErrorCallback | undefined) {
+export async function stream(
+  req: Request,
+  res: Response,
+  options: NormalizedServerOptions,
+  _: Buffer | undefined,
+  server: ProxyServer,
+  cb: ErrorCallback | undefined,
+) {
   // And we begin!
   server.emit("start", req, res, options.target || options.forward!);
 
   const agents = options.followRedirects ? followRedirects : nativeAgents;
-  const http = agents.http as typeof import('http');
-  const https = agents.https as typeof import('https');
+  const http = agents.http as typeof import("http");
+  const https = agents.https as typeof import("https");
 
   if (options.forward) {
-    // forward enabled, so just pipe the request
-    const proto = options.forward.protocol === "https:" ? https : http;
     const outgoingOptions = common.setupOutgoing(
       options.ssl || {},
       options,
       req,
       "forward",
     );
-    const forwardReq = proto.request(outgoingOptions);
 
-    // error handler (e.g. ECONNRESET, ECONNREFUSED)
-    // Handle errors on incoming request as well as it makes sense to
-    const forwardError = createErrorHandler(forwardReq, options.forward);
-    req.on("error", forwardError);
-    forwardReq.on("error", forwardError);
+    const targetUrl = `${outgoingOptions.url}`;
 
-    (options.buffer || req).pipe(forwardReq);
+    const undiciOptions: any = {
+      method: outgoingOptions.method as Dispatcher.HttpMethod,
+      headers: outgoingOptions.headers,
+      path: outgoingOptions.path,
+    };
+
+    // Handle request body
+    if (options.buffer) {
+      undiciOptions.body = options.buffer;
+    } else if (req.method !== "GET" && req.method !== "HEAD") {
+      undiciOptions.body = req;
+    }
+
+    try {
+      const client = new Client(targetUrl);
+      await client.request(undiciOptions);
+    } catch (err) {
+      if (cb) {
+        cb(err as Error, req, res, options.forward);
+      } else {
+        server.emit("error", err as Error, req, res, options.forward);
+      }
+    }
+
     if (!options.target) {
-      // no target, so we do not send anything back to the client.
-      // If target is set, we do a separate proxy below, which might be to a
-      // completely different server.
       return res.end();
     }
   }
 
   // Request initalization
-  const proto = options.target!.protocol === "https:" ? https : http;
   const outgoingOptions = common.setupOutgoing(options.ssl || {}, options, req);
-  const proxyReq = proto.request(outgoingOptions);
+  const client = new Client(outgoingOptions.url, {
+    allowH2: req.httpVersionMajor === 2,
+  });
+  // const proxyReq = proto.request(outgoingOptions);
+
+  const dispatchOptions: Dispatcher.DispatchOptions = {
+    method: outgoingOptions.method as Dispatcher.HttpMethod,
+    path: outgoingOptions.path || "/",
+    headers: outgoingOptions.headers,
+
+    body:
+      options.buffer ||
+      (req.method !== "GET" && req.method !== "HEAD" ? req : undefined),
+  };
+
+  let responseStarted = false;
+
+  client.dispatch(dispatchOptions, {
+    onRequestStart(controller, context) {
+      // Can modify the request just before headers are sent
+      console.log("onRequestStart");
+    },
+    onResponseStart(controller, statusCode, headers, statusMessage) {
+      // Set response status and headers - crucial for SSE
+      res.statusCode = statusCode;
+
+      // Set headers from the record object
+      for (const [name, value] of Object.entries(headers)) {
+        res.setHeader(name, value);
+      }
+
+      // For SSE, ensure headers are sent immediately
+      const contentType = headers["content-type"] || headers["Content-Type"];
+      if (contentType && contentType.toString().includes("text/event-stream")) {
+        res.flushHeaders();
+      }
+
+      responseStarted = true;
+    },
+    onResponseError(controller, err) {
+      if (
+        req.socket.destroyed &&
+        (err as NodeJS.ErrnoException).code === "ECONNRESET"
+      ) {
+        server.emit("econnreset", err, req, res, outgoingOptions.url);
+        controller.abort(err);
+        return;
+      }
+
+      if (cb) {
+        cb(err, req, res, outgoingOptions.url);
+      } else {
+        server.emit("error", err, req, res, outgoingOptions.url);
+      }
+    },
+    onResponseData(controller, chunk) {
+      if (responseStarted) {
+        res.write(chunk);
+      }
+    },
+    onResponseEnd(controller, trailers) {
+      if (trailers) {
+        res.addTrailers(trailers);
+      }
+      res.end();
+      client.close();
+    },
+  });
+
+  return;
 
   // Enable developers to modify the proxyReq before headers are sent
   proxyReq.on("socket", (socket: Socket) => {
@@ -140,9 +237,15 @@ export function stream(req: Request, res: Response, options: NormalizedServerOpt
   req.on("error", proxyError);
   proxyReq.on("error", proxyError);
 
-  function createErrorHandler(proxyReq: http.ClientRequest, url: NormalizeProxyTarget<ProxyTargetUrl>) {
+  function createErrorHandler(
+    proxyReq: http.ClientRequest,
+    url: NormalizeProxyTarget<ProxyTargetUrl>,
+  ) {
     return (err: Error) => {
-      if (req.socket.destroyed && (err as NodeJS.ErrnoException).code === "ECONNRESET") {
+      if (
+        req.socket.destroyed &&
+        (err as NodeJS.ErrnoException).code === "ECONNRESET"
+      ) {
         server.emit("econnreset", err, req, res, url);
         proxyReq.destroy();
         return;
@@ -164,7 +267,14 @@ export function stream(req: Request, res: Response, options: NormalizedServerOpt
     if (!res.headersSent && !options.selfHandleResponse) {
       for (const pass of web_o) {
         // note: none of these return anything
-        pass(req, res as EditableResponse, proxyRes, options as NormalizedServerOptions & { target: NormalizeProxyTarget<ProxyTarget> });
+        pass(
+          req,
+          res as EditableResponse,
+          proxyRes,
+          options as NormalizedServerOptions & {
+            target: NormalizeProxyTarget<ProxyTarget>;
+          },
+        );
       }
     }
 
