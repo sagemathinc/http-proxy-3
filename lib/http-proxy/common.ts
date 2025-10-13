@@ -1,4 +1,8 @@
-import type { NormalizedServerOptions, ProxyTargetDetailed, ServerOptions } from "./index";
+import type {
+  NormalizedServerOptions,
+  ProxyTargetDetailed,
+  ServerOptions,
+} from "./index";
 import { type IncomingMessage as Request } from "node:http";
 import { TLSSocket } from "node:tls";
 import type { Socket } from "node:net";
@@ -27,12 +31,7 @@ export interface Outgoing extends Outgoing0 {
 // See https://github.com/http-party/node-http-proxy/issues/1647
 const HEADER_BLACKLIST = "trailer";
 
-const HTTP2_HEADER_BLACKLIST = [
-  ':method',
-  ':path',
-  ':scheme',
-  ':authority',
-]
+const HTTP2_HEADER_BLACKLIST = [":method", ":path", ":scheme", ":authority"];
 
 // setupOutgoing -- Copies the right headers from `options` and `req` to
 // `outgoing` which is then used to fire the proxied request by calling
@@ -51,8 +50,10 @@ export function setupOutgoing(
   // the final path is target path + relative path requested by user:
   const target = options[forward || "target"]!;
 
-  outgoing.port =
-    +(target.port ?? (target.protocol !== undefined && isSSL.test(target.protocol) ? 443 : 80));
+  outgoing.port = +(
+    target.port ??
+    (target.protocol !== undefined && isSSL.test(target.protocol) ? 443 : 80)
+  );
 
   for (const e of [
     "host",
@@ -125,7 +126,9 @@ export function setupOutgoing(
 
   // target if defined is a URL object so has attribute "pathname", not "path".
   const targetPath =
-    target && options.prependPath !== false && 'pathname' in target ? getPath(`${target.pathname}${target.search ?? ""}`) : "/";
+    target && options.prependPath !== false && "pathname" in target
+      ? getPath(`${target.pathname}${target.search ?? ""}`)
+      : "/";
 
   let outgoingPath = options.toProxy ? req.url : getPath(req.url);
 
@@ -144,6 +147,13 @@ export function setupOutgoing(
         ? outgoing.host + ":" + outgoing.port
         : outgoing.host;
   }
+
+  outgoing.url =
+    target.href ||
+    (target.protocol === "https" ? "https" : "http") +
+      "://" +
+      outgoing.host +
+      (outgoing.port ? ":" + outgoing.port : "");
   return outgoing;
 }
 
@@ -281,17 +291,23 @@ function hasPort(host: string): boolean {
 }
 
 function getPath(url?: string): string {
-  if (url === '' || url?.startsWith('?')) {
-    return url
+  if (url === "" || url?.startsWith("?")) {
+    return url;
   }
   const u = toURL(url);
   return `${u.pathname ?? ""}${u.search ?? ""}`;
 }
 
-export function toURL(url: URL | urllib.Url | ProxyTargetDetailed | string | undefined): URL {
+export function toURL(
+  url: URL | urllib.Url | ProxyTargetDetailed | string | undefined,
+): URL {
   if (url instanceof URL) {
     return url;
-  } else if (typeof url === "object" && 'href' in url && typeof url.href === "string") {
+  } else if (
+    typeof url === "object" &&
+    "href" in url &&
+    typeof url.href === "string"
+  ) {
     url = url.href;
   }
   if (!url) {
