@@ -21,6 +21,7 @@ export interface Outgoing extends Outgoing0 {
   headers: { [header: string]: string | string[] | undefined } & {
     overwritten?: boolean;
   };
+  url: string;
 }
 
 // If we allow this header and a user sends it with a request,
@@ -31,7 +32,14 @@ export interface Outgoing extends Outgoing0 {
 // See https://github.com/http-party/node-http-proxy/issues/1647
 const HEADER_BLACKLIST = "trailer";
 
-const HTTP2_HEADER_BLACKLIST = [":method", ":path", ":scheme", ":authority"];
+const HTTP2_HEADER_BLACKLIST = [
+  ":method",
+  ":path",
+  ":scheme",
+  ":authority",
+  "connection",
+  "keep-alive",
+];
 
 // setupOutgoing -- Copies the right headers from `options` and `req` to
 // `outgoing` which is then used to fire the proxied request by calling
@@ -154,6 +162,13 @@ export function setupOutgoing(
       "://" +
       outgoing.host +
       (outgoing.port ? ":" + outgoing.port : "");
+
+  if (req.httpVersionMajor > 1) {
+    for (const header of HTTP2_HEADER_BLACKLIST) {
+      delete outgoing.headers[header];
+    }
+  }
+
   return outgoing;
 }
 

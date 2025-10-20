@@ -7,6 +7,7 @@ import { EventEmitter } from "node:events";
 import type { Stream } from "node:stream";
 import debug from "debug";
 import { toURL } from "./common";
+import type { Client, Dispatcher } from "undici";
 
 const log = debug("http-proxy-3");
 
@@ -92,6 +93,8 @@ export interface ServerOptions {
    * This is passed to https.request.
    */
   ca?: string;
+  clientOptions?: Client.Options;
+  requestOptions?: Dispatcher.RequestOptions;
 }
 
 export interface NormalizedServerOptions extends ServerOptions {
