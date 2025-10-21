@@ -18,8 +18,8 @@ import {
 } from "node:http";
 import { type Socket } from "node:net";
 import type { ErrorCallback, NormalizedServerOptions, NormalizeProxyTarget, ProxyServer, ProxyTarget, ProxyTargetUrl, ServerOptions } from "..";
-import Stream, { Writable } from "node:stream";
-import { Client, Dispatcher } from "undici";
+import Stream from "node:stream";
+import { Agent, Dispatcher, interceptors } from "undici";
 
 export type ProxyResponse = Request & {
   headers: { [key: string]: string | string[] };
@@ -79,7 +79,7 @@ export function stream(req: Request, res: Response, options: NormalizedServerOpt
   // And we begin!
   server.emit("start", req, res, options.target || options.forward!);
 
-  if (options.clientOptions || options.requestOptions || true) {
+  if (options.agentOptions || options.requestOptions || true) {
     return stream2(req, res, options, _, server, cb);
   }
 
@@ -198,7 +198,34 @@ async function stream2(
   server: ProxyServer,
   cb?: ErrorCallback,
 ) {
-  // Implementation of stream2 function
+
+  req.on("error", (err: Error) => {
+    if (req.socket.destroyed && (err as NodeJS.ErrnoException).code === "ECONNRESET") {
+      server.emit("econnreset", err, req, res, options.target || options.forward!);
+      return;
+    }
+    if (cb) {
+      cb(err, req, res);
+    } else {
+      server.emit("error", err, req, res);
+    }
+  }
+  );
+
+  const agentOptions: Agent.Options = {
+    ...options.agentOptions,
+    allowH2: true,
+    connect: {
+      rejectUnauthorized: options.secure !== false,
+    },
+  };
+
+  let agent: Agent | Dispatcher = new Agent(agentOptions)
+
+  if (options.followRedirects) {
+    agent = agent.compose(interceptors.redirect({ maxRedirections: 5 }))
+  }
+
   if (options.forward) {
     const outgoingOptions = common.setupOutgoing(
       options.ssl || {},
@@ -207,20 +234,10 @@ async function stream2(
       "forward",
     );
 
-    const clientOptions = {
-      allowH2: outgoingOptions.url.startsWith('https://'),
-      connect: {
-        rejectUnauthorized: options.secure !== false,
-      },
-      ...options.clientOptions,
-    };
-
-    const client = new Client(outgoingOptions.url, options.clientOptions);
-
-
     const requestOptions: Dispatcher.RequestOptions = {
+      origin: new URL(outgoingOptions.url).origin,
       method: outgoingOptions.method as Dispatcher.HttpMethod,
-      headers: outgoingOptions.headers,
+      headers: outgoingOptions.headers || {},
       path: outgoingOptions.path || "/",
     };
 
@@ -232,7 +249,7 @@ async function stream2(
     }
 
     try {
-      await client.request(requestOptions)
+      await agent.request(requestOptions)
     } catch (err) {
       if (cb) {
         cb(err as Error, req, res, options.forward);
@@ -248,61 +265,78 @@ async function stream2(
 
   const outgoingOptions = common.setupOutgoing(options.ssl || {}, options, req);
 
-  const clientOptions = {
-    ...options.clientOptions,
-    allowH2: outgoingOptions.url.startsWith('https://'),
-    connect: {
-      rejectUnauthorized: options.secure !== false,
-    }
-  };
-
-  const client = new Client(outgoingOptions.url, clientOptions);
-
-
   const requestOptions: Dispatcher.RequestOptions = {
+    origin: new URL(outgoingOptions.url).origin,
     method: outgoingOptions.method as Dispatcher.HttpMethod,
-    headers: outgoingOptions.headers,
+    headers: outgoingOptions.headers || {},
     path: outgoingOptions.path || "/",
+    headersTimeout: options.proxyTimeout,
   };
 
-  // Handle request body
+  if (options.auth) {
+    requestOptions.headers["authorization"] = `Basic ${Buffer.from(options.auth).toString("base64")}`
+  }
+
   if (options.buffer) {
     requestOptions.body = options.buffer as Stream.Readable;
   } else if (req.method !== "GET" && req.method !== "HEAD") {
     requestOptions.body = req;
   }
 
-  client.stream(
-    requestOptions,
-    ({ statusCode, headers }) => {
-      if (!res.headersSent) {
-        if (req.httpVersionMajor === 2) {
-          delete headers.connection;
-          delete headers["keep-alive"];
-          delete headers["transfer-encoding"];
-        }
-        res.writeHead(statusCode, headers);
+  // server?.emit("proxyReq", requestOptions, req, res, options, undefined);
+  let proxyRes: ProxyResponse
+
+
+  try {
+    const { statusCode, headers, body } = await agent.request(
+      requestOptions
+    );
+    proxyRes = {} as ProxyResponse;
+    proxyRes.statusCode = statusCode;
+    proxyRes.headers = headers as { [key: string]: string | string[] };
+    proxyRes.rawHeaders = Object.entries(headers).flatMap(([key, value]) => {
+      if (Array.isArray(value)) {
+        return value.map(v => [key, v]).flat();
       }
-      return new Writable({
-        write(chunk, _encoding, callback) {
-          res.write(chunk);
-          callback();
-        },
+      return [key, value];
+    });
+    proxyRes.pipe = body.pipe.bind(body);
+
+
+    server?.emit("proxyRes", proxyRes, req, res);
+
+    if (!res.headersSent && !options.selfHandleResponse) {
+      for (const pass of web_o) {
+        // note: none of these return anything
+        pass(req, res as EditableResponse, proxyRes, options as NormalizedServerOptions & { target: NormalizeProxyTarget<ProxyTarget> });
+      }
+    }
+
+    if (!res.writableEnded) {
+      // Allow us to listen for when the proxy has completed
+      body.on("end", () => {
+        server?.emit("end", req, res, proxyRes);
       });
-    },
-    (err, { trailers }) => {
-      if (err) {
-        if (cb) {
-          cb(err as Error, req, res, options.forward);
-        } else {
-          server.emit("error", err as Error, req, res, options.forward);
-        }
+      // We pipe to the response unless its expected to be handled by the user
+      if (!options.selfHandleResponse) {
+        body.pipe(res);
       }
-      if (trailers) {
-        res.end();
+    } else {
+      server?.emit("end", req, res, proxyRes);
+    }
+
+
+  } catch (err) {
+    if (err) {
+      if (cb) {
+        cb(err as Error, req, res, options.target);
+      } else {
+        server.emit("error", err as Error, req, res, options.target);
       }
-    },
-  );
+    }
+  }
+
+
 }
 
 export const WEB_PASSES = { deleteLength, timeout, XHeaders, stream };
