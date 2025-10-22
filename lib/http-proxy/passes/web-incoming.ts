@@ -7,19 +7,19 @@ The names of passes are exported as WEB_PASSES from this module.
 
 */
 
+import type {
+  IncomingMessage as Request,
+  ServerResponse as Response,
+} from "node:http";
 import * as http from "node:http";
 import * as https from "node:https";
-import { OUTGOING_PASSES, EditableResponse } from "./web-outgoing";
-import * as common from "../common";
+import type { Socket } from "node:net";
+import type Stream from "node:stream";
 import * as followRedirects from "follow-redirects";
-import {
-  type IncomingMessage as Request,
-  type ServerResponse as Response,
-} from "node:http";
-import { type Socket } from "node:net";
+import { Agent, type Dispatcher, interceptors } from "undici";
 import type { ErrorCallback, NormalizedServerOptions, NormalizeProxyTarget, ProxyServer, ProxyTarget, ProxyTargetUrl, ServerOptions } from "..";
-import Stream from "node:stream";
-import { Agent, Dispatcher, interceptors } from "undici";
+import * as common from "../common";
+import { type EditableResponse, OUTGOING_PASSES } from "./web-outgoing";
 
 export type ProxyResponse = Request & {
   headers: { [key: string]: string | string[] };
@@ -79,7 +79,8 @@ export function stream(req: Request, res: Response, options: NormalizedServerOpt
   // And we begin!
   server.emit("start", req, res, options.target || options.forward!);
 
-  if (options.agentOptions || options.requestOptions || true) {
+  if (options.agentOptions || options.requestOptions
+  ) {
     return stream2(req, res, options, _, server, cb);
   }
 
@@ -274,7 +275,7 @@ async function stream2(
   };
 
   if (options.auth) {
-    requestOptions.headers["authorization"] = `Basic ${Buffer.from(options.auth).toString("base64")}`
+    requestOptions.headers = { ...requestOptions.headers, authorization: `Basic ${Buffer.from(options.auth).toString("base64")}` };
   }
 
   if (options.buffer) {
@@ -283,46 +284,48 @@ async function stream2(
     requestOptions.body = req;
   }
 
-  // server?.emit("proxyReq", requestOptions, req, res, options, undefined);
-  let proxyRes: ProxyResponse
-
-
+  
+  
+  
   try {
     const { statusCode, headers, body } = await agent.request(
       requestOptions
     );
-    proxyRes = {} as ProxyResponse;
-    proxyRes.statusCode = statusCode;
-    proxyRes.headers = headers as { [key: string]: string | string[] };
-    proxyRes.rawHeaders = Object.entries(headers).flatMap(([key, value]) => {
+
+    // ProxyRes is used in the outgoing passes
+    // But since only certain properties are used, we can fake it here
+    // to avoid having to refactor everything.
+    const fakeProxyRes = {} as ProxyResponse;
+
+    fakeProxyRes.statusCode = statusCode;
+    fakeProxyRes.headers = headers as { [key: string]: string | string[] };
+    fakeProxyRes.rawHeaders = Object.entries(headers).flatMap(([key, value]) => {
       if (Array.isArray(value)) {
-        return value.map(v => [key, v]).flat();
+        return value.flatMap(v => (v != null ? [key, v] : []));
       }
-      return [key, value];
-    });
-    proxyRes.pipe = body.pipe.bind(body);
+      return value != null ? [key, value] : [];
+    }) as string[];
+    fakeProxyRes.pipe = body.pipe.bind(body);
 
-
-    server?.emit("proxyRes", proxyRes, req, res);
 
     if (!res.headersSent && !options.selfHandleResponse) {
       for (const pass of web_o) {
         // note: none of these return anything
-        pass(req, res as EditableResponse, proxyRes, options as NormalizedServerOptions & { target: NormalizeProxyTarget<ProxyTarget> });
+        pass(req, res as EditableResponse, fakeProxyRes, options as NormalizedServerOptions & { target: NormalizeProxyTarget<ProxyTarget> });
       }
     }
 
     if (!res.writableEnded) {
       // Allow us to listen for when the proxy has completed
       body.on("end", () => {
-        server?.emit("end", req, res, proxyRes);
+        server?.emit("end", req, res, fakeProxyRes);
       });
       // We pipe to the response unless its expected to be handled by the user
       if (!options.selfHandleResponse) {
         body.pipe(res);
       }
     } else {
-      server?.emit("end", req, res, proxyRes);
+      server?.emit("end", req, res, fakeProxyRes);
     }
 
 
