@@ -150,18 +150,18 @@ export function setupOutgoing(
   if (options.changeOrigin) {
     outgoing.headers.host =
       target.protocol !== undefined &&
-      required(outgoing.port, target.protocol) &&
-      !hasPort(outgoing.host)
+        required(outgoing.port, target.protocol) &&
+        !hasPort(outgoing.host)
         ? outgoing.host + ":" + outgoing.port
         : outgoing.host;
   }
 
-  outgoing.url =
-    target.href ||
+  outgoing.url = ("href" in target &&
+    target.href) ||
     (target.protocol === "https" ? "https" : "http") +
-      "://" +
-      outgoing.host +
-      (outgoing.port ? ":" + outgoing.port : "");
+    "://" +
+    outgoing.host +
+    (outgoing.port ? ":" + outgoing.port : "");
 
   if (req.httpVersionMajor > 1) {
     for (const header of HTTP2_HEADER_BLACKLIST) {
