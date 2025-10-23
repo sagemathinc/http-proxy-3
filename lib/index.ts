@@ -1,9 +1,9 @@
 import {
+  type ErrorCallback,
   ProxyServer,
-  type ServerOptions,
   type ProxyTarget,
   type ProxyTargetUrl,
-  type ErrorCallback,
+  type ServerOptions,
 } from './http-proxy/index';
 export {
   ProxyServer,
@@ -13,7 +13,8 @@ export {
   type ErrorCallback,
 };
 export { numOpenSockets } from './http-proxy/passes/ws-incoming';
-import * as http from 'node:http';
+
+import type * as http from 'node:http';
 
 /**
  * Creates the proxy server.
@@ -31,6 +32,11 @@ import * as http from 'node:http';
  */
 
 function createProxyServer<TIncomingMessage extends typeof http.IncomingMessage = typeof http.IncomingMessage, TServerResponse extends typeof http.ServerResponse = typeof http.ServerResponse, TError = Error>(options: ServerOptions = {}): ProxyServer<TIncomingMessage, TServerResponse, TError> {
+  // Check if we're in forced undici mode
+  if (process.env.FORCE_UNDICI_PATH === 'true' && options.undici === undefined) {
+    options = { ...options, undici: { agentOptions: { allowH2: true } } };
+  }
+
   return new ProxyServer<TIncomingMessage, TServerResponse, TError>(options);
 }
 

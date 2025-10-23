@@ -441,6 +441,8 @@ proxyServer.listen(8015);
 
 #### HTTP/2 Support with Undici
 
+> **⚠️ Experimental Feature**: The undici code path for HTTP/2 support is currently experimental. While it provides full HTTP/2 functionality and has comprehensive test coverage, the API and behavior may change in future versions. Use with caution in production environments.
+
 http-proxy-3 supports HTTP/2 through [undici](https://github.com/nodejs/undici), a modern HTTP client. When undici is enabled, the proxy can communicate with HTTP/2 servers and provides enhanced performance and features.
 
 ##### Basic HTTP/2 Setup

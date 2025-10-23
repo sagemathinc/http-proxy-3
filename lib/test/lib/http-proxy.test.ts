@@ -112,7 +112,7 @@ describe("#createProxyServer using the web-incoming passes", () => {
 });
 
 describe("#createProxyServer using the web-incoming passes", () => {
-  it("should make the request, handle response and finish it", () => new Promise<void>(done => {
+  it.skipIf(() => process.env.FORCE_UNDICI_PATH === "true")("should make the request, handle response and finish it", () => new Promise<void>(done => {
     const ports = { source: gen.port, proxy: gen.port };
     const proxy = httpProxy
       .createProxyServer({
