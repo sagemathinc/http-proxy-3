@@ -30,6 +30,7 @@ Contributors:
 August 21, 2025 STATUS compared to [http-proxy](https://www.npmjs.com/package/http-proxy) and [httpxy](https://www.npmjs.com/package/httpxy):
 
 - Library entirely rewritten in Typescript in a modern style, with many typings added internally and strict mode enabled.
+- **HTTP/2 Support**: Full HTTP/2 support via [undici](https://github.com/nodejs/undici) with callback-based request/response lifecycle hooks.
 - All dependent packages updated to latest versions, addressing all security vulnerabilities according to `pnpm audit`.
 - Code rewritten to not use deprecated/insecure API's, e.g., using `URL` instead of `parse`.
 - Fixed socket leaks in the Websocket proxy code, going beyond [http-proxy-node16](https://www.npmjs.com/package/http-proxy-node16) to also instrument and logging socket counts. Also fixed an issue with uncatchable errors when using websockets.
@@ -89,7 +90,9 @@ This is the original user's guide, but with various updates.
   - [Setup a stand-alone proxy server with latency](#setup-a-stand-alone-proxy-server-with-latency)
   - [Using HTTPS](#using-https)
   - [Proxying WebSockets](#proxying-websockets)
+  - [HTTP/2 Support with Undici](#http2-support-with-undici)
 - [Options](#options)
+- [Configuration Compatibility](#configuration-compatibility)
 - [Listening for proxy events](#listening-for-proxy-events)
 - [Shutdown](#shutdown)
 - [Miscellaneous](#miscellaneous)
@@ -114,6 +117,10 @@ an `options` object as argument ([valid properties are available here](lib/http-
 import { createProxyServer } from "http-proxy-3";
 const proxy = createProxyServer(options); // See below
 ```
+
+http-proxy-3 supports two request processing paths:
+- **Native Path**: Uses Node.js native `http`/`https` modules (default)
+- **Undici Path**: Uses [undici](https://github.com/nodejs/undici) for HTTP/2 support (when `undici` option is provided)
 
 Unless listen(..) is invoked on the object, this does not create a webserver. See below.
 
@@ -218,6 +225,8 @@ server.listen(5050);
 This example shows how you can proxy a request using your own HTTP server that
 modifies the outgoing proxy request by adding a special header.
 
+##### Using Traditional Events (Native HTTP/HTTPS)
+
 ```js
 import * as http from "node:http";
 import { createProxyServer } from "http-proxy-3";
@@ -242,6 +251,38 @@ const server = http.createServer((req, res) => {
   proxy.web(req, res, {
     target: "http://127.0.0.1:5050",
   });
+});
+
+console.log("listening on port 5050");
+server.listen(5050);
+```
+
+##### Using Callbacks (Undici HTTP/2)
+
+```js
+import * as http from "node:http";
+import { createProxyServer } from "http-proxy-3";
+
+// Create a proxy server with undici and HTTP/2 support
+const proxy = createProxyServer({
+  target: "https://127.0.0.1:5050",
+  undici: {
+    agentOptions: { allowH2: true },
+    // Modify the request before it's sent
+    onBeforeRequest: async (requestOptions, req, res, options) => {
+      requestOptions.headers['X-Special-Proxy-Header'] = 'foobar';
+      requestOptions.headers['X-HTTP2-Enabled'] = 'true';
+    },
+    // Access the response after it's received
+    onAfterResponse: async (response, req, res, options) => {
+      console.log(`Proxied ${req.url} -> ${response.statusCode}`);
+    }
+  }
+});
+
+const server = http.createServer((req, res) => {
+  // The headers are modified via the onBeforeRequest callback
+  proxy.web(req, res);
 });
 
 console.log("listening on port 5050");
@@ -398,6 +439,103 @@ proxyServer.listen(8015);
 
 **[Back to top](#table-of-contents)**
 
+#### HTTP/2 Support with Undici
+
+http-proxy-3 supports HTTP/2 through [undici](https://github.com/nodejs/undici), a modern HTTP client. When undici is enabled, the proxy can communicate with HTTP/2 servers and provides enhanced performance and features.
+
+##### Basic HTTP/2 Setup
+
+```js
+import { createProxyServer } from "http-proxy-3";
+import { Agent, setGlobalDispatcher } from "undici";
+
+// Enable HTTP/2 for all fetch operations
+setGlobalDispatcher(new Agent({ allowH2: true }));
+
+// Create a proxy with HTTP/2 support
+const proxy = createProxyServer({
+  target: "https://http2-server.example.com",
+  undici: {
+    agentOptions: { allowH2: true }
+  }
+});
+```
+
+##### Simple HTTP/2 Enablement
+
+```js
+// Shorthand to enable undici with defaults
+const proxy = createProxyServer({
+  target: "https://http2-server.example.com",
+  undici: true  // Uses default configuration
+});
+```
+
+##### Advanced Configuration with Callbacks
+
+```js
+const proxy = createProxyServer({
+  target: "https://api.example.com",
+  undici: {
+    // Undici agent configuration
+    agentOptions: {
+      allowH2: true,
+      connect: {
+        rejectUnauthorized: false,  // For self-signed certs
+        timeout: 10000
+      }
+    },
+    // Undici request options
+    requestOptions: {
+      headersTimeout: 30000,
+      bodyTimeout: 60000
+    },
+    // Called before making the undici request
+    onBeforeRequest: async (requestOptions, req, res, options) => {
+      // Modify outgoing request
+      requestOptions.headers['X-API-Key'] = 'your-api-key';
+      requestOptions.headers['X-Request-ID'] = Math.random().toString(36);
+    },
+    // Called after receiving the undici response
+    onAfterResponse: async (response, req, res, options) => {
+      // Access full response object
+      console.log(`Status: ${response.statusCode}`);
+      console.log('Headers:', response.headers);
+      // Note: response.body is a stream, not the actual body content
+    }
+  }
+});
+```
+
+##### HTTP/2 with HTTPS Proxy
+
+```js
+import { readFileSync } from "node:fs";
+
+const proxy = createProxyServer({
+  target: "https://http2-target.example.com",
+  ssl: {
+    key: readFileSync("server-key.pem"),
+    cert: readFileSync("server-cert.pem")
+  },
+  undici: {
+    agentOptions: { 
+      allowH2: true,
+      connect: { rejectUnauthorized: false }
+    }
+  },
+  secure: false  // Skip SSL verification for self-signed certs
+}).listen(8443);
+```
+
+**Important Notes:**
+- When `undici` option is provided, the proxy uses undici's HTTP client instead of Node.js native `http`/`https` modules
+- undici automatically handles HTTP/2 negotiation when `allowH2: true` is set
+- The `onBeforeRequest` and `onAfterResponse` callbacks are only available in the undici code path
+- Traditional `proxyReq` and `proxyRes` events are not emitted in the undici path - use the callbacks instead
+
+**[Back to top](#table-of-contents)**
+
 ### Options
 
 `httpProxy.createProxyServer` supports the following options:
@@ -491,6 +629,14 @@ proxyServer.listen(8015);
   };
   ```
 
+- **ca**: Optionally override the trusted CA certificates. This is passed to https.request.
+
+- **undici**: Enable undici for HTTP/2 support. Set to `true` for defaults, or provide custom configuration:
+  - `agentOptions`: Configuration for undici Agent (see [undici Agent.Options](https://github.com/nodejs/undici/blob/main/docs/api/Agent.md))
+  - `requestOptions`: Configuration for undici requests (see [undici Dispatcher.RequestOptions](https://github.com/nodejs/undici/blob/main/docs/api/Dispatcher.md#dispatcherrequestoptions))
+  - `onBeforeRequest`: Async callback called before making the undici request
+  - `onAfterResponse`: Async callback called after receiving the undici response
+
 **NOTE:**
 `options.ws` and `options.ssl` are optional.
 `options.target` and `options.forward` cannot both be missing
@@ -499,6 +645,51 @@ If you are using the `proxyServer.listen` method, the following options are also
 
 - **ssl**: object to be passed to https.createServer()
 - **ws**: true/false, if you want to proxy websockets
+
+**[Back to top](#table-of-contents)**
+
+### Configuration Compatibility
+
+The following table shows which configuration options are compatible with different code paths:
+
+| Option | Native HTTP/HTTPS | Undici HTTP/2 | Notes |
+|--------|-------------------|---------------|--------|
+| `target` | ✅ | ✅ | Core option, works in both paths |
+| `forward` | ✅ | ✅ | Core option, works in both paths |
+| `agent` | ✅ | ❌ | Native agents only, use `undici.agentOptions` instead |
+| `ssl` | ✅ | ✅ | HTTPS server configuration |
+| `ws` | ✅ | ❌ | WebSocket proxying uses native path only |
+| `xfwd` | ✅ | ✅ | X-Forwarded headers |
+| `secure` | ✅ | ✅ | SSL certificate verification |
+| `toProxy` | ✅ | ✅ | Proxy-to-proxy configuration |
+| `prependPath` | ✅ | ✅ | Path manipulation |
+| `ignorePath` | ✅ | ✅ | Path manipulation |
+| `localAddress` | ✅ | ✅ | Local interface binding |
+| `changeOrigin` | ✅ | ✅ | Host header rewriting |
+| `preserveHeaderKeyCase` | ✅ | ✅ | Header case preservation |
+| `auth` | ✅ | ✅ | Basic authentication |
+| `hostRewrite` | ✅ | ✅ | Redirect hostname rewriting |
+| `autoRewrite` | ✅ | ✅ | Automatic redirect rewriting |
+| `protocolRewrite` | ✅ | ✅ | Protocol rewriting on redirects |
+| `cookieDomainRewrite` | ✅ | ✅ | Cookie domain rewriting |
+| `cookiePathRewrite` | ✅ | ✅ | Cookie path rewriting |
+| `headers` | ✅ | ✅ | Extra headers to add |
+| `proxyTimeout` | ✅ | ✅ | Outgoing request timeout |
+| `timeout` | ✅ | ✅ | Incoming request timeout |
+| `followRedirects` | ✅ | ✅ | Redirect following |
+| `selfHandleResponse` | ✅ | ✅ | Manual response handling |
+| `buffer` | ✅ | ✅ | Request body stream |
+| `method` | ✅ | ✅ | HTTP method override |
+| `ca` | ✅ | ✅ | Custom CA certificates |
+| `undici` | ❌ | ✅ | Undici-specific configuration |
+
+**Code Path Selection:**
+- **Native Path**: Used by default, supports HTTP/1.1 and WebSockets
+- **Undici Path**: Activated when `undici` option is provided, supports HTTP/2
+
+**Event Compatibility:**
+- **Native Path**: Emits traditional events (`proxyReq`, `proxyRes`, `proxyReqWs`)
+- **Undici Path**: Uses callback functions (`onBeforeRequest`, `onAfterResponse`) instead of events
 
 **[Back to top](#table-of-contents)**
 
@@ -512,11 +703,13 @@ If you are using the `proxyServer.listen` method, the following options are also
 - `close`: This event is emitted once the proxy websocket was closed.
 - (DEPRECATED) `proxySocket`: Deprecated in favor of `open`.
 
+**Note**: When using the undici code path (HTTP/2), the `proxyReq` and `proxyRes` events are **not** emitted. Instead, use the `onBeforeRequest` and `onAfterResponse` callback functions in the `undici` configuration.
+
+#### Traditional Events (Native HTTP/HTTPS path)
+
 ```js
 import { createProxyServer } from "http-proxy-3";
-// Error example
-//
-// Http Proxy Server with bad target
+
 const proxy = createProxyServer({
   target: "http://localhost:9005",
 });
@@ -528,7 +721,6 @@ proxy.on("error", (err, req, res) => {
   res.writeHead(500, {
     "Content-Type": "text/plain",
   });
-
   res.end("Something went wrong. And we are reporting a custom error message.");
 });
 
@@ -545,6 +737,32 @@ proxy.on("open", (proxySocket) => {
   // listen for messages coming FROM the target here
   proxySocket.on("data", hybiParseAndLogMessage);
 });
+```
+
+#### Callback Functions (Undici/HTTP2 path)
+
+```js
+import { createProxyServer } from "http-proxy-3";
+
+const proxy = createProxyServer({
+  target: "https://api.example.com",
+  undici: {
+    agentOptions: { allowH2: true },
+    // Called before making the undici request
+    onBeforeRequest: async (requestOptions, req, res, options) => {
+      // Modify the outgoing request
+      requestOptions.headers['X-Custom-Header'] = 'added-by-callback';
+      console.log('Making request to:', requestOptions.origin + requestOptions.path);
+    },
+    // Called after receiving the undici response
+    onAfterResponse: async (response, req, res, options) => {
+      // Access the full response object
+      console.log(`Response: ${response.statusCode}`, response.headers);
+      // Note: response.body is a stream that will be piped to res automatically
+    }
+  }
+});
+```
 
 // Listen for the `close` event on `proxy`.
 proxy.on("close", (res, socket, head) => {
