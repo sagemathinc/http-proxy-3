@@ -8,6 +8,7 @@ import type { Stream } from "node:stream";
 import debug from "debug";
 import { toURL } from "./common";
 import type { Agent, Dispatcher } from "undici";
+import { Agent as UndiciAgent, interceptors } from "undici";
 
 const log = debug("http-proxy-3");
 
@@ -236,6 +237,9 @@ export class ProxyServer<TIncomingMessage extends typeof http.IncomingMessage = 
 	private wsPasses: Array<PassFunctions<TIncomingMessage, TServerResponse, TError>['ws']>;
 	private _server?: http.Server<TIncomingMessage, TServerResponse> | http2.Http2SecureServer<TIncomingMessage, TServerResponse> | null;
 
+	// Undici agent for this proxy server
+	public undiciAgent?: Agent;
+
 	/**
 	 * Creates the proxy server with specified options.
 	 * @param options - Config object passed to the proxy
@@ -250,6 +254,33 @@ export class ProxyServer<TIncomingMessage extends typeof http.IncomingMessage = 
 		this.webPasses = Object.values(WEB_PASSES) as Array<PassFunctions<TIncomingMessage, TServerResponse, TError>['web']>;
 		this.wsPasses = Object.values(WS_PASSES) as Array<PassFunctions<TIncomingMessage, TServerResponse, TError>['ws']>;
 		this.on("error", this.onError);
+
+		// Initialize undici agent if enabled
+		if (options.undici) {
+			this.initializeAgent(options.undici);
+		}
+	}
+
+	/**
+	 * Initialize the single undici agent based on server options
+	 */
+	private initializeAgent(undiciOptions: UndiciOptions | boolean): void {
+		const resolvedOptions = undiciOptions === true ? {} as UndiciOptions : undiciOptions as UndiciOptions;
+		const agentOptions: Agent.Options = {
+			allowH2: true,
+			connect: {
+				rejectUnauthorized: this.options.secure !== false,
+			},
+			...(resolvedOptions.agentOptions || {}),
+		};
+
+		this.undiciAgent = new UndiciAgent(agentOptions);
+
+		if (this.options.followRedirects) {
+			this.undiciAgent = this.undiciAgent.compose(
+				interceptors.redirect({ maxRedirections: 5 })
+			) as Agent;
+		}
 	}
 
 	/**

@@ -16,7 +16,7 @@ import * as https from "node:https";
 import type { Socket } from "node:net";
 import type Stream from "node:stream";
 import * as followRedirects from "follow-redirects";
-import { Agent, type Dispatcher, interceptors } from "undici";
+import type { Dispatcher } from "undici";
 import type { ErrorCallback, NormalizedServerOptions, NormalizeProxyTarget, ProxyServer, ProxyTarget, ProxyTargetUrl, ServerOptions, UndiciOptions } from "..";
 import * as common from "../common";
 import { type EditableResponse, OUTGOING_PASSES } from "./web-outgoing";
@@ -199,35 +199,37 @@ async function stream2(
   cb?: ErrorCallback,
 ) {
 
+  // Helper function to handle errors consistently throughout the undici path
+  // Centralizes the error handling logic to avoid repetition
+  const handleError = (err: Error, target?: ProxyTargetUrl) => {
+    if (cb) {
+      cb(err, req, res, target);
+    } else {
+      server.emit("error", err, req, res, target);
+    }
+  };
+
   req.on("error", (err: Error) => {
     if (req.socket.destroyed && (err as NodeJS.ErrnoException).code === "ECONNRESET") {
-      server.emit("econnreset", err, req, res, options.target || options.forward!);
+      const target = options.target || options.forward;
+      if (target) {
+        server.emit("econnreset", err, req, res, target);
+      }
       return;
     }
-    if (cb) {
-      cb(err, req, res);
-    } else {
-      server.emit("error", err, req, res);
-    }
-  }
-  );
+    handleError(err);
+  });
 
   const undiciOptions = options.undici === true ? {} as UndiciOptions : options.undici;
   if (!undiciOptions) {
     throw new Error("stream2 called without undici options");
   }
-  const agentOptions: Agent.Options = {
-    allowH2: true,
-    connect: {
-      rejectUnauthorized: options.secure !== false,
-    },
-    ...(undiciOptions.agentOptions || {}),
-  };
 
-  let agent: Agent | Dispatcher = new Agent(agentOptions)
+  const agent = server.undiciAgent
 
-  if (options.followRedirects) {
-    agent = agent.compose(interceptors.redirect({ maxRedirections: 5 }))
+  if (!agent) {
+    handleError(new Error("Undici agent not initialized"));
+    return;
   }
 
   if (options.forward) {
@@ -257,11 +259,7 @@ async function stream2(
       try {
         await undiciOptions.onBeforeRequest(requestOptions, req, res, options);
       } catch (err) {
-        if (cb) {
-          cb(err as Error, req, res, options.forward);
-        } else {
-          server.emit("error", err as Error, req, res, options.forward);
-        }
+        handleError(err as Error, options.forward);
         return;
       }
     }
@@ -274,20 +272,12 @@ async function stream2(
         try {
           await undiciOptions.onAfterResponse(result, req, res, options);
         } catch (err) {
-          if (cb) {
-            cb(err as Error, req, res, options.forward);
-          } else {
-            server.emit("error", err as Error, req, res, options.forward);
-          }
+          handleError(err as Error, options.forward);
           return;
         }
       }
     } catch (err) {
-      if (cb) {
-        cb(err as Error, req, res, options.forward);
-      } else {
-        server.emit("error", err as Error, req, res, options.forward);
-      }
+      handleError(err as Error, options.forward);
     }
 
     if (!options.target) {
@@ -321,11 +311,7 @@ async function stream2(
     try {
       await undiciOptions.onBeforeRequest(requestOptions, req, res, options);
     } catch (err) {
-      if (cb) {
-        cb(err as Error, req, res, options.target);
-      } else {
-        server.emit("error", err as Error, req, res, options.target);
-      }
+      handleError(err as Error, options.target);
       return;
     }
   }
@@ -338,11 +324,7 @@ async function stream2(
       try {
         await undiciOptions.onAfterResponse(response, req, res, options);
       } catch (err) {
-        if (cb) {
-          cb(err as Error, req, res, options.target);
-        } else {
-          server.emit("error", err as Error, req, res, options.target);
-        }
+        handleError(err as Error, options.target);
         return;
       }
     }
@@ -351,12 +333,14 @@ async function stream2(
     // ProxyRes is used in the outgoing passes
     // But since only certain properties are used, we can fake it here
     // to avoid having to refactor everything.
-    const fakeProxyRes = {...response, rawHeaders: Object.entries(response.headers).flatMap(([key, value]) => {
-      if (Array.isArray(value)) {
-        return value.flatMap(v => (v != null ? [key, v] : []));
-      }
-      return value != null ? [key, value] : [];
-    }) as string[]} as unknown as ProxyResponse;
+    const fakeProxyRes = {
+      ...response, rawHeaders: Object.entries(response.headers).flatMap(([key, value]) => {
+        if (Array.isArray(value)) {
+          return value.flatMap(v => (v != null ? [key, v] : []));
+        }
+        return value != null ? [key, value] : [];
+      }) as string[]
+    } as unknown as ProxyResponse;
 
     if (!res.headersSent && !options.selfHandleResponse) {
       for (const pass of web_o) {
@@ -381,11 +365,7 @@ async function stream2(
 
   } catch (err) {
     if (err) {
-      if (cb) {
-        cb(err as Error, req, res, options.target);
-      } else {
-        server.emit("error", err as Error, req, res, options.target);
-      }
+      handleError(err as Error, options.target);
     }
   }
 
