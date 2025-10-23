@@ -93,8 +93,19 @@ export interface ServerOptions {
 	 * This is passed to https.request.
 	 */
 	ca?: string;
+	/** Enable undici for HTTP/2 support. Set to true for defaults, or provide custom configuration. */
+	undici?: boolean | UndiciOptions;
+}
+
+export interface UndiciOptions {
+	/** Undici Agent configuration */
 	agentOptions?: Agent.Options;
+	/** Undici request options */
 	requestOptions?: Dispatcher.RequestOptions;
+	/** Called before making the undici request */
+	onBeforeRequest?: (requestOptions: Dispatcher.RequestOptions, req: http.IncomingMessage, res: http.ServerResponse, options: NormalizedServerOptions) => void | Promise<void>;
+	/** Called after receiving the undici response */
+	onAfterResponse?: (response: Dispatcher.ResponseData, req: http.IncomingMessage, res: http.ServerResponse, options: NormalizedServerOptions) => void | Promise<void>;
 }
 
 export interface NormalizedServerOptions extends ServerOptions {
@@ -232,7 +243,7 @@ export class ProxyServer<TIncomingMessage extends typeof http.IncomingMessage = 
 	constructor(options: ServerOptions = {}) {
 		super();
 		log("creating a ProxyServer", options);
-		options.prependPath = options.prependPath === false ? false : true;
+		options.prependPath = options.prependPath !== false;
 		this.options = options;
 		this.web = this.createRightProxy("web")(options);
 		this.ws = this.createRightProxy("ws")(options);
