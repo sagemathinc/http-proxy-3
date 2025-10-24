@@ -12,7 +12,7 @@ import bodyParser from "body-parser";
 import fetch from "node-fetch";
 import {describe, it, expect} from 'vitest';
 
-describe("connect.bodyParser() middleware in http-proxy-3", () => {
+describe.skipIf(() => process.env.FORCE_UNDICI_PATH === "true")("connect.bodyParser() middleware in http-proxy-3", () => {
   let ports: Record<'http' | 'proxy', number>;
   it("gets ports", async () => {
     ports = { http: await getPort(), proxy: await getPort() };

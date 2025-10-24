@@ -7,17 +7,19 @@ The names of passes are exported as WEB_PASSES from this module.
 
 */
 
+import type {
+  IncomingMessage as Request,
+  ServerResponse as Response,
+} from "node:http";
 import * as http from "node:http";
 import * as https from "node:https";
-import { OUTGOING_PASSES, EditableResponse } from "./web-outgoing";
-import * as common from "../common";
+import type { Socket } from "node:net";
+import type Stream from "node:stream";
 import * as followRedirects from "follow-redirects";
-import {
-  type IncomingMessage as Request,
-  type ServerResponse as Response,
-} from "node:http";
-import { type Socket } from "node:net";
-import type { ErrorCallback, NormalizedServerOptions, NormalizeProxyTarget, ProxyServer, ProxyTarget, ProxyTargetUrl, ServerOptions } from "..";
+import type { Dispatcher } from "undici";
+import type { ErrorCallback, NormalizedServerOptions, NormalizeProxyTarget, ProxyServer, ProxyTarget, ProxyTargetUrl, ServerOptions, UndiciOptions } from "..";
+import * as common from "../common";
+import { type EditableResponse, OUTGOING_PASSES } from "./web-outgoing";
 
 export type ProxyResponse = Request & {
   headers: { [key: string]: string | string[] };
@@ -76,6 +78,10 @@ export function XHeaders(req: Request, _res: Response, options: ServerOptions) {
 export function stream(req: Request, res: Response, options: NormalizedServerOptions, _: Buffer | undefined, server: ProxyServer, cb: ErrorCallback | undefined) {
   // And we begin!
   server.emit("start", req, res, options.target || options.forward!);
+
+  if (options.undici) {
+    return stream2(req, res, options, _, server, cb);
+  }
 
   const agents = options.followRedirects ? followRedirects : nativeAgents;
   const http = agents.http as typeof import('http');
@@ -181,6 +187,189 @@ export function stream(req: Request, res: Response, options: NormalizedServerOpt
       server?.emit("end", req, res, proxyRes);
     }
   });
+}
+
+
+async function stream2(
+  req: Request,
+  res: Response,
+  options: NormalizedServerOptions,
+  _: Buffer | undefined,
+  server: ProxyServer,
+  cb?: ErrorCallback,
+) {
+
+  // Helper function to handle errors consistently throughout the undici path
+  // Centralizes the error handling logic to avoid repetition
+  const handleError = (err: Error, target?: ProxyTargetUrl) => {
+    if (cb) {
+      cb(err, req, res, target);
+    } else {
+      server.emit("error", err, req, res, target);
+    }
+  };
+
+  req.on("error", (err: Error) => {
+    if (req.socket.destroyed && (err as NodeJS.ErrnoException).code === "ECONNRESET") {
+      const target = options.target || options.forward;
+      if (target) {
+        server.emit("econnreset", err, req, res, target);
+      }
+      return;
+    }
+    handleError(err);
+  });
+
+  const undiciOptions = options.undici === true ? {} as UndiciOptions : options.undici;
+  if (!undiciOptions) {
+    throw new Error("stream2 called without undici options");
+  }
+
+  const agent = server.undiciAgent
+
+  if (!agent) {
+    handleError(new Error("Undici agent not initialized"));
+    return;
+  }
+
+  if (options.forward) {
+    const outgoingOptions = common.setupOutgoing(
+      options.ssl || {},
+      options,
+      req,
+      "forward",
+    );
+
+    const requestOptions: Dispatcher.RequestOptions = {
+      origin: new URL(outgoingOptions.url).origin,
+      method: outgoingOptions.method as Dispatcher.HttpMethod,
+      headers: outgoingOptions.headers || {},
+      path: outgoingOptions.path || "/",
+    };
+
+    // Handle request body
+    if (options.buffer) {
+      requestOptions.body = options.buffer as Stream.Readable;
+    } else if (req.method !== "GET" && req.method !== "HEAD") {
+      requestOptions.body = req;
+    }
+
+    // Call onBeforeRequest callback before making the forward request
+    if (undiciOptions.onBeforeRequest) {
+      try {
+        await undiciOptions.onBeforeRequest(requestOptions, req, res, options);
+      } catch (err) {
+        handleError(err as Error, options.forward);
+        return;
+      }
+    }
+
+    try {
+      const result = await agent.request(requestOptions);
+
+      // Call onAfterResponse callback for forward requests (though they typically don't expect responses)
+      if (undiciOptions.onAfterResponse) {
+        try {
+          await undiciOptions.onAfterResponse(result, req, res, options);
+        } catch (err) {
+          handleError(err as Error, options.forward);
+          return;
+        }
+      }
+    } catch (err) {
+      handleError(err as Error, options.forward);
+    }
+
+    if (!options.target) {
+      return res.end();
+    }
+  }
+
+  const outgoingOptions = common.setupOutgoing(options.ssl || {}, options, req);
+
+  const requestOptions: Dispatcher.RequestOptions = {
+    origin: new URL(outgoingOptions.url).origin,
+    method: outgoingOptions.method as Dispatcher.HttpMethod,
+    headers: outgoingOptions.headers || {},
+    path: outgoingOptions.path || "/",
+    headersTimeout: options.proxyTimeout,
+    ...undiciOptions.requestOptions
+  };
+
+  if (options.auth) {
+    requestOptions.headers = { ...requestOptions.headers, authorization: `Basic ${Buffer.from(options.auth).toString("base64")}` };
+  }
+
+  if (options.buffer) {
+    requestOptions.body = options.buffer as Stream.Readable;
+  } else if (req.method !== "GET" && req.method !== "HEAD") {
+    requestOptions.body = req;
+  }
+
+  // Call onBeforeRequest callback before making the request
+  if (undiciOptions.onBeforeRequest) {
+    try {
+      await undiciOptions.onBeforeRequest(requestOptions, req, res, options);
+    } catch (err) {
+      handleError(err as Error, options.target);
+      return;
+    }
+  }
+
+  try {
+    const response = await agent.request(requestOptions);
+
+    // Call onAfterResponse callback after receiving the response
+    if (undiciOptions.onAfterResponse) {
+      try {
+        await undiciOptions.onAfterResponse(response, req, res, options);
+      } catch (err) {
+        handleError(err as Error, options.target);
+        return;
+      }
+    }
+
+
+    // ProxyRes is used in the outgoing passes
+    // But since only certain properties are used, we can fake it here
+    // to avoid having to refactor everything.
+    const fakeProxyRes = {
+      ...response, rawHeaders: Object.entries(response.headers).flatMap(([key, value]) => {
+        if (Array.isArray(value)) {
+          return value.flatMap(v => (v != null ? [key, v] : []));
+        }
+        return value != null ? [key, value] : [];
+      }) as string[]
+    } as unknown as ProxyResponse;
+
+    if (!res.headersSent && !options.selfHandleResponse) {
+      for (const pass of web_o) {
+        // note: none of these return anything
+        pass(req, res as EditableResponse, fakeProxyRes, options as NormalizedServerOptions & { target: NormalizeProxyTarget<ProxyTarget> });
+      }
+    }
+
+    if (!res.writableEnded) {
+      // Allow us to listen for when the proxy has completed
+      response.body.on("end", () => {
+        server?.emit("end", req, res, fakeProxyRes);
+      });
+      // We pipe to the response unless its expected to be handled by the user
+      if (!options.selfHandleResponse) {
+        response.body.pipe(res);
+      }
+    } else {
+      server?.emit("end", req, res, fakeProxyRes);
+    }
+
+
+  } catch (err) {
+    if (err) {
+      handleError(err as Error, options.target);
+    }
+  }
+
+
 }
 
 export const WEB_PASSES = { deleteLength, timeout, XHeaders, stream };
