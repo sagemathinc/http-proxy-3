@@ -17,9 +17,10 @@ import type { Socket } from "node:net";
 import type Stream from "node:stream";
 import * as followRedirects from "follow-redirects";
 import type { Dispatcher } from "undici";
-import type { ErrorCallback, NormalizedServerOptions, NormalizeProxyTarget, ProxyServer, ProxyTarget, ProxyTargetUrl, ServerOptions, UndiciOptions } from "..";
+import type { ErrorCallback, FetchOptions, NormalizedServerOptions, NormalizeProxyTarget, ProxyServer, ProxyTarget, ProxyTargetUrl, ServerOptions, UndiciOptions } from "..";
 import * as common from "../common";
 import { type EditableResponse, OUTGOING_PASSES } from "./web-outgoing";
+import { Readable } from "node:stream";
 
 export type ProxyResponse = Request & {
   headers: { [key: string]: string | string[] };
@@ -79,7 +80,7 @@ export function stream(req: Request, res: Response, options: NormalizedServerOpt
   // And we begin!
   server.emit("start", req, res, options.target || options.forward!);
 
-  if (options.undici) {
+  if (options.fetch) {
     return stream2(req, res, options, _, server, cb);
   }
 
@@ -220,17 +221,11 @@ async function stream2(
     handleError(err);
   });
 
-  const undiciOptions = options.undici === true ? {} as UndiciOptions : options.undici;
-  if (!undiciOptions) {
-    throw new Error("stream2 called without undici options");
+  const fetchOptions = options.fetch === true ? {} as FetchOptions : options.fetch;
+  if (!fetchOptions) {
+    throw new Error("stream2 called without fetch options");
   }
 
-  const agent = server.undiciAgent
-
-  if (!agent) {
-    handleError(new Error("Undici agent not initialized"));
-    return;
-  }
 
   if (options.forward) {
     const outgoingOptions = common.setupOutgoing(
@@ -240,7 +235,7 @@ async function stream2(
       "forward",
     );
 
-    const requestOptions: Dispatcher.RequestOptions = {
+    const requestOptions: RequestInit = {
       origin: new URL(outgoingOptions.url).origin,
       method: outgoingOptions.method as Dispatcher.HttpMethod,
       headers: outgoingOptions.headers || {},
@@ -255,9 +250,9 @@ async function stream2(
     }
 
     // Call onBeforeRequest callback before making the forward request
-    if (undiciOptions.onBeforeRequest) {
+    if (fetchOptions.onBeforeRequest) {
       try {
-        await undiciOptions.onBeforeRequest(requestOptions, req, res, options);
+        await fetchOptions.onBeforeRequest(requestOptions, req, res, options);
       } catch (err) {
         handleError(err as Error, options.forward);
         return;
@@ -265,12 +260,12 @@ async function stream2(
     }
 
     try {
-      const result = await agent.request(requestOptions);
+      const result = await fetch(outgoingOptions.url, requestOptions);
 
       // Call onAfterResponse callback for forward requests (though they typically don't expect responses)
-      if (undiciOptions.onAfterResponse) {
+      if (fetchOptions.onAfterResponse) {
         try {
-          await undiciOptions.onAfterResponse(result, req, res, options);
+          await fetchOptions.onAfterResponse(result, req, res, options);
         } catch (err) {
           handleError(err as Error, options.forward);
           return;
@@ -287,13 +282,13 @@ async function stream2(
 
   const outgoingOptions = common.setupOutgoing(options.ssl || {}, options, req);
 
-  const requestOptions: Dispatcher.RequestOptions = {
+  const requestOptions: RequestInit = {
     origin: new URL(outgoingOptions.url).origin,
     method: outgoingOptions.method as Dispatcher.HttpMethod,
     headers: outgoingOptions.headers || {},
     path: outgoingOptions.path || "/",
     headersTimeout: options.proxyTimeout,
-    ...undiciOptions.requestOptions
+    ...fetchOptions.requestOptions
   };
 
   if (options.auth) {
@@ -307,9 +302,9 @@ async function stream2(
   }
 
   // Call onBeforeRequest callback before making the request
-  if (undiciOptions.onBeforeRequest) {
+  if (fetchOptions.onBeforeRequest) {
     try {
-      await undiciOptions.onBeforeRequest(requestOptions, req, res, options);
+      await fetchOptions.onBeforeRequest(requestOptions, req, res, options);
     } catch (err) {
       handleError(err as Error, options.target);
       return;
@@ -317,12 +312,12 @@ async function stream2(
   }
 
   try {
-    const response = await agent.request(requestOptions);
+    const response = await fetch(outgoingOptions.url, requestOptions);
 
     // Call onAfterResponse callback after receiving the response
-    if (undiciOptions.onAfterResponse) {
+    if (fetchOptions.onAfterResponse) {
       try {
-        await undiciOptions.onAfterResponse(response, req, res, options);
+        await fetchOptions.onAfterResponse(response, req, res, options);
       } catch (err) {
         handleError(err as Error, options.target);
         return;
@@ -351,17 +346,24 @@ async function stream2(
 
     if (!res.writableEnded) {
       // Allow us to listen for when the proxy has completed
-      response.body.on("end", () => {
+      const nodeStream = response.body
+        ? Readable.from(response.body as AsyncIterable<Uint8Array>)
+        : null;
+
+      if (nodeStream) {
+        nodeStream.on("end", () => {
+          server?.emit("end", req, res, fakeProxyRes);
+        });
+        // We pipe to the response unless its expected to be handled by the user
+        if (!options.selfHandleResponse) {
+          nodeStream.pipe(res);
+        }
+      } else {
         server?.emit("end", req, res, fakeProxyRes);
-      });
-      // We pipe to the response unless its expected to be handled by the user
-      if (!options.selfHandleResponse) {
-        response.body.pipe(res);
       }
     } else {
       server?.emit("end", req, res, fakeProxyRes);
     }
-
 
   } catch (err) {
     if (err) {

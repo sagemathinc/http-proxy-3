@@ -95,19 +95,30 @@ export interface ServerOptions {
 	 */
 	ca?: string;
 	/** Enable undici for HTTP/2 support. Set to true for defaults, or provide custom configuration. */
-	undici?: boolean | UndiciOptions;
+  fetch?: boolean | FetchOptions;
 }
 
-export interface UndiciOptions {
-	/** Undici Agent configuration */
-	agentOptions?: Agent.Options;
-	/** Undici request options */
-	requestOptions?: Dispatcher.RequestOptions;
-	/** Called before making the undici request */
-	onBeforeRequest?: (requestOptions: Dispatcher.RequestOptions, req: http.IncomingMessage, res: http.ServerResponse, options: NormalizedServerOptions) => void | Promise<void>;
-	/** Called after receiving the undici response */
-	onAfterResponse?: (response: Dispatcher.ResponseData, req: http.IncomingMessage, res: http.ServerResponse, options: NormalizedServerOptions) => void | Promise<void>;
+export interface FetchOptions {
+  /** Undici Agent configuration */
+  dispatcher?: Dispatcher;
+  /** Undici request options */
+  requestOptions?: RequestInit;
+  /** Called before making the undici request */
+  onBeforeRequest?: (
+    requestOptions: RequestInit,
+    req: http.IncomingMessage,
+    res: http.ServerResponse,
+    options: NormalizedServerOptions,
+  ) => void | Promise<void>;
+  /** Called after receiving the undici response */
+  onAfterResponse?: (
+    response: Response,
+    req: http.IncomingMessage,
+    res: http.ServerResponse,
+    options: NormalizedServerOptions,
+  ) => void | Promise<void>;
 }
+
 
 export interface NormalizedServerOptions extends ServerOptions {
 	target?: NormalizeProxyTarget<ProxyTarget>;
@@ -238,7 +249,7 @@ export class ProxyServer<TIncomingMessage extends typeof http.IncomingMessage = 
 	private _server?: http.Server<TIncomingMessage, TServerResponse> | http2.Http2SecureServer<TIncomingMessage, TServerResponse> | null;
 
 	// Undici agent for this proxy server
-	public undiciAgent?: Agent;
+	public dispatcher?: Dispatcher;
 
 	/**
 	 * Creates the proxy server with specified options.
@@ -254,34 +265,7 @@ export class ProxyServer<TIncomingMessage extends typeof http.IncomingMessage = 
 		this.webPasses = Object.values(WEB_PASSES) as Array<PassFunctions<TIncomingMessage, TServerResponse, TError>['web']>;
 		this.wsPasses = Object.values(WS_PASSES) as Array<PassFunctions<TIncomingMessage, TServerResponse, TError>['ws']>;
 		this.on("error", this.onError);
-
-		// Initialize undici agent if enabled
-		if (options.undici) {
-			this.initializeAgent(options.undici);
-		}
-	}
-
-	/**
-	 * Initialize the single undici agent based on server options
-	 */
-	private initializeAgent(undiciOptions: UndiciOptions | boolean): void {
-		const resolvedOptions = undiciOptions === true ? {} as UndiciOptions : undiciOptions as UndiciOptions;
-		const agentOptions: Agent.Options = {
-			allowH2: true,
-			connect: {
-				rejectUnauthorized: this.options.secure !== false,
-			},
-			...(resolvedOptions.agentOptions || {}),
-		};
-
-		this.undiciAgent = new UndiciAgent(agentOptions);
-
-		if (this.options.followRedirects) {
-			this.undiciAgent = this.undiciAgent.compose(
-				interceptors.redirect({ maxRedirections: 5 })
-			) as Agent;
-		}
-	}
+  }
 
 	/**
 	 * Creates the proxy server with specified options.
