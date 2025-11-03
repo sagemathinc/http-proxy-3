@@ -41,7 +41,7 @@ describe("Undici callback functions (onBeforeRequest and onAfterResponse)", () =
     it("Test onBeforeRequest and onAfterResponse callbacks", async () => {
         let onBeforeRequestCalled = false;
         let onAfterResponseCalled = false;
-        let capturedResponse: unknown = {};
+        let capturedResponse: Response = {} as Response;
 
         const proxy = httpProxy.createServer({
             target: `http://localhost:${ports.target}`,
@@ -83,10 +83,9 @@ describe("Undici callback functions (onBeforeRequest and onAfterResponse)", () =
         expect(onAfterResponseCalled).toBe(true);
 
         // Check that we received the full response object
-        expect(capturedResponse).toHaveProperty('statusCode');
-        expect((capturedResponse as { statusCode: number }).statusCode).toBe(200);
+        expect(capturedResponse).toHaveProperty('status');
+        expect((capturedResponse).status).toBe(200);
         expect(capturedResponse).toHaveProperty('headers');
-        expect((capturedResponse as { headers: Record<string, string> }).headers).toHaveProperty('x-target-header');
-        expect((capturedResponse as { headers: Record<string, string> }).headers['x-target-header']).toBe('from-target');
+        expect((capturedResponse).headers.get('x-target-header')).toBe('from-target');
     });
 });

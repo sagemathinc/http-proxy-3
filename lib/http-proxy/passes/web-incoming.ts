@@ -283,9 +283,14 @@ async function stream2(
 
   const outgoingOptions = common.setupOutgoing(options.ssl || {}, options, req);
 
+  // Remove symbols from headers as undici fetch does not like them
   const requestOptions: RequestInit = {
     method: outgoingOptions.method as Dispatcher.HttpMethod,
-    headers: outgoingOptions.headers as Record<string, string>,
+    headers: Object.fromEntries(
+      Object.entries(outgoingOptions.headers || {}).filter(([key, _value]) => {
+        return typeof key === "string";
+      })
+    ) as RequestInit["headers"],
     ...fetchOptions.requestOptions
   };
 
@@ -314,7 +319,7 @@ async function stream2(
   }
 
   try {
-    const response = await fetch(outgoingOptions.url, requestOptions);
+    const response = await fetch(new URL(outgoingOptions.path ?? "/", outgoingOptions.url), requestOptions);
 
     // Call onAfterResponse callback after receiving the response
     if (fetchOptions.onAfterResponse) {
@@ -331,13 +336,18 @@ async function stream2(
     // But since only certain properties are used, we can fake it here
     // to avoid having to refactor everything.
     const fakeProxyRes = {
-      ...response, rawHeaders: Object.entries(response.headers).flatMap(([key, value]) => {
+      statusCode: response.status,
+      statusMessage: response.statusText,
+      headers: Object.fromEntries(response.headers.entries()),
+      rawHeaders: Object.entries(response.headers).flatMap(([key, value]) => {
         if (Array.isArray(value)) {
           return value.flatMap(v => (v != null ? [key, v] : []));
         }
         return value != null ? [key, value] : [];
       }) as string[]
     } as unknown as ProxyResponse;
+
+    server?.emit("proxyRes", fakeProxyRes, req, res);
 
     if (!res.headersSent && !options.selfHandleResponse) {
       for (const pass of web_o) {
@@ -353,12 +363,19 @@ async function stream2(
         : null;
 
       if (nodeStream) {
+        nodeStream.on("error", (err) => {
+          handleError(err, options.target);
+        });
+
         nodeStream.on("end", () => {
           server?.emit("end", req, res, fakeProxyRes);
         });
+
         // We pipe to the response unless its expected to be handled by the user
         if (!options.selfHandleResponse) {
-          nodeStream.pipe(res);
+          nodeStream.pipe(res, { end: true });
+        } else {
+          nodeStream.resume();
         }
       } else {
         server?.emit("end", req, res, fakeProxyRes);
