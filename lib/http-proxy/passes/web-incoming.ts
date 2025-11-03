@@ -17,7 +17,7 @@ import type { Socket } from "node:net";
 import type Stream from "node:stream";
 import * as followRedirects from "follow-redirects";
 import type { Dispatcher } from "undici";
-import type { ErrorCallback, FetchOptions, NormalizedServerOptions, NormalizeProxyTarget, ProxyServer, ProxyTarget, ProxyTargetUrl, ServerOptions, UndiciOptions } from "..";
+import type { ErrorCallback, FetchOptions, NormalizedServerOptions, NormalizeProxyTarget, ProxyServer, ProxyTarget, ProxyTargetUrl, ServerOptions } from "..";
 import * as common from "../common";
 import { type EditableResponse, OUTGOING_PASSES } from "./web-outgoing";
 import { Readable } from "node:stream";
@@ -236,11 +236,12 @@ async function stream2(
     );
 
     const requestOptions: RequestInit = {
-      origin: new URL(outgoingOptions.url).origin,
-      method: outgoingOptions.method as Dispatcher.HttpMethod,
-      headers: outgoingOptions.headers || {},
-      path: outgoingOptions.path || "/",
-    };
+      method: outgoingOptions.method,
+    }
+
+    if (fetchOptions.dispatcher) {
+      requestOptions.dispatcher = fetchOptions.dispatcher;
+    }
 
     // Handle request body
     if (options.buffer) {
@@ -283,13 +284,14 @@ async function stream2(
   const outgoingOptions = common.setupOutgoing(options.ssl || {}, options, req);
 
   const requestOptions: RequestInit = {
-    origin: new URL(outgoingOptions.url).origin,
     method: outgoingOptions.method as Dispatcher.HttpMethod,
-    headers: outgoingOptions.headers || {},
-    path: outgoingOptions.path || "/",
-    headersTimeout: options.proxyTimeout,
+    headers: outgoingOptions.headers as Record<string, string>,
     ...fetchOptions.requestOptions
   };
+
+  if (fetchOptions.dispatcher) {
+    requestOptions.dispatcher = fetchOptions.dispatcher;
+  }
 
   if (options.auth) {
     requestOptions.headers = { ...requestOptions.headers, authorization: `Basic ${Buffer.from(options.auth).toString("base64")}` };

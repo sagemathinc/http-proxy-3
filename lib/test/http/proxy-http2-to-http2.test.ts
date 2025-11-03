@@ -46,7 +46,7 @@ describe("Basic example of proxying over HTTP2 to a target HTTP2 server", () => 
       .createServer({
         target: `https://localhost:${ports.http2}`,
         ssl,
-        undici: { agentOptions: { allowH2: true } },
+        fetch: { dispatcher: new Agent({ allowH2: true }) as any },
         // without secure false, clients will fail and this is broken:
         secure: false,
       })

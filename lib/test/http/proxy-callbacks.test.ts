@@ -9,11 +9,8 @@ import * as httpProxy from "../..";
 import getPort from "../get-port";
 import fetch from "node-fetch";
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
-import { Agent, setGlobalDispatcher } from "undici";
+import { Agent } from "undici";
 
-setGlobalDispatcher(new Agent({
-    allowH2: true
-}));
 
 describe("Undici callback functions (onBeforeRequest and onAfterResponse)", () => {
     let ports: Record<'target' | 'proxy', number>;
@@ -48,8 +45,10 @@ describe("Undici callback functions (onBeforeRequest and onAfterResponse)", () =
 
         const proxy = httpProxy.createServer({
             target: `http://localhost:${ports.target}`,
-            undici: {
-                agentOptions: { allowH2: true }, // Enable undici code path
+            fetch: {
+                dispatcher: new Agent({
+                    allowH2: true
+                }) as any, // Enable undici code path
                 onBeforeRequest: async (requestOptions, _req, _res, _options) => {
                     onBeforeRequestCalled = true;
                     // Modify the outgoing request
@@ -62,7 +61,7 @@ describe("Undici callback functions (onBeforeRequest and onAfterResponse)", () =
                 onAfterResponse: async (response, _req, _res, _options) => {
                     onAfterResponseCalled = true;
                     capturedResponse = response;
-                    console.log(`Response received: ${response.statusCode}`);
+                    console.log(`Response received: ${response.status}`);
                 }
             }
         }); servers.proxy = proxy.listen(ports.proxy);

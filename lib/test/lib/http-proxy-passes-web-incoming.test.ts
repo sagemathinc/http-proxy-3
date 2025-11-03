@@ -306,7 +306,7 @@ describe("#createProxyServer.web() using own http server", () => {
       target: address(8083),
       proxyTimeout: 100,
       timeout: 150, // so client exits and isn't left handing the test.
-      undici: true
+      fetch: true
     });
 
     const server = require("net").createServer().listen(ports["8083"]);

@@ -7,8 +7,6 @@ import { EventEmitter } from "node:events";
 import type { Stream } from "node:stream";
 import debug from "debug";
 import { toURL } from "./common";
-import type { Agent, Dispatcher } from "undici";
-import { Agent as UndiciAgent, interceptors } from "undici";
 
 const log = debug("http-proxy-3");
 
@@ -95,28 +93,30 @@ export interface ServerOptions {
 	 */
 	ca?: string;
 	/** Enable undici for HTTP/2 support. Set to true for defaults, or provide custom configuration. */
-  fetch?: boolean | FetchOptions;
+	fetch?: boolean | FetchOptions;
 }
 
+export type Dispatcher = RequestInit["dispatcher"];
+
 export interface FetchOptions {
-  /** Undici Agent configuration */
-  dispatcher?: Dispatcher;
-  /** Undici request options */
-  requestOptions?: RequestInit;
-  /** Called before making the undici request */
-  onBeforeRequest?: (
-    requestOptions: RequestInit,
-    req: http.IncomingMessage,
-    res: http.ServerResponse,
-    options: NormalizedServerOptions,
-  ) => void | Promise<void>;
-  /** Called after receiving the undici response */
-  onAfterResponse?: (
-    response: Response,
-    req: http.IncomingMessage,
-    res: http.ServerResponse,
-    options: NormalizedServerOptions,
-  ) => void | Promise<void>;
+	/** Undici Agent configuration */
+	dispatcher?: Dispatcher;
+	/** Undici request options */
+	requestOptions?: RequestInit;
+	/** Called before making the undici request */
+	onBeforeRequest?: (
+		requestOptions: RequestInit,
+		req: http.IncomingMessage,
+		res: http.ServerResponse,
+		options: NormalizedServerOptions,
+	) => void | Promise<void>;
+	/** Called after receiving the undici response */
+	onAfterResponse?: (
+		response: Response,
+		req: http.IncomingMessage,
+		res: http.ServerResponse,
+		options: NormalizedServerOptions,
+	) => void | Promise<void>;
 }
 
 
@@ -265,7 +265,7 @@ export class ProxyServer<TIncomingMessage extends typeof http.IncomingMessage = 
 		this.webPasses = Object.values(WEB_PASSES) as Array<PassFunctions<TIncomingMessage, TServerResponse, TError>['web']>;
 		this.wsPasses = Object.values(WS_PASSES) as Array<PassFunctions<TIncomingMessage, TServerResponse, TError>['ws']>;
 		this.on("error", this.onError);
-  }
+	}
 
 	/**
 	 * Creates the proxy server with specified options.
