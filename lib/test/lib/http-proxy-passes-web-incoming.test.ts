@@ -129,79 +129,81 @@ describe("#createProxyServer.web() using own http server", () => {
       .end();
   }));
 
-  it.skipIf(() => process.env.FORCE_UNDICI_PATH === "true")("should detect a proxyReq event and modify headers", () => new Promise<void>(done => {
-    const proxy = httpProxy.createProxyServer({
-      target: address(8080),
-    });
+  it.skipIf(() => process.env.FORCE_FETCH_PATH
+    === "true")("should detect a proxyReq event and modify headers", () => new Promise<void>(done => {
+      const proxy = httpProxy.createProxyServer({
+        target: address(8080),
+      });
 
-    proxy.on("proxyReq", (proxyReq, _req, _res, _options) => {
-      proxyReq.setHeader("X-Special-Proxy-Header", "foobar");
-    });
+      proxy.on("proxyReq", (proxyReq, _req, _res, _options) => {
+        proxyReq.setHeader("X-Special-Proxy-Header", "foobar");
+      });
 
-    function requestHandler(req: http.IncomingMessage, res: http.ServerResponse) {
-      proxy.web(req, res);
-    }
+      function requestHandler(req: http.IncomingMessage, res: http.ServerResponse) {
+        proxy.web(req, res);
+      }
 
-    const proxyServer = http.createServer(requestHandler);
+      const proxyServer = http.createServer(requestHandler);
 
-    const source = http.createServer((req, res) => {
-      res.end();
-      source.close();
-      proxyServer.close();
-      expect(req.headers["x-special-proxy-header"]).toEqual("foobar");
-      done();
-    });
+      const source = http.createServer((req, res) => {
+        res.end();
+        source.close();
+        proxyServer.close();
+        expect(req.headers["x-special-proxy-header"]).toEqual("foobar");
+        done();
+      });
 
-    proxyServer.listen(ports["8081"]);
-    source.listen(ports["8080"]);
+      proxyServer.listen(ports["8081"]);
+      source.listen(ports["8080"]);
 
-    http.request(address(8081), () => { }).end();
-  }));
+      http.request(address(8081), () => { }).end();
+    }));
 
-  it.skipIf(() => process.env.FORCE_UNDICI_PATH === "true")('should skip proxyReq event when handling a request with header "expect: 100-continue" [https://www.npmjs.com/advisories/1486]', () => new Promise<void>(done => {
-    const proxy = httpProxy.createProxyServer({
-      target: address(8080),
-    });
+  it.skipIf(() => process.env.FORCE_FETCH_PATH
+    === "true")('should skip proxyReq event when handling a request with header "expect: 100-continue" [https://www.npmjs.com/advisories/1486]', () => new Promise<void>(done => {
+      const proxy = httpProxy.createProxyServer({
+        target: address(8080),
+      });
 
-    proxy.on("proxyReq", (proxyReq, _req, _res, _options) => {
-      proxyReq.setHeader("X-Special-Proxy-Header", "foobar");
-    });
+      proxy.on("proxyReq", (proxyReq, _req, _res, _options) => {
+        proxyReq.setHeader("X-Special-Proxy-Header", "foobar");
+      });
 
-    function requestHandler(req: http.IncomingMessage, res: http.ServerResponse) {
-      proxy.web(req, res);
-    }
+      function requestHandler(req: http.IncomingMessage, res: http.ServerResponse) {
+        proxy.web(req, res);
+      }
 
-    const proxyServer = http.createServer(requestHandler);
+      const proxyServer = http.createServer(requestHandler);
 
-    const source = http.createServer((req, res) => {
-      res.end();
-      source.close();
-      proxyServer.close();
-      expect(req.headers["x-special-proxy-header"]).not.toEqual("foobar");
-      done();
-    });
+      const source = http.createServer((req, res) => {
+        res.end();
+        source.close();
+        proxyServer.close();
+        expect(req.headers["x-special-proxy-header"]).not.toEqual("foobar");
+        done();
+      });
 
-    proxyServer.listen(ports["8081"]);
-    source.listen(ports["8080"]);
+      proxyServer.listen(ports["8081"]);
+      source.listen(ports["8080"]);
 
-    const postData = "".padStart(1025, "x");
+      const postData = "".padStart(1025, "x");
 
-    const postOptions = {
-      hostname: "127.0.0.1",
-      port: ports["8081"],
-      path: "/",
-      method: "POST",
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded",
-        "Content-Length": Buffer.byteLength(postData),
-        expect: "100-continue",
-      },
-    };
+      const postOptions = {
+        hostname: "127.0.0.1",
+        port: ports["8081"],
+        path: "/",
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+          "Content-Length": Buffer.byteLength(postData),
+          expect: "100-continue",
+        },
+      };
 
-    const req = http.request(postOptions, () => { });
-    req.write(postData);
-    req.end();
-  }));
+      const req = http.request(postOptions, () => { });
+      req.write(postData);
+      req.end();
+    }));
 
   it("should proxy the request and handle error via callback", () => new Promise<void>(done => {
     const proxy = httpProxy.createProxyServer({
@@ -390,85 +392,87 @@ describe("#createProxyServer.web() using own http server", () => {
     req.end();
   }));
 
-  it.skipIf(() => process.env.FORCE_UNDICI_PATH === "true")("should proxy the request and provide a proxyRes event with the request and response parameters", () => new Promise<void>(done => {
-    const proxy = httpProxy.createProxyServer({
-      target: address(8080),
-    });
-
-    function requestHandler(req: http.IncomingMessage, res: http.ServerResponse) {
-      proxy.once("proxyRes", (proxyRes, pReq, pRes) => {
-        source.close();
-        proxyServer.close();
-        expect(proxyRes != null).toBe(true);
-        expect(pReq).toEqual(req);
-        expect(pRes).toEqual(res);
-        done();
+  it.skipIf(() => process.env.FORCE_FETCH_PATH
+    === "true")("should proxy the request and provide a proxyRes event with the request and response parameters", () => new Promise<void>(done => {
+      const proxy = httpProxy.createProxyServer({
+        target: address(8080),
       });
 
-      proxy.web(req, res);
-    }
+      function requestHandler(req: http.IncomingMessage, res: http.ServerResponse) {
+        proxy.once("proxyRes", (proxyRes, pReq, pRes) => {
+          source.close();
+          proxyServer.close();
+          expect(proxyRes != null).toBe(true);
+          expect(pReq).toEqual(req);
+          expect(pRes).toEqual(res);
+          done();
+        });
 
-    const proxyServer = http.createServer(requestHandler);
+        proxy.web(req, res);
+      }
 
-    const source = http.createServer((_req, res) => {
-      res.end("Response");
-    });
+      const proxyServer = http.createServer(requestHandler);
 
-    proxyServer.listen(port(8086));
-    source.listen(port(8080));
-    http.request(address(8086), () => { }).end();
-  }));
-
-  it.skipIf(() => process.env.FORCE_UNDICI_PATH === "true")("should proxy the request and provide and respond to manual user response when using modifyResponse", () => new Promise(done => {
-    const proxy = httpProxy.createProxyServer({
-      target: address(8080),
-      selfHandleResponse: true,
-    });
-
-    function requestHandler(req: http.IncomingMessage, res: http.ServerResponse) {
-      proxy.once("proxyRes", (proxyRes, _pReq, pRes) => {
-        proxyRes.pipe(
-          concat((body) => {
-            expect(body.toString("utf8")).toEqual("Response");
-            pRes.end(Buffer.from("my-custom-response"));
-          }),
-        );
+      const source = http.createServer((_req, res) => {
+        res.end("Response");
       });
 
-      proxy.web(req, res);
-    }
+      proxyServer.listen(port(8086));
+      source.listen(port(8080));
+      http.request(address(8086), () => { }).end();
+    }));
 
-    const proxyServer = http.createServer(requestHandler);
+  it.skipIf(() => process.env.FORCE_FETCH_PATH
+    === "true")("should proxy the request and provide and respond to manual user response when using modifyResponse", () => new Promise(done => {
+      const proxy = httpProxy.createProxyServer({
+        target: address(8080),
+        selfHandleResponse: true,
+      });
 
-    const source = http.createServer((_req, res) => {
-      res.end("Response");
-    });
+      function requestHandler(req: http.IncomingMessage, res: http.ServerResponse) {
+        proxy.once("proxyRes", (proxyRes, _pReq, pRes) => {
+          proxyRes.pipe(
+            concat((body) => {
+              expect(body.toString("utf8")).toEqual("Response");
+              pRes.end(Buffer.from("my-custom-response"));
+            }),
+          );
+        });
 
-    async.parallel(
-      [
-        (next) => proxyServer.listen(port(8086), next),
-        (next) => source.listen(port(8080), next),
-      ],
-      (_err) => {
-        http
-          .get(address(8086), (res) => {
-            res.pipe(
-              concat((body) => {
-                expect(body.toString("utf8")).toEqual("my-custom-response");
-                source.close();
-                proxyServer.close();
-                done(undefined);
-              }),
-            );
-          })
-          .once("error", (err) => {
-            source.close();
-            proxyServer.close();
-            done(err);
-          });
-      },
-    );
-  }));
+        proxy.web(req, res);
+      }
+
+      const proxyServer = http.createServer(requestHandler);
+
+      const source = http.createServer((_req, res) => {
+        res.end("Response");
+      });
+
+      async.parallel(
+        [
+          (next) => proxyServer.listen(port(8086), next),
+          (next) => source.listen(port(8080), next),
+        ],
+        (_err) => {
+          http
+            .get(address(8086), (res) => {
+              res.pipe(
+                concat((body) => {
+                  expect(body.toString("utf8")).toEqual("my-custom-response");
+                  source.close();
+                  proxyServer.close();
+                  done(undefined);
+                }),
+              );
+            })
+            .once("error", (err) => {
+              source.close();
+              proxyServer.close();
+              done(err);
+            });
+        },
+      );
+    }));
 
   it("should proxy the request and handle changeOrigin option", () => new Promise<void>(done => {
     const proxy = httpProxy

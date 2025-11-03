@@ -248,6 +248,7 @@ async function stream2(
       requestOptions.body = options.buffer as Stream.Readable;
     } else if (req.method !== "GET" && req.method !== "HEAD") {
       requestOptions.body = req;
+      requestOptions.duplex
     }
 
     // Call onBeforeRequest callback before making the forward request

@@ -13,7 +13,7 @@ import { Server } from "socket.io";
 import { io as socketioClient } from "socket.io-client";
 import wait from "../wait";
 import { once } from "node:events";
-import {describe, it, expect} from 'vitest';
+import { describe, it, expect } from 'vitest';
 
 const ports: { [port: string]: number } = {};
 let portIndex = -1;
@@ -68,7 +68,7 @@ describe("#createProxyServer with forward options and using web-incoming passes"
       })
       .listen(ports.source);
 
-    http.request("http://127.0.0.1:" + ports.proxy, () => {}).end();
+    http.request("http://127.0.0.1:" + ports.proxy, () => { }).end();
   }));
 });
 
@@ -105,59 +105,60 @@ describe("#createProxyServer using the web-incoming passes", () => {
             "x-forwarded-for": "127.0.0.1",
           },
         },
-        () => {},
+        () => { },
       )
       .end();
   }));
 });
 
 describe("#createProxyServer using the web-incoming passes", () => {
-  it.skipIf(() => process.env.FORCE_UNDICI_PATH === "true")("should make the request, handle response and finish it", () => new Promise<void>(done => {
-    const ports = { source: gen.port, proxy: gen.port };
-    const proxy = httpProxy
-      .createProxyServer({
-        target: "http://127.0.0.1:" + ports.source,
-        preserveHeaderKeyCase: true,
-      })
-      .listen(ports.proxy);
+  it.skipIf(() => process.env.FORCE_FETCH_PATH
+    === "true")("should make the request, handle response and finish it", () => new Promise<void>(done => {
+      const ports = { source: gen.port, proxy: gen.port };
+      const proxy = httpProxy
+        .createProxyServer({
+          target: "http://127.0.0.1:" + ports.source,
+          preserveHeaderKeyCase: true,
+        })
+        .listen(ports.proxy);
 
-    const source = http
-      .createServer((req, res) => {
-        expect(req.method).toEqual("GET");
-        expect(req.headers.host?.split(":")[1]).toEqual(`${ports.proxy}`);
-        res.writeHead(200, { "Content-Type": "text/plain" });
-        res.end("Hello from " + ports.source);
-      })
-      .listen(ports.source);
+      const source = http
+        .createServer((req, res) => {
+          expect(req.method).toEqual("GET");
+          expect(req.headers.host?.split(":")[1]).toEqual(`${ports.proxy}`);
+          res.writeHead(200, { "Content-Type": "text/plain" });
+          res.end("Hello from " + ports.source);
+        })
+        .listen(ports.source);
 
-    http
-      .request(
-        {
-          hostname: "127.0.0.1",
-          port: ports.proxy,
-          method: "GET",
-        },
-        (res) => {
-          expect(res.statusCode).toEqual(200);
-          expect(res.headers["content-type"]).toEqual("text/plain");
-          if (res.rawHeaders != undefined) {
-            expect(res.rawHeaders.indexOf("Content-Type")).not.toEqual(-1);
-            expect(res.rawHeaders.indexOf("text/plain")).not.toEqual(-1);
-          }
+      http
+        .request(
+          {
+            hostname: "127.0.0.1",
+            port: ports.proxy,
+            method: "GET",
+          },
+          (res) => {
+            expect(res.statusCode).toEqual(200);
+            expect(res.headers["content-type"]).toEqual("text/plain");
+            if (res.rawHeaders != undefined) {
+              expect(res.rawHeaders.indexOf("Content-Type")).not.toEqual(-1);
+              expect(res.rawHeaders.indexOf("text/plain")).not.toEqual(-1);
+            }
 
-          res.on("data", function (data) {
-            expect(data.toString()).toEqual("Hello from " + ports.source);
-          });
+            res.on("data", function (data) {
+              expect(data.toString()).toEqual("Hello from " + ports.source);
+            });
 
-          res.on("end", () => {
-            source.close();
-            proxy.close();
-            done();
-          });
-        },
-      )
-      .end();
-  }));
+            res.on("end", () => {
+              source.close();
+              proxy.close();
+              done();
+            });
+          },
+        )
+        .end();
+    }));
 });
 
 describe("#createProxyServer() method with error response", () => {
@@ -182,9 +183,9 @@ describe("#createProxyServer() method with error response", () => {
         port: ports.proxy,
         method: "GET",
       },
-      () => {},
+      () => { },
     );
-    client.on("error", () => {});
+    client.on("error", () => { });
     client.end();
   }));
 });
@@ -217,7 +218,7 @@ describe("#createProxyServer setting the correct timeout value", () => {
         port: ports.proxy,
         method: "GET",
       },
-      () => {},
+      () => { },
     );
 
     testReq.on("error", function (e) {
@@ -267,7 +268,7 @@ describe("#createProxyServer with xfwd option", () => {
       socket.end();
     });
 
-    socket.on("end", () => {});
+    socket.on("end", () => { });
   }));
 });
 
@@ -275,9 +276,9 @@ describe("#createProxyServer using the ws-incoming passes", () => {
   it("should proxy the websockets stream", () => new Promise<void>(done => {
     const ports = { source: gen.port, proxy: gen.port };
     const proxy = httpProxy.createProxyServer({
-        target: "ws://127.0.0.1:" + ports.source,
-        ws: true,
-      }),
+      target: "ws://127.0.0.1:" + ports.source,
+      ws: true,
+    }),
       proxyServer = proxy.listen(ports.proxy),
       destiny = new WebSocketServer({ port: ports.source }, () => {
         const client = new WebSocket("ws://127.0.0.1:" + ports.proxy);
@@ -306,10 +307,10 @@ describe("#createProxyServer using the ws-incoming passes", () => {
   it("should emit error on proxy error", () => new Promise<void>(done => {
     const ports = { source: gen.port, proxy: gen.port };
     const proxy = httpProxy.createProxyServer({
-        // note: we don't ever listen on this port
-        target: "ws://127.0.0.1:" + ports.source,
-        ws: true,
-      }),
+      // note: we don't ever listen on this port
+      target: "ws://127.0.0.1:" + ports.source,
+      ws: true,
+    }),
       proxyServer = proxy.listen(ports.proxy),
       client = new WebSocket("ws://127.0.0.1:" + ports.proxy);
 
@@ -488,11 +489,11 @@ describe("#createProxyServer using the ws-incoming passes", () => {
     server.on("upgrade", (_req, socket) => {
       socket.write(
         "HTTP/1.1 101 Web Socket Protocol Handshake\r\n" +
-          "Upgrade: WebSocket\r\n" +
-          "Connection: Upgrade\r\n" +
-          "Set-Cookie: test1=test1\r\n" +
-          "Set-Cookie: test2=test2\r\n" +
-          "\r\n",
+        "Upgrade: WebSocket\r\n" +
+        "Connection: Upgrade\r\n" +
+        "Set-Cookie: test1=test1\r\n" +
+        "Set-Cookie: test2=test2\r\n" +
+        "\r\n",
       );
       socket.pipe(socket); // echo back
     });
@@ -539,9 +540,9 @@ describe("#createProxyServer using the ws-incoming passes", () => {
       }
       socket.write(
         "HTTP/1.1 101 Web Socket Protocol Handshake\r\n" +
-          "Upgrade: WebSocket\r\n" +
-          "Connection: Upgrade\r\n" +
-          "\r\n",
+        "Upgrade: WebSocket\r\n" +
+        "Connection: Upgrade\r\n" +
+        "\r\n",
       );
       socket.pipe(socket); // echo back
     });
@@ -570,9 +571,9 @@ describe("#createProxyServer using the ws-incoming passes", () => {
 
     const ports = { source: gen.port, proxy: gen.port };
     const proxy = httpProxy.createProxyServer({
-        target: "ws://127.0.0.1:" + ports.source,
-        ws: true,
-      }),
+      target: "ws://127.0.0.1:" + ports.source,
+      ws: true,
+    }),
       proxyServer = proxy.listen(ports.proxy),
       destiny = new WebSocketServer({ port: ports.source }, () => {
         const client = new WebSocket("ws://127.0.0.1:" + ports.proxy);
@@ -603,9 +604,9 @@ describe("#createProxyServer using the ws-incoming passes", () => {
 
     const ports = { source: gen.port, proxy: gen.port };
     const proxy = httpProxy.createProxyServer({
-        target: "ws://127.0.0.1:" + ports.source,
-        ws: true,
-      }),
+      target: "ws://127.0.0.1:" + ports.source,
+      ws: true,
+    }),
       proxyServer = proxy.listen(ports.proxy),
       destiny = new WebSocketServer({ port: ports.source }, () => {
         const client = new WebSocket("ws://127.0.0.1:" + ports.proxy);

@@ -35,7 +35,7 @@ import type * as http from 'node:http';
 function createProxyServer<TIncomingMessage extends typeof http.IncomingMessage = typeof http.IncomingMessage, TServerResponse extends typeof http.ServerResponse = typeof http.ServerResponse, TError = Error>(options: ServerOptions = {}): ProxyServer<TIncomingMessage, TServerResponse, TError> {
   // Check if we're in forced undici mode
   if (process.env.FORCE_FETCH_PATH === 'true' && options.fetch === undefined) {
-    options = { ...options, fetch: { dispatcher: new Agent({ allowH2: true, connect: { rejectUnauthorized: true } }) as any } };
+    options = { ...options, fetch: { dispatcher: new Agent({ allowH2: true, connect: { rejectUnauthorized: false } }) as any } };
   }
 
   return new ProxyServer<TIncomingMessage, TServerResponse, TError>(options);
