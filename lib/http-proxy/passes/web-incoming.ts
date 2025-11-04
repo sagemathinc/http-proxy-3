@@ -80,7 +80,7 @@ export function stream(req: Request, res: Response, options: NormalizedServerOpt
   // And we begin!
   server.emit("start", req, res, options.target || options.forward!);
 
-  if (options.fetch) {
+  if (options.fetch || process.env.FORCE_FETCH_PATH === 'true') {
     return stream2(req, res, options, _, server, cb);
   }
 
@@ -200,6 +200,12 @@ async function stream2(
   cb?: ErrorCallback,
 ) {
 
+  if (process.env.FORCE_FETCH_PATH === 'true' && !options.fetch) {
+    const { Agent } = await import('undici');
+    console.log('Setting undici dispatcher for fetch operations in stream2');
+    options.fetch = { dispatcher: new Agent({ allowH2: true, connect: { rejectUnauthorized: false } }) as any };
+  }
+
   // Helper function to handle errors consistently throughout the undici path
   // Centralizes the error handling logic to avoid repetition
   const handleError = (err: Error, target?: ProxyTargetUrl) => {
@@ -248,7 +254,7 @@ async function stream2(
       requestOptions.body = options.buffer as Stream.Readable;
     } else if (req.method !== "GET" && req.method !== "HEAD") {
       requestOptions.body = req;
-      requestOptions.duplex
+      requestOptions.duplex = "half";
     }
 
     // Call onBeforeRequest callback before making the forward request
@@ -262,7 +268,7 @@ async function stream2(
     }
 
     try {
-      const result = await fetch(outgoingOptions.url, requestOptions);
+      const result = await fetch(new URL(outgoingOptions.url).origin + outgoingOptions.path, requestOptions);
 
       // Call onAfterResponse callback for forward requests (though they typically don't expect responses)
       if (fetchOptions.onAfterResponse) {
@@ -303,6 +309,7 @@ async function stream2(
     requestOptions.headers = { ...requestOptions.headers, authorization: `Basic ${Buffer.from(options.auth).toString("base64")}` };
   }
 
+
   if (options.buffer) {
     requestOptions.body = options.buffer as Stream.Readable;
   } else if (req.method !== "GET" && req.method !== "HEAD") {
@@ -320,7 +327,7 @@ async function stream2(
   }
 
   try {
-    const response = await fetch(new URL(outgoingOptions.path ?? "/", outgoingOptions.url), requestOptions);
+    const response = await fetch(new URL(outgoingOptions.url).origin + outgoingOptions.path, requestOptions);
 
     // Call onAfterResponse callback after receiving the response
     if (fetchOptions.onAfterResponse) {
