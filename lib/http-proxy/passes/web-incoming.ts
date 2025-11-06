@@ -16,8 +16,16 @@ import * as https from "node:https";
 import type { Socket } from "node:net";
 import type Stream from "node:stream";
 import * as followRedirects from "follow-redirects";
-import type { Dispatcher } from "undici";
-import type { ErrorCallback, FetchOptions, NormalizedServerOptions, NormalizeProxyTarget, ProxyServer, ProxyTarget, ProxyTargetUrl, ServerOptions } from "..";
+import type {
+  ErrorCallback,
+  FetchOptions,
+  NormalizedServerOptions,
+  NormalizeProxyTarget,
+  ProxyServer,
+  ProxyTarget,
+  ProxyTargetUrl,
+  ServerOptions,
+} from "..";
 import * as common from "../common";
 import { type EditableResponse, OUTGOING_PASSES } from "./web-outgoing";
 import { Readable } from "node:stream";
@@ -76,17 +84,24 @@ export function XHeaders(req: Request, _res: Response, options: ServerOptions) {
 // Does the actual proxying. If `forward` is enabled fires up
 // a ForwardStream (there is NO RESPONSE), same happens for ProxyStream. The request
 // just dies otherwise.
-export function stream(req: Request, res: Response, options: NormalizedServerOptions, _: Buffer | undefined, server: ProxyServer, cb: ErrorCallback | undefined) {
+export function stream(
+  req: Request,
+  res: Response,
+  options: NormalizedServerOptions,
+  _: Buffer | undefined,
+  server: ProxyServer,
+  cb: ErrorCallback | undefined,
+) {
   // And we begin!
   server.emit("start", req, res, options.target || options.forward!);
 
-  if (options.fetch || process.env.FORCE_FETCH_PATH === 'true') {
+  if (options.fetch || process.env.FORCE_FETCH_PATH === "true") {
     return stream2(req, res, options, _, server, cb);
   }
 
   const agents = options.followRedirects ? followRedirects : nativeAgents;
-  const http = agents.http as typeof import('http');
-  const https = agents.https as typeof import('https');
+  const http = agents.http as typeof import("http");
+  const https = agents.https as typeof import("https");
 
   if (options.forward) {
     // forward enabled, so just pipe the request
@@ -147,9 +162,15 @@ export function stream(req: Request, res: Response, options: NormalizedServerOpt
   req.on("error", proxyError);
   proxyReq.on("error", proxyError);
 
-  function createErrorHandler(proxyReq: http.ClientRequest, url: NormalizeProxyTarget<ProxyTargetUrl>) {
+  function createErrorHandler(
+    proxyReq: http.ClientRequest,
+    url: NormalizeProxyTarget<ProxyTargetUrl>,
+  ) {
     return (err: Error) => {
-      if (req.socket.destroyed && (err as NodeJS.ErrnoException).code === "ECONNRESET") {
+      if (
+        req.socket.destroyed &&
+        (err as NodeJS.ErrnoException).code === "ECONNRESET"
+      ) {
         server.emit("econnreset", err, req, res, url);
         proxyReq.destroy();
         return;
@@ -171,7 +192,14 @@ export function stream(req: Request, res: Response, options: NormalizedServerOpt
     if (!res.headersSent && !options.selfHandleResponse) {
       for (const pass of web_o) {
         // note: none of these return anything
-        pass(req, res as EditableResponse, proxyRes, options as NormalizedServerOptions & { target: NormalizeProxyTarget<ProxyTarget> });
+        pass(
+          req,
+          res as EditableResponse,
+          proxyRes,
+          options as NormalizedServerOptions & {
+            target: NormalizeProxyTarget<ProxyTarget>;
+          },
+        );
       }
     }
 
@@ -190,7 +218,6 @@ export function stream(req: Request, res: Response, options: NormalizedServerOpt
   });
 }
 
-
 async function stream2(
   req: Request,
   res: Response,
@@ -199,15 +226,7 @@ async function stream2(
   server: ProxyServer,
   cb?: ErrorCallback,
 ) {
-
-  if (process.env.FORCE_FETCH_PATH === 'true' && !options.fetch) {
-    const { Agent } = await import('undici');
-    console.log('Setting undici dispatcher for fetch operations in stream2');
-    options.fetch = { dispatcher: new Agent({ allowH2: true, connect: { rejectUnauthorized: false } }) as any };
-  }
-
-  // Helper function to handle errors consistently throughout the undici path
-  // Centralizes the error handling logic to avoid repetition
+  // Helper function to handle errors consistently throughout the fetch path
   const handleError = (err: Error, target?: ProxyTargetUrl) => {
     if (cb) {
       cb(err, req, res, target);
@@ -217,7 +236,10 @@ async function stream2(
   };
 
   req.on("error", (err: Error) => {
-    if (req.socket.destroyed && (err as NodeJS.ErrnoException).code === "ECONNRESET") {
+    if (
+      req.socket.destroyed &&
+      (err as NodeJS.ErrnoException).code === "ECONNRESET"
+    ) {
       const target = options.target || options.forward;
       if (target) {
         server.emit("econnreset", err, req, res, target);
@@ -227,11 +249,11 @@ async function stream2(
     handleError(err);
   });
 
-  const fetchOptions = options.fetch === true ? {} as FetchOptions : options.fetch;
+  const fetchOptions =
+    options.fetch === true ? ({} as FetchOptions) : options.fetch;
   if (!fetchOptions) {
     throw new Error("stream2 called without fetch options");
   }
-
 
   if (options.forward) {
     const outgoingOptions = common.setupOutgoing(
@@ -243,7 +265,7 @@ async function stream2(
 
     const requestOptions: RequestInit = {
       method: outgoingOptions.method,
-    }
+    };
 
     if (fetchOptions.dispatcher) {
       requestOptions.dispatcher = fetchOptions.dispatcher;
@@ -268,7 +290,10 @@ async function stream2(
     }
 
     try {
-      const result = await fetch(new URL(outgoingOptions.url).origin + outgoingOptions.path, requestOptions);
+      const result = await fetch(
+        new URL(outgoingOptions.url).origin + outgoingOptions.path,
+        requestOptions,
+      );
 
       // Call onAfterResponse callback for forward requests (though they typically don't expect responses)
       if (fetchOptions.onAfterResponse) {
@@ -290,15 +315,15 @@ async function stream2(
 
   const outgoingOptions = common.setupOutgoing(options.ssl || {}, options, req);
 
-  // Remove symbols from headers as undici fetch does not like them
+  // Remove symbols from headers
   const requestOptions: RequestInit = {
-    method: outgoingOptions.method as Dispatcher.HttpMethod,
+    method: outgoingOptions.method,
     headers: Object.fromEntries(
       Object.entries(outgoingOptions.headers || {}).filter(([key, _value]) => {
         return typeof key === "string";
-      })
+      }),
     ) as RequestInit["headers"],
-    ...fetchOptions.requestOptions
+    ...fetchOptions.requestOptions,
   };
 
   if (fetchOptions.dispatcher) {
@@ -306,9 +331,11 @@ async function stream2(
   }
 
   if (options.auth) {
-    requestOptions.headers = { ...requestOptions.headers, authorization: `Basic ${Buffer.from(options.auth).toString("base64")}` };
+    requestOptions.headers = {
+      ...requestOptions.headers,
+      authorization: `Basic ${Buffer.from(options.auth).toString("base64")}`,
+    };
   }
-
 
   if (options.buffer) {
     requestOptions.body = options.buffer as Stream.Readable;
@@ -327,7 +354,10 @@ async function stream2(
   }
 
   try {
-    const response = await fetch(new URL(outgoingOptions.url).origin + outgoingOptions.path, requestOptions);
+    const response = await fetch(
+      new URL(outgoingOptions.url).origin + outgoingOptions.path,
+      requestOptions,
+    );
 
     // Call onAfterResponse callback after receiving the response
     if (fetchOptions.onAfterResponse) {
@@ -339,7 +369,6 @@ async function stream2(
       }
     }
 
-
     // ProxyRes is used in the outgoing passes
     // But since only certain properties are used, we can fake it here
     // to avoid having to refactor everything.
@@ -349,10 +378,10 @@ async function stream2(
       headers: Object.fromEntries(response.headers.entries()),
       rawHeaders: Object.entries(response.headers).flatMap(([key, value]) => {
         if (Array.isArray(value)) {
-          return value.flatMap(v => (v != null ? [key, v] : []));
+          return value.flatMap((v) => (v != null ? [key, v] : []));
         }
         return value != null ? [key, value] : [];
-      }) as string[]
+      }) as string[],
     } as unknown as ProxyResponse;
 
     server?.emit("proxyRes", fakeProxyRes, req, res);
@@ -360,7 +389,14 @@ async function stream2(
     if (!res.headersSent && !options.selfHandleResponse) {
       for (const pass of web_o) {
         // note: none of these return anything
-        pass(req, res as EditableResponse, fakeProxyRes, options as NormalizedServerOptions & { target: NormalizeProxyTarget<ProxyTarget> });
+        pass(
+          req,
+          res as EditableResponse,
+          fakeProxyRes,
+          options as NormalizedServerOptions & {
+            target: NormalizeProxyTarget<ProxyTarget>;
+          },
+        );
       }
     }
 
@@ -391,14 +427,11 @@ async function stream2(
     } else {
       server?.emit("end", req, res, fakeProxyRes);
     }
-
   } catch (err) {
     if (err) {
       handleError(err as Error, options.target);
     }
   }
-
-
 }
 
 export const WEB_PASSES = { deleteLength, timeout, XHeaders, stream };

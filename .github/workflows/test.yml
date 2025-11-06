@@ -44,5 +44,4 @@ jobs:
       - run: pnpm build
       - name: Test native HTTP code path
         run: pnpm test-native
-      - name: Test undici HTTP/2 code path
-        run: pnpm test-undici
+

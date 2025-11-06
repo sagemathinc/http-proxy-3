@@ -30,7 +30,7 @@ Contributors:
 August 21, 2025 STATUS compared to [http-proxy](https://www.npmjs.com/package/http-proxy) and [httpxy](https://www.npmjs.com/package/httpxy):
 
 - Library entirely rewritten in Typescript in a modern style, with many typings added internally and strict mode enabled.
-- **HTTP/2 Support**: Full HTTP/2 support via [undici](https://github.com/nodejs/undici) with callback-based request/response lifecycle hooks.
+- **HTTP/2 Support**: Full HTTP/2 support via fetch API with callback-based request/response lifecycle hooks.
 - All dependent packages updated to latest versions, addressing all security vulnerabilities according to `pnpm audit`.
 - Code rewritten to not use deprecated/insecure API's, e.g., using `URL` instead of `parse`.
 - Fixed socket leaks in the Websocket proxy code, going beyond [http-proxy-node16](https://www.npmjs.com/package/http-proxy-node16) to also instrument and logging socket counts. Also fixed an issue with uncatchable errors when using websockets.
@@ -90,7 +90,7 @@ This is the original user's guide, but with various updates.
   - [Setup a stand-alone proxy server with latency](#setup-a-stand-alone-proxy-server-with-latency)
   - [Using HTTPS](#using-https)
   - [Proxying WebSockets](#proxying-websockets)
-  - [HTTP/2 Support with Undici](#http2-support-with-undici)
+  - [HTTP/2 Support with Fetch](#http2-support-with-fetch)
 - [Options](#options)
 - [Configuration Compatibility](#configuration-compatibility)
 - [Listening for proxy events](#listening-for-proxy-events)
@@ -120,7 +120,7 @@ const proxy = createProxyServer(options); // See below
 
 http-proxy-3 supports two request processing paths:
 - **Native Path**: Uses Node.js native `http`/`https` modules (default)
-- **Undici Path**: Uses [undici](https://github.com/nodejs/undici) for HTTP/2 support (when `undici` option is provided)
+- **Fetch Path**: Uses fetch API for HTTP/2 support (when `fetch` option is provided)
 
 Unless listen(..) is invoked on the object, this does not create a webserver. See below.
 
@@ -257,17 +257,18 @@ console.log("listening on port 5050");
 server.listen(5050);
 ```
 
-##### Using Callbacks (Undici HTTP/2)
+##### Using Callbacks (Fetch/HTTP/2)
 
 ```js
 import * as http from "node:http";
 import { createProxyServer } from "http-proxy-3";
+import { Agent } from "undici";
 
-// Create a proxy server with undici and HTTP/2 support
+// Create a proxy server with fetch and HTTP/2 support
 const proxy = createProxyServer({
   target: "https://127.0.0.1:5050",
-  undici: {
-    agentOptions: { allowH2: true },
+  fetch: {
+    dispatcher: new Agent({ allowH2: true }),
     // Modify the request before it's sent
     onBeforeRequest: async (requestOptions, req, res, options) => {
       requestOptions.headers['X-Special-Proxy-Header'] = 'foobar';
@@ -275,7 +276,7 @@ const proxy = createProxyServer({
     },
     // Access the response after it's received
     onAfterResponse: async (response, req, res, options) => {
-      console.log(`Proxied ${req.url} -> ${response.statusCode}`);
+      console.log(`Proxied ${req.url} -> ${response.status}`);
     }
   }
 });
@@ -439,37 +440,38 @@ proxyServer.listen(8015);
 
 **[Back to top](#table-of-contents)**
 
-#### HTTP/2 Support with Undici
+#### HTTP/2 Support with Fetch
 
-> **⚠️ Experimental Feature**: The undici code path for HTTP/2 support is currently experimental. While it provides full HTTP/2 functionality and has comprehensive test coverage, the API and behavior may change in future versions. Use with caution in production environments.
+> **⚠️ Experimental Feature**: The fetch code path for HTTP/2 support is currently experimental. While it provides HTTP/2 functionality and has comprehensive test coverage, the API and behavior may change in future versions. Use with caution in production environments.
 
-http-proxy-3 supports HTTP/2 through [undici](https://github.com/nodejs/undici), a modern HTTP client. When undici is enabled, the proxy can communicate with HTTP/2 servers and provides enhanced performance and features.
+http-proxy-3 supports HTTP/2 through the native fetch API. When fetch is enabled, the proxy can communicate with HTTP/2 servers. The fetch code path is runtime-agnostic and works across different JavaScript runtimes (Node.js, Deno, Bun, etc.). However, this means HTTP/2 support depends on the runtime. Deno enables HTTP/2 by default, Bun currently does not and Node.js requires to set a different dispatcher. See next section for Node.js details.
+
 
 ##### Basic HTTP/2 Setup
 
 ```js
 import { createProxyServer } from "http-proxy-3";
-import { Agent, setGlobalDispatcher } from "undici";
+import { Agent } from "undici";
 
-// Enable HTTP/2 for all fetch operations
+// Either enable HTTP/2 for all fetch operations
 setGlobalDispatcher(new Agent({ allowH2: true }));
 
-// Create a proxy with HTTP/2 support
+// Or create a proxy with HTTP/2 support using fetch
 const proxy = createProxyServer({
   target: "https://http2-server.example.com",
-  undici: {
-    agentOptions: { allowH2: true }
+  fetch: {
+    dispatcher: new Agent({ allowH2: true })
   }
 });
 ```
 
-##### Simple HTTP/2 Enablement
+##### Simple Fetch Enablement
 
 ```js
-// Shorthand to enable undici with defaults
+// Shorthand to enable fetch with defaults
 const proxy = createProxyServer({
   target: "https://http2-server.example.com",
-  undici: true  // Uses default configuration
+  fetch: true  // Uses default fetch configuration
 });
 ```
 
@@ -478,32 +480,32 @@ const proxy = createProxyServer({
 ```js
 const proxy = createProxyServer({
   target: "https://api.example.com",
-  undici: {
-    // Undici agent configuration
-    agentOptions: {
+  fetch: {
+    // Use undici's Agent for HTTP/2 support
+    dispatcher: new Agent({
       allowH2: true,
       connect: {
         rejectUnauthorized: false,  // For self-signed certs
         timeout: 10000
       }
-    },
-    // Undici request options
+    }),
+    // Additional fetch request options
     requestOptions: {
       headersTimeout: 30000,
       bodyTimeout: 60000
     },
-    // Called before making the undici request
+    // Called before making the fetch request
     onBeforeRequest: async (requestOptions, req, res, options) => {
       // Modify outgoing request
       requestOptions.headers['X-API-Key'] = 'your-api-key';
       requestOptions.headers['X-Request-ID'] = Math.random().toString(36);
     },
-    // Called after receiving the undici response
+    // Called after receiving the fetch response
     onAfterResponse: async (response, req, res, options) => {
       // Access full response object
-      console.log(`Status: ${response.statusCode}`);
+      console.log(`Status: ${response.status}`);
       console.log('Headers:', response.headers);
-      // Note: response.body is a stream, not the actual body content
+      // Note: response.body is a stream that will be piped to res automatically
     }
   }
 });
@@ -513,6 +515,7 @@ const proxy = createProxyServer({
 
 ```js
 import { readFileSync } from "node:fs";
+import { Agent } from "undici";
 
 const proxy = createProxyServer({
   target: "https://http2-target.example.com",
@@ -520,21 +523,47 @@ const proxy = createProxyServer({
     key: readFileSync("server-key.pem"),
     cert: readFileSync("server-cert.pem")
   },
-  undici: {
-    agentOptions: { 
+  fetch: {
+    dispatcher: new Agent({ 
       allowH2: true,
       connect: { rejectUnauthorized: false }
-    }
+    })
   },
   secure: false  // Skip SSL verification for self-signed certs
 }).listen(8443);
 ```
 
+##### Using Custom Fetch Implementation
+
+```js
+import { createProxyServer } from "http-proxy-3";
+import { fetch as undiciFetch, Agent } from "undici";
+
+// Wrap undici's fetch with custom configuration
+function customFetch(url, opts) {
+  opts = opts || {};
+  opts.dispatcher = new Agent({ allowH2: true });
+  return undiciFetch(url, opts);
+}
+
+const proxy = createProxyServer({
+  target: "https://api.example.com",
+  fetch: {
+    // Pass your custom fetch implementation
+    customFetch,
+    onBeforeRequest: async (requestOptions, req, res, options) => {
+      requestOptions.headers['X-Custom'] = 'value';
+    }
+  }
+});
+```
+
 **Important Notes:**
-- When `undici` option is provided, the proxy uses undici's HTTP client instead of Node.js native `http`/`https` modules
-- undici automatically handles HTTP/2 negotiation when `allowH2: true` is set
-- The `onBeforeRequest` and `onAfterResponse` callbacks are only available in the undici code path
-- Traditional `proxyReq` and `proxyRes` events are not emitted in the undici path - use the callbacks instead
+- When `fetch` option is provided, the proxy uses the fetch API instead of Node.js native `http`/`https` modules
+- To enable HTTP/2, pass a dispatcher (e.g., from undici with `allowH2: true`) in the fetch configuration
+- The `onBeforeRequest` and `onAfterResponse` callbacks are only available in the fetch code path
+- Traditional `proxyReq` and `proxyRes` events are not emitted in the fetch path - use the callbacks instead
+- The fetch approach is runtime-agnostic and doesn't require undici as a dependency for basic HTTP/1.1 proxying
 
 **[Back to top](#table-of-contents)**
 
@@ -633,11 +662,12 @@ const proxy = createProxyServer({
 
 - **ca**: Optionally override the trusted CA certificates. This is passed to https.request.
 
-- **undici**: Enable undici for HTTP/2 support. Set to `true` for defaults, or provide custom configuration:
-  - `agentOptions`: Configuration for undici Agent (see [undici Agent.Options](https://github.com/nodejs/undici/blob/main/docs/api/Agent.md))
-  - `requestOptions`: Configuration for undici requests (see [undici Dispatcher.RequestOptions](https://github.com/nodejs/undici/blob/main/docs/api/Dispatcher.md#dispatcherrequestoptions))
-  - `onBeforeRequest`: Async callback called before making the undici request
-  - `onAfterResponse`: Async callback called after receiving the undici response
+- **fetch**: Enable fetch API for HTTP/2 support. Set to `true` for defaults, or provide custom configuration:
+  - `dispatcher`: Custom fetch dispatcher (e.g., undici Agent with `allowH2: true` for HTTP/2)
+  - `requestOptions`: Additional fetch request options
+  - `onBeforeRequest`: Async callback called before making the fetch request
+  - `onAfterResponse`: Async callback called after receiving the fetch response
+  - `customFetch`: Custom fetch implementation to use instead of the global fetch
 
 **NOTE:**
 `options.ws` and `options.ssl` are optional.
@@ -654,15 +684,15 @@ If you are using the `proxyServer.listen` method, the following options are also
 
 The following table shows which configuration options are compatible with different code paths:
 
-| Option | Native HTTP/HTTPS | Undici HTTP/2 | Notes |
+| Option | Native HTTP/HTTPS | Fetch/HTTP/2 | Notes |
 |--------|-------------------|---------------|--------|
 | `target` | ✅ | ✅ | Core option, works in both paths |
 | `forward` | ✅ | ✅ | Core option, works in both paths |
-| `agent` | ✅ | ❌ | Native agents only, use `undici.agentOptions` instead |
+| `agent` | ✅ | ❌ | Native agents only, use `fetch.dispatcher` instead |
 | `ssl` | ✅ | ✅ | HTTPS server configuration |
 | `ws` | ✅ | ❌ | WebSocket proxying uses native path only |
 | `xfwd` | ✅ | ✅ | X-Forwarded headers |
-| `secure` | ✅ | ✅ | SSL certificate verification |
+| `secure` | ✅ | ❌¹ | SSL certificate verification |
 | `toProxy` | ✅ | ✅ | Proxy-to-proxy configuration |
 | `prependPath` | ✅ | ✅ | Path manipulation |
 | `ignorePath` | ✅ | ✅ | Path manipulation |
@@ -683,15 +713,18 @@ The following table shows which configuration options are compatible with differ
 | `buffer` | ✅ | ✅ | Request body stream |
 | `method` | ✅ | ✅ | HTTP method override |
 | `ca` | ✅ | ✅ | Custom CA certificates |
-| `undici` | ❌ | ✅ | Undici-specific configuration |
+| `fetch` | ❌ | ✅ | Fetch-specific configuration |
+
+**Notes:**
+- ¹ `secure` is not directly supported in the fetch path. Instead, use `fetch.dispatcher` with `{connect: {rejectUnauthorized: false}}` to disable SSL certificate verification (e.g., for self-signed certificates).
 
 **Code Path Selection:**
 - **Native Path**: Used by default, supports HTTP/1.1 and WebSockets
-- **Undici Path**: Activated when `undici` option is provided, supports HTTP/2
+- **Fetch Path**: Activated when `fetch` option is provided, supports HTTP/2 (with appropriate dispatcher)
 
 **Event Compatibility:**
 - **Native Path**: Emits traditional events (`proxyReq`, `proxyRes`, `proxyReqWs`)
-- **Undici Path**: Uses callback functions (`onBeforeRequest`, `onAfterResponse`) instead of events
+- **Fetch Path**: Uses callback functions (`onBeforeRequest`, `onAfterResponse`) instead of events
 
 **[Back to top](#table-of-contents)**
 
@@ -705,7 +738,7 @@ The following table shows which configuration options are compatible with differ
 - `close`: This event is emitted once the proxy websocket was closed.
 - (DEPRECATED) `proxySocket`: Deprecated in favor of `open`.
 
-**Note**: When using the undici code path (HTTP/2), the `proxyReq` and `proxyRes` events are **not** emitted. Instead, use the `onBeforeRequest` and `onAfterResponse` callback functions in the `undici` configuration.
+**Note**: When using the fetch code path (HTTP/2), the `proxyReq` and `proxyRes` events are **not** emitted. Instead, use the `onBeforeRequest` and `onAfterResponse` callback functions in the `fetch` configuration.
 
 #### Traditional Events (Native HTTP/HTTPS path)
 
@@ -741,25 +774,26 @@ proxy.on("open", (proxySocket) => {
 });
 ```
 
-#### Callback Functions (Undici/HTTP2 path)
+#### Callback Functions (Fetch/HTTP2 path)
 
 ```js
 import { createProxyServer } from "http-proxy-3";
+import { Agent } from "undici";
 
 const proxy = createProxyServer({
   target: "https://api.example.com",
-  undici: {
-    agentOptions: { allowH2: true },
-    // Called before making the undici request
+  fetch: {
+    dispatcher: new Agent({ allowH2: true }),
+    // Called before making the fetch request
     onBeforeRequest: async (requestOptions, req, res, options) => {
       // Modify the outgoing request
       requestOptions.headers['X-Custom-Header'] = 'added-by-callback';
-      console.log('Making request to:', requestOptions.origin + requestOptions.path);
+      console.log('Making request to:', requestOptions.headers.host);
     },
-    // Called after receiving the undici response
+    // Called after receiving the fetch response
     onAfterResponse: async (response, req, res, options) => {
       // Access the full response object
-      console.log(`Response: ${response.statusCode}`, response.headers);
+      console.log(`Response: ${response.status}`, response.headers);
       // Note: response.body is a stream that will be piped to res automatically
     }
   }

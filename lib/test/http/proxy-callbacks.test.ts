@@ -1,5 +1,5 @@
 /*
-Test the new onProxyReq and onProxyRes callbacks for undici code path
+Test the new onBeforeRequest and onAfterResponse callbacks for fetch code path
 
 pnpm test proxy-callbacks.test.ts
 */
@@ -12,7 +12,7 @@ import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { Agent } from "undici";
 
 
-describe("Undici callback functions (onBeforeRequest and onAfterResponse)", () => {
+describe("Fetch callback functions (onBeforeRequest and onAfterResponse)", () => {
     let ports: Record<'target' | 'proxy', number>;
     const servers: Record<string, any> = {};
 
