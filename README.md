@@ -27,15 +27,16 @@ Contributors:
 
 **Status:**
 
-August 21, 2025 STATUS compared to [http-proxy](https://www.npmjs.com/package/http-proxy) and [httpxy](https://www.npmjs.com/package/httpxy):
+October 8, 2025 STATUS compared to [http-proxy](https://www.npmjs.com/package/http-proxy) and [httpxy](https://www.npmjs.com/package/httpxy):
 
 - Library entirely rewritten in Typescript in a modern style, with many typings added internally and strict mode enabled.
 - **HTTP/2 Support**: Full HTTP/2 support via fetch API with callback-based request/response lifecycle hooks.
 - All dependent packages updated to latest versions, addressing all security vulnerabilities according to `pnpm audit`.
 - Code rewritten to not use deprecated/insecure API's, e.g., using `URL` instead of `parse`.
-- Fixed socket leaks in the Websocket proxy code, going beyond [http-proxy-node16](https://www.npmjs.com/package/http-proxy-node16) to also instrument and logging socket counts. Also fixed an issue with uncatchable errors when using websockets.
+- Fixed multiple socket leaks in the Websocket proxy code, going beyond [http-proxy-node16](https://www.npmjs.com/package/http-proxy-node16) to also instrument and logging socket counts. Also fixed an issue with uncatchable errors when using websockets.
 - Switch to pnpm for development.
 - More jest unit tests than both http-proxy and httpxy: converted all the http-proxy examples into working unit tests that they actually work (http-proxy's unit tests just setup the examples in many cases, but didn't test that they actually work). Also httpxy seems to have almost no tests. These tests should make contributing PR's much easier.
+- [Partial HTTP2 support](https://github.com/sagemathinc/http-proxy-3/pull/33).
 - Addressed [this vulnerability](https://github.com/http-party/node-http-proxy/issues/1647).
 
 **Motivation:** http-proxy is one of the oldest and most famous nodejs modules, and it gets downloaded around 15 million times a week, and I've loved using it for years. Unfortunately, it is [unmaintained](https://github.com/http-party/node-http-proxy/issues/1687), it has significant leaks that [regularly crash production servers](https://github.com/jupyterhub/configurable-http-proxy/issues/434), and is written in ancient untyped Javascript. The maintainers have long since stopped responding, so there is no choice but to fork and start over. I wanted to do my part to help maintain the open source ecosystem, hence this library. I hope you find it useful.

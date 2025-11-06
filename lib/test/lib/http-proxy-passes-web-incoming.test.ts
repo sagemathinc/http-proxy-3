@@ -691,7 +691,8 @@ describe("#followRedirects", () => {
       const source = http
         .createServer((req, res) => {
           if (
-            new URL(req.url ?? "", "http://dummy.org").pathname === "/redirect"
+            new URL(req.url ?? "", "http://base.invalid").pathname ===
+            "/redirect"
           ) {
             res.writeHead(200, { "Content-Type": "text/plain" });
             res.end("ok");

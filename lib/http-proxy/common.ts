@@ -335,10 +335,10 @@ export function toURL(
   if (url.startsWith("//")) {
     // special case -- this would be viewed as a this is a "network-path reference",
     // so we explicitly prefix with our http schema.  See
-    url = `http://dummy.org${url}`;
+    url = `http://base.invalid${url}`;
   }
   // urllib.Url is deprecated but we support it by converting to URL
-  return new URL(url, "http://dummy.org");
+  return new URL(url, "http://base.invalid");
 }
 
 // vendor simplified version of https://www.npmjs.com/package/requires-port to
