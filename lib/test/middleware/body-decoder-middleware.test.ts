@@ -10,11 +10,12 @@ import getPort from "../get-port";
 import connect from "connect";
 import bodyParser from "body-parser";
 import fetch from "node-fetch";
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from "vitest";
 
-describe.skipIf(() => process.env.FORCE_FETCH_PATH
-  === "true")("connect.bodyParser() middleware in http-proxy-3", () => {
-    let ports: Record<'http' | 'proxy', number>;
+describe.skipIf(() => process.env.FORCE_FETCH_PATH === "true")(
+  "connect.bodyParser() middleware in http-proxy-3",
+  () => {
+    let ports: Record<"http" | "proxy", number>;
     it("gets ports", async () => {
       ports = { http: await getPort(), proxy: await getPort() };
     });
@@ -101,4 +102,5 @@ describe.skipIf(() => process.env.FORCE_FETCH_PATH
     it("Clean up", () => {
       Object.values(servers).map((x: any) => x?.close());
     });
-  });
+  },
+);
