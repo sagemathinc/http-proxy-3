@@ -1,5 +1,5 @@
 /*
-pnpm test proxy-https-to-https.test.ts
+pnpm test proxy-http2-to-http2.test.ts
 
 */
 
@@ -8,17 +8,15 @@ import * as httpProxy from "../..";
 import getPort from "../get-port";
 import { join } from "node:path";
 import { readFile } from "node:fs/promises";
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { Agent, setGlobalDispatcher } from "undici";
+import { describe, it, expect, beforeAll, afterAll } from "vitest";
+import { Agent, fetch } from "undici";
 
-setGlobalDispatcher(new Agent({
-  allowH2: true
-}));
+const TestAgent = new Agent({ allowH2: true, connect: { rejectUnauthorized: false } });
 
 const fixturesDir = join(__dirname, "..", "fixtures");
 
 describe("Basic example of proxying over HTTP2 to a target HTTP2 server", () => {
-  let ports: Record<'http2' | 'proxy', number>;
+  let ports: Record<"http2" | "proxy", number>;
   beforeAll(async () => {
     // Gets ports
     ports = { http2: await getPort(), proxy: await getPort() };
@@ -46,7 +44,7 @@ describe("Basic example of proxying over HTTP2 to a target HTTP2 server", () => 
       .createServer({
         target: `https://localhost:${ports.http2}`,
         ssl,
-        fetch: { dispatcher: new Agent({ allowH2: true }) as any },
+        fetch: { dispatcher: TestAgent as any },
         // without secure false, clients will fail and this is broken:
         secure: false,
       })
@@ -54,12 +52,12 @@ describe("Basic example of proxying over HTTP2 to a target HTTP2 server", () => 
   });
 
   it("Use fetch to test direct non-proxied http2 server", async () => {
-    const r = await (await fetch(`https://localhost:${ports.http2}`)).text();
+    const r = await (await fetch(`https://localhost:${ports.http2}`, { dispatcher: TestAgent })).text();
     expect(r).toContain("hello over http2");
   });
 
   it("Use fetch to test the proxy server", async () => {
-    const r = await (await fetch(`https://localhost:${ports.proxy}`)).text();
+    const r = await (await fetch(`https://localhost:${ports.proxy}`, { dispatcher: TestAgent })).text();
     expect(r).toContain("hello over http2");
   });
 

@@ -452,7 +452,7 @@ http-proxy-3 supports HTTP/2 through the native fetch API. When fetch is enabled
 
 ```js
 import { createProxyServer } from "http-proxy-3";
-import { Agent } from "undici";
+import { Agent, setGlobalDispatcher } from "undici";
 
 // Either enable HTTP/2 for all fetch operations
 setGlobalDispatcher(new Agent({ allowH2: true }));

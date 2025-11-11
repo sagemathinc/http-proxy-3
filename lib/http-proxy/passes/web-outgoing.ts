@@ -143,7 +143,7 @@ export function writeHeaders(
 
   for (const key0 in proxyRes.headers) {
     let key = key0;
-    if (_req.httpVersionMajor > 1 && (key === "connection") || key === "keep-alive") {
+    if (_req.httpVersionMajor > 1 && (key === "connection" || key === "keep-alive")) {  
       // don't send connection header to http2 client
       continue;
     }

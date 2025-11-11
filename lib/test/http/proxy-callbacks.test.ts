@@ -64,7 +64,8 @@ describe("Fetch callback functions (onBeforeRequest and onAfterResponse)", () =>
                     console.log(`Response received: ${response.status}`);
                 }
             }
-        }); servers.proxy = proxy.listen(ports.proxy);
+        }); 
+        servers.proxy = proxy.listen(ports.proxy);
 
         // Make a request through the proxy
         const response = await fetch(`http://localhost:${ports.proxy}/test`);

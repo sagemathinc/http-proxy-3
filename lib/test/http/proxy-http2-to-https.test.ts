@@ -8,17 +8,12 @@ import * as httpProxy from "../..";
 import getPort from "../get-port";
 import { join } from "node:path";
 import { readFile } from "node:fs/promises";
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { Agent, setGlobalDispatcher } from "undici";
-
-setGlobalDispatcher(new Agent({
-  allowH2: true
-}));
+import { describe, it, expect, beforeAll, afterAll } from "vitest";
 
 const fixturesDir = join(__dirname, "..", "fixtures");
 
 describe("Basic example of proxying over HTTPS to a target HTTPS server", () => {
-  let ports: Record<'https' | 'proxy', number>;
+  let ports: Record<"https" | "proxy", number>;
   beforeAll(async () => {
     // Gets ports
     ports = { https: await getPort(), proxy: await getPort() };

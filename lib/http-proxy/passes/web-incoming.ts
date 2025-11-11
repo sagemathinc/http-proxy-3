@@ -7,10 +7,7 @@ The names of passes are exported as WEB_PASSES from this module.
 
 */
 
-import type {
-  IncomingMessage as Request,
-  ServerResponse as Response,
-} from "node:http";
+import type { IncomingMessage as Request, ServerResponse as Response } from "node:http";
 import * as http from "node:http";
 import * as https from "node:https";
 import type { Socket } from "node:net";
@@ -41,10 +38,7 @@ const nativeAgents = { http, https };
 
 //  Sets `content-length` to '0' if request is of DELETE type.
 export function deleteLength(req: Request) {
-  if (
-    (req.method === "DELETE" || req.method === "OPTIONS") &&
-    !req.headers["content-length"]
-  ) {
+  if ((req.method === "DELETE" || req.method === "OPTIONS") && !req.headers["content-length"]) {
     req.headers["content-length"] = "0";
     delete req.headers["transfer-encoding"];
   }
@@ -72,13 +66,10 @@ export function XHeaders(req: Request, _res: Response, options: ServerOptions) {
 
   for (const header of ["for", "port", "proto"] as const) {
     req.headers["x-forwarded-" + header] =
-      (req.headers["x-forwarded-" + header] || "") +
-      (req.headers["x-forwarded-" + header] ? "," : "") +
-      values[header];
+      (req.headers["x-forwarded-" + header] || "") + (req.headers["x-forwarded-" + header] ? "," : "") + values[header];
   }
 
-  req.headers["x-forwarded-host"] =
-    req.headers["x-forwarded-host"] || req.headers["host"] || "";
+  req.headers["x-forwarded-host"] = req.headers["x-forwarded-host"] || req.headers["host"] || "";
 }
 
 // Does the actual proxying. If `forward` is enabled fires up
@@ -106,12 +97,7 @@ export function stream(
   if (options.forward) {
     // forward enabled, so just pipe the request
     const proto = options.forward.protocol === "https:" ? https : http;
-    const outgoingOptions = common.setupOutgoing(
-      options.ssl || {},
-      options,
-      req,
-      "forward",
-    );
+    const outgoingOptions = common.setupOutgoing(options.ssl || {}, options, req, "forward");
     const forwardReq = proto.request(outgoingOptions);
 
     // error handler (e.g. ECONNRESET, ECONNREFUSED)
@@ -162,15 +148,9 @@ export function stream(
   req.on("error", proxyError);
   proxyReq.on("error", proxyError);
 
-  function createErrorHandler(
-    proxyReq: http.ClientRequest,
-    url: NormalizeProxyTarget<ProxyTargetUrl>,
-  ) {
+  function createErrorHandler(proxyReq: http.ClientRequest, url: NormalizeProxyTarget<ProxyTargetUrl>) {
     return (err: Error) => {
-      if (
-        req.socket.destroyed &&
-        (err as NodeJS.ErrnoException).code === "ECONNRESET"
-      ) {
+      if (req.socket.destroyed && (err as NodeJS.ErrnoException).code === "ECONNRESET") {
         server.emit("econnreset", err, req, res, url);
         proxyReq.destroy();
         return;
@@ -236,10 +216,7 @@ async function stream2(
   };
 
   req.on("error", (err: Error) => {
-    if (
-      req.socket.destroyed &&
-      (err as NodeJS.ErrnoException).code === "ECONNRESET"
-    ) {
+    if (req.socket.destroyed && (err as NodeJS.ErrnoException).code === "ECONNRESET") {
       const target = options.target || options.forward;
       if (target) {
         server.emit("econnreset", err, req, res, target);
@@ -249,19 +226,13 @@ async function stream2(
     handleError(err);
   });
 
-  const fetchOptions =
-    options.fetch === true ? ({} as FetchOptions) : options.fetch;
+  const fetchOptions = options.fetch === true ? ({} as FetchOptions) : options.fetch;
   if (!fetchOptions) {
     throw new Error("stream2 called without fetch options");
   }
 
   if (options.forward) {
-    const outgoingOptions = common.setupOutgoing(
-      options.ssl || {},
-      options,
-      req,
-      "forward",
-    );
+    const outgoingOptions = common.setupOutgoing(options.ssl || {}, options, req, "forward");
 
     const requestOptions: RequestInit = {
       method: outgoingOptions.method,
@@ -290,10 +261,7 @@ async function stream2(
     }
 
     try {
-      const result = await fetch(
-        new URL(outgoingOptions.url).origin + outgoingOptions.path,
-        requestOptions,
-      );
+      const result = await fetch(new URL(outgoingOptions.url).origin + outgoingOptions.path, requestOptions);
 
       // Call onAfterResponse callback for forward requests (though they typically don't expect responses)
       if (fetchOptions.onAfterResponse) {
@@ -341,6 +309,7 @@ async function stream2(
     requestOptions.body = options.buffer as Stream.Readable;
   } else if (req.method !== "GET" && req.method !== "HEAD") {
     requestOptions.body = req;
+    requestOptions.duplex = "half";
   }
 
   // Call onBeforeRequest callback before making the request
@@ -354,10 +323,7 @@ async function stream2(
   }
 
   try {
-    const response = await fetch(
-      new URL(outgoingOptions.url).origin + outgoingOptions.path,
-      requestOptions,
-    );
+    const response = await fetch(new URL(outgoingOptions.url).origin + outgoingOptions.path, requestOptions);
 
     // Call onAfterResponse callback after receiving the response
     if (fetchOptions.onAfterResponse) {
@@ -402,9 +368,7 @@ async function stream2(
 
     if (!res.writableEnded) {
       // Allow us to listen for when the proxy has completed
-      const nodeStream = response.body
-        ? Readable.from(response.body as AsyncIterable<Uint8Array>)
-        : null;
+      const nodeStream = response.body ? Readable.from(response.body as AsyncIterable<Uint8Array>) : null;
 
       if (nodeStream) {
         nodeStream.on("error", (err) => {
@@ -428,9 +392,7 @@ async function stream2(
       server?.emit("end", req, res, fakeProxyRes);
     }
   } catch (err) {
-    if (err) {
-      handleError(err as Error, options.target);
-    }
+    handleError(err as Error, options.target);
   }
 }
 
