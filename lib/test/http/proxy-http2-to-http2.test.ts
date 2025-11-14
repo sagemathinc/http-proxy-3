@@ -1,60 +1,64 @@
 /*
-pnpm test proxy-https-to-https.test.ts
+pnpm test proxy-http2-to-http2.test.ts
 
 */
 
-import * as https from "node:https";
+import * as http2 from "node:http2";
 import * as httpProxy from "../..";
 import getPort from "../get-port";
 import { join } from "node:path";
 import { readFile } from "node:fs/promises";
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
+import { Agent, fetch } from "undici";
+
+const TestAgent = new Agent({ allowH2: true, connect: { rejectUnauthorized: false } });
 
 const fixturesDir = join(__dirname, "..", "fixtures");
 
-describe("Basic example of proxying over HTTPS to a target HTTPS server", () => {
-  let ports: Record<"https" | "proxy", number>;
+describe("Basic example of proxying over HTTP2 to a target HTTP2 server", () => {
+  let ports: Record<"http2" | "proxy", number>;
   beforeAll(async () => {
     // Gets ports
-    ports = { https: await getPort(), proxy: await getPort() };
+    ports = { http2: await getPort(), proxy: await getPort() };
   });
 
   const servers: any = {};
   let ssl: { key: string; cert: string };
 
-  it("Create the target HTTPS server", async () => {
+  it("Create the target HTTP2 server", async () => {
     ssl = {
       key: await readFile(join(fixturesDir, "agent2-key.pem"), "utf8"),
       cert: await readFile(join(fixturesDir, "agent2-cert.pem"), "utf8"),
     };
-    servers.https = https
-      .createServer(ssl, (_req, res) => {
+    servers.https = http2
+      .createSecureServer(ssl, (_req, res) => {
         res.writeHead(200, { "Content-Type": "text/plain" });
-        res.write("hello over https\n");
+        res.write("hello over http2\n");
         res.end();
       })
-      .listen(ports.https);
+      .listen(ports.http2);
   });
 
   it("Create the HTTPS proxy server", async () => {
     servers.proxy = httpProxy
       .createServer({
-        target: `https://localhost:${ports.https}`,
+        target: `https://localhost:${ports.http2}`,
         ssl,
+        fetch: { dispatcher: TestAgent as any },
         // without secure false, clients will fail and this is broken:
         secure: false,
       })
       .listen(ports.proxy);
   });
 
-  it("Use fetch to test direct non-proxied https server", async () => {
-    const r = await (await fetch(`https://localhost:${ports.https}`)).text();
-    expect(r).toContain("hello over https");
+  it("Use fetch to test direct non-proxied http2 server", async () => {
+    const r = await (await fetch(`https://localhost:${ports.http2}`, { dispatcher: TestAgent })).text();
+    expect(r).toContain("hello over http2");
   });
 
   it("Use fetch to test the proxy server", async () => {
-    const r = await (await fetch(`https://localhost:${ports.proxy}`)).text();
-    expect(r).toContain("hello over https");
+    const r = await (await fetch(`https://localhost:${ports.proxy}`, { dispatcher: TestAgent })).text();
+    expect(r).toContain("hello over http2");
   });
 
   afterAll(async () => {

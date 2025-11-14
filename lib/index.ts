@@ -1,9 +1,9 @@
 import {
+  type ErrorCallback,
   ProxyServer,
-  type ServerOptions,
   type ProxyTarget,
   type ProxyTargetUrl,
-  type ErrorCallback,
+  type ServerOptions,
 } from './http-proxy/index';
 export {
   ProxyServer,
@@ -13,7 +13,8 @@ export {
   type ErrorCallback,
 };
 export { numOpenSockets } from './http-proxy/passes/ws-incoming';
-import * as http from 'node:http';
+
+import type * as http from 'node:http';
 
 /**
  * Creates the proxy server.

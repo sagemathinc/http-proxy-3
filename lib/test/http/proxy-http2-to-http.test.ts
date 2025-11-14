@@ -7,19 +7,15 @@ import * as httpProxy from "../..";
 import getPort from "../get-port";
 import { join } from "node:path";
 import { readFile } from "node:fs/promises";
-import fetch from "node-fetch";
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { Agent, setGlobalDispatcher } from "undici";
+import { describe, it, expect, beforeAll, afterAll } from "vitest";
+import { Agent, fetch } from "undici";
 
-setGlobalDispatcher(new Agent({
-  allowH2: true
-}));
-
+const TestAgent = new Agent({ allowH2: true });
 
 const fixturesDir = join(__dirname, "..", "fixtures");
 
 describe("Basic example of proxying over HTTPS to a target HTTP server", () => {
-  let ports: Record<'http' | 'proxy', number>;
+  let ports: Record<"http" | "proxy", number>;
   beforeAll(async () => {
     ports = { http: await getPort(), proxy: await getPort() };
   });
@@ -52,12 +48,12 @@ describe("Basic example of proxying over HTTPS to a target HTTP server", () => {
   });
 
   it("Use fetch to test non-https server", async () => {
-    const r = await (await fetch(`http://localhost:${ports.http}`)).text();
+    const r = await (await fetch(`http://localhost:${ports.http}`, { dispatcher: TestAgent })).text();
     expect(r).toContain("hello http over https");
   });
 
   it("Use fetch to test the ACTUAL https server", async () => {
-    const r = await (await fetch(`https://localhost:${ports.proxy}`)).text();
+    const r = await (await fetch(`https://localhost:${ports.proxy}`, { dispatcher: TestAgent })).text();
     expect(r).toContain("hello http over https");
   });
 

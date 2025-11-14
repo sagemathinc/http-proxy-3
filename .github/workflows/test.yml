@@ -42,4 +42,6 @@ jobs:
       - run: npm install -g pnpm
       - run: pnpm install
       - run: pnpm build
-      - run: pnpm test
+      - name: Test native HTTP code path
+        run: pnpm test-native
+

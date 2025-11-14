@@ -57,6 +57,9 @@
   "scripts": {
     "test": "NODE_TLS_REJECT_UNAUTHORIZED=0 pnpm exec vitest run",
     "test-all": "pnpm audit && TEST_EXTERNAL_REVERSE_PROXY=yes pnpm test --pool threads --poolOptions.threads.singleThread",
+    "test-dual-path": "pnpm test-native && pnpm test-fetch",
+    "test-native": "echo '🔧 Testing native HTTP code path...' && NODE_TLS_REJECT_UNAUTHORIZED=0 pnpm exec vitest run",
+    "test-fetch": "echo '🚀 Testing fetch code path...' && NODE_TLS_REJECT_UNAUTHORIZED=0 FORCE_FETCH_PATH=true pnpm exec vitest run",
     "test-versions": "bash -c '. \"$NVM_DIR/nvm.sh\" && nvm use 20 && pnpm test && nvm use 22 && pnpm test && nvm use 24 && pnpm test'",
     "clean": "rm -rf dist node_modules",
     "build": "pnpm exec tsc --build",
