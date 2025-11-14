@@ -122,8 +122,6 @@ export interface FetchOptions {
     res: http.ServerResponse,
     options: NormalizedServerOptions,
   ) => void | Promise<void>;
-  /** Custom fetch implementation */
-  customFetch?: typeof fetch;
 }
 
 export interface NormalizedServerOptions extends ServerOptions {

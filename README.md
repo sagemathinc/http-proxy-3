@@ -534,30 +534,6 @@ const proxy = createProxyServer({
 }).listen(8443);
 ```
 
-##### Using Custom Fetch Implementation
-
-```js
-import { createProxyServer } from "http-proxy-3";
-import { fetch as undiciFetch, Agent } from "undici";
-
-// Wrap undici's fetch with custom configuration
-function customFetch(url, opts) {
-  opts = opts || {};
-  opts.dispatcher = new Agent({ allowH2: true });
-  return undiciFetch(url, opts);
-}
-
-const proxy = createProxyServer({
-  target: "https://api.example.com",
-  fetch: {
-    // Pass your custom fetch implementation
-    customFetch,
-    onBeforeRequest: async (requestOptions, req, res, options) => {
-      requestOptions.headers['X-Custom'] = 'value';
-    }
-  }
-});
-```
 
 **Important Notes:**
 - When `fetch` option is provided, the proxy uses the fetch API instead of Node.js native `http`/`https` modules
@@ -668,7 +644,6 @@ const proxy = createProxyServer({
   - `requestOptions`: Additional fetch request options
   - `onBeforeRequest`: Async callback called before making the fetch request
   - `onAfterResponse`: Async callback called after receiving the fetch response
-  - `customFetch`: Custom fetch implementation to use instead of the global fetch
 
 **NOTE:**
 `options.ws` and `options.ssl` are optional.
