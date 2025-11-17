@@ -101,7 +101,11 @@ export interface ServerOptions {
   fetch?: boolean | FetchOptions;
 }
 
-export type Dispatcher = RequestInit["dispatcher"];
+// use `any` when `lib: "dom"` is included in tsconfig.json,
+// as dispatcher property does not exist in RequestInit in that case
+export type Dispatcher = (typeof globalThis extends { onmessage: any }
+  ? any
+  : RequestInit)["dispatcher"];
 
 export interface FetchOptions {
   /** Allow custom dispatcher */
