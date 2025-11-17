@@ -51,7 +51,7 @@
     "socket.io-client": "^4.8.1",
     "typescript": "^5.8.3",
     "undici": "^7.16.0",
-    "vitest": "^3.2.4",
+    "vitest": "^4.0.9",
     "ws": "^8.18.2"
   },
   "scripts": {

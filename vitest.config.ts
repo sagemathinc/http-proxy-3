@@ -5,6 +5,7 @@ export default defineConfig({
     setupFiles: 'lib/test/setup.js',
     coverage: {
       provider: 'v8'
-    }
+    },
+    exclude: ['dist']
   },
 })
