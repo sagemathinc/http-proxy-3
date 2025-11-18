@@ -86,7 +86,7 @@ export function stream(
   // And we begin!
   server.emit("start", req, res, options.target || options.forward!);
 
-  if (options.fetch || process.env.FORCE_FETCH_PATH === "true") {
+  if (options.fetchOptions || process.env.FORCE_FETCH_PATH === "true") {
     return stream2(req, res, options, _, server, cb);
   }
 
@@ -226,10 +226,10 @@ async function stream2(
     handleError(err);
   });
 
-  const fetchOptions = options.fetch === true ? ({} as FetchOptions) : options.fetch;
-  if (!fetchOptions) {
-    throw new Error("stream2 called without fetch options");
-  }
+  const customFetch = options.customFetch || fetch;
+
+  const fetchOptions = (options.fetchOptions === true ? {} : options.fetchOptions) as FetchOptions;
+
 
   if (options.forward) {
     const outgoingOptions = common.setupOutgoing(options.ssl || {}, options, req, "forward");
@@ -238,9 +238,6 @@ async function stream2(
       method: outgoingOptions.method,
     };
 
-    if (fetchOptions.dispatcher) {
-      requestOptions.dispatcher = fetchOptions.dispatcher;
-    }
 
     // Handle request body
     if (options.buffer) {
@@ -261,7 +258,7 @@ async function stream2(
     }
 
     try {
-      const result = await fetch(new URL(outgoingOptions.url).origin + outgoingOptions.path, requestOptions);
+      const result = await customFetch(new URL(outgoingOptions.url).origin + outgoingOptions.path, requestOptions);
 
       // Call onAfterResponse callback for forward requests (though they typically don't expect responses)
       if (fetchOptions.onAfterResponse) {
@@ -294,10 +291,6 @@ async function stream2(
     ...fetchOptions.requestOptions,
   };
 
-  if (fetchOptions.dispatcher) {
-    requestOptions.dispatcher = fetchOptions.dispatcher;
-  }
-
   if (options.auth) {
     requestOptions.headers = {
       ...requestOptions.headers,
@@ -323,7 +316,7 @@ async function stream2(
   }
 
   try {
-    const response = await fetch(new URL(outgoingOptions.url).origin + outgoingOptions.path, requestOptions);
+    const response = await customFetch(new URL(outgoingOptions.url).origin + outgoingOptions.path, requestOptions);
 
     // Call onAfterResponse callback after receiving the response
     if (fetchOptions.onAfterResponse) {

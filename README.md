@@ -269,7 +269,7 @@ import { Agent } from "undici";
 const proxy = createProxyServer({
   target: "https://127.0.0.1:5050",
   fetch: {
-    dispatcher: new Agent({ allowH2: true }),
+    requestOptions: {dispatcher: new Agent({ allowH2: true })},
     // Modify the request before it's sent
     onBeforeRequest: async (requestOptions, req, res, options) => {
       requestOptions.headers['X-Special-Proxy-Header'] = 'foobar';
@@ -460,8 +460,8 @@ setGlobalDispatcher(new Agent({ allowH2: true }));
 // Or create a proxy with HTTP/2 support using fetch
 const proxy = createProxyServer({
   target: "https://http2-server.example.com",
-  fetch: {
-    dispatcher: new Agent({ allowH2: true })
+  fetchOptions: {
+    requestOptions: {dispatcher: new Agent({ allowH2: true })}
   }
 });
 ```
@@ -481,17 +481,17 @@ const proxy = createProxyServer({
 ```js
 const proxy = createProxyServer({
   target: "https://api.example.com",
-  fetch: {
-    // Use undici's Agent for HTTP/2 support
-    dispatcher: new Agent({
-      allowH2: true,
-      connect: {
-        rejectUnauthorized: false,  // For self-signed certs
-        timeout: 10000
-      }
-    }),
+  fetchOptions: {
+        requestOptions: {
+      // Use undici's Agent for HTTP/2 support
+      dispatcher: new Agent({
+        allowH2: true,
+        connect: {
+          rejectUnauthorized: false,  // For self-signed certs
+          timeout: 10000
+        }
+      }),
     // Additional fetch request options
-    requestOptions: {
       headersTimeout: 30000,
       bodyTimeout: 60000
     },
@@ -639,9 +639,8 @@ const proxy = createProxyServer({
 
 - **ca**: Optionally override the trusted CA certificates. This is passed to https.request.
 
-- **fetch**: Enable fetch API for HTTP/2 support. Set to `true` for defaults, or provide custom configuration:
-  - `dispatcher`: Custom fetch dispatcher (e.g., undici Agent with `allowH2: true` for HTTP/2)
-  - `requestOptions`: Additional fetch request options
+- **fetchOptions**: Enable fetch API for HTTP/2 support. Set to `true` for defaults, or provide custom configuration:
+  - `requestOptions`: Additional fetch request options (e.g., undici Agent with `allowH2: true` for HTTP/2 as dispatcher)
   - `onBeforeRequest`: Async callback called before making the fetch request
   - `onAfterResponse`: Async callback called after receiving the fetch response
 
@@ -696,7 +695,7 @@ The following table shows which configuration options are compatible with differ
 
 **Code Path Selection:**
 - **Native Path**: Used by default, supports HTTP/1.1 and WebSockets
-- **Fetch Path**: Activated when `fetch` option is provided, supports HTTP/2 (with appropriate dispatcher)
+- **Fetch Path**: Activated when `fetchOptions` option is provided, supports HTTP/2 (with appropriate dispatcher)
 
 **Event Compatibility:**
 - **Native Path**: Emits traditional events (`proxyReq`, `proxyRes`, `proxyReqWs`)

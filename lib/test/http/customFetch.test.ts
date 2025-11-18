@@ -15,7 +15,11 @@ const TestAgent = new Agent({ allowH2: true, connect: { rejectUnauthorized: fals
 
 const fixturesDir = join(__dirname, "..", "fixtures");
 
-describe("Basic example of proxying over HTTP2 to a target HTTP2 server", () => {
+const customFetch: typeof fetch = (url, options) => {
+  return fetch(url, {...options, dispatcher: TestAgent as any });
+};
+
+describe("Basic example of proxying over HTTP2 to a target HTTP2 with custom Fetch option server", () => {
   let ports: Record<"http2" | "proxy", number>;
   beforeAll(async () => {
     // Gets ports
@@ -44,9 +48,8 @@ describe("Basic example of proxying over HTTP2 to a target HTTP2 server", () => 
       .createServer({
         target: `https://localhost:${ports.http2}`,
         ssl,
-        fetchOptions: { requestOptions: { dispatcher: TestAgent as any } },
-        // without secure false, clients will fail and this is broken:
-        secure: false,
+        customFetch: customFetch,
+        fetchOptions: true,
       })
       .listen(ports.proxy);
   });

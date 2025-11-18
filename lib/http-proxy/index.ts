@@ -98,18 +98,10 @@ export interface ServerOptions {
    */
   ca?: string;
   /** Enable using fetch for proxy requests. Set to true for defaults, or provide custom configuration. */
-  fetch?: boolean | FetchOptions;
+  fetchOptions?: boolean | FetchOptions;
+  customFetch?: typeof fetch;
 }
-
-// use `any` when `lib: "dom"` is included in tsconfig.json,
-// as dispatcher property does not exist in RequestInit in that case
-export type Dispatcher = (typeof globalThis extends { onmessage: any }
-  ? any
-  : RequestInit)["dispatcher"];
-
 export interface FetchOptions {
-  /** Allow custom dispatcher */
-  dispatcher?: Dispatcher;
   /** Fetch request options */
   requestOptions?: RequestInit;
   /** Called before making the fetch request */

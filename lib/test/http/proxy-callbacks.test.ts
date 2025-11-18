@@ -45,10 +45,11 @@ describe("Fetch callback functions (onBeforeRequest and onAfterResponse)", () =>
 
         const proxy = httpProxy.createServer({
             target: `http://localhost:${ports.target}`,
-            fetch: {
-                dispatcher: new Agent({
-                    allowH2: true
-                }) as any, // Enable undici code path
+            fetchOptions: {
+                requestOptions: {
+                    dispatcher: new Agent({
+                        allowH2: true
+                }) },
                 onBeforeRequest: async (requestOptions, _req, _res, _options) => {
                     onBeforeRequestCalled = true;
                     // Modify the outgoing request
