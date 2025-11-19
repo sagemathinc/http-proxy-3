@@ -49,7 +49,7 @@ describe("Fetch callback functions (onBeforeRequest and onAfterResponse)", () =>
                 requestOptions: {
                     dispatcher: new Agent({
                         allowH2: true
-                }) },
+                }) as any },
                 onBeforeRequest: async (requestOptions, _req, _res, _options) => {
                     onBeforeRequestCalled = true;
                     // Modify the outgoing request
