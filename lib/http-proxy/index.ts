@@ -98,8 +98,8 @@ export interface ServerOptions {
    */
   ca?: string;
   /** Enable using fetch for proxy requests. Set to true for defaults, or provide custom configuration. */
-  fetchOptions?: boolean | FetchOptions;
-  customFetch?: typeof fetch;
+  fetchOptions?: FetchOptions;
+  fetch?: typeof fetch;
 }
 export interface FetchOptions {
   /** Fetch request options */

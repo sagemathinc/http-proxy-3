@@ -268,7 +268,7 @@ import { Agent } from "undici";
 // Create a proxy server with fetch and HTTP/2 support
 const proxy = createProxyServer({
   target: "https://127.0.0.1:5050",
-  fetch: {
+  fetchOptions: {
     requestOptions: {dispatcher: new Agent({ allowH2: true })},
     // Modify the request before it's sent
     onBeforeRequest: async (requestOptions, req, res, options) => {
@@ -472,7 +472,7 @@ const proxy = createProxyServer({
 // Shorthand to enable fetch with defaults
 const proxy = createProxyServer({
   target: "https://http2-server.example.com",
-  fetch: true  // Uses default fetch configuration
+  fetch  // Uses default fetch configuration
 });
 ```
 
@@ -482,7 +482,7 @@ const proxy = createProxyServer({
 const proxy = createProxyServer({
   target: "https://api.example.com",
   fetchOptions: {
-        requestOptions: {
+    requestOptions: {
       // Use undici's Agent for HTTP/2 support
       dispatcher: new Agent({
         allowH2: true,
@@ -524,13 +524,14 @@ const proxy = createProxyServer({
     key: readFileSync("server-key.pem"),
     cert: readFileSync("server-cert.pem")
   },
-  fetch: {
-    dispatcher: new Agent({ 
-      allowH2: true,
-      connect: { rejectUnauthorized: false }
-    })
+  fetchOptions: {
+    requestOptions: {
+      dispatcher: new Agent({ 
+        allowH2: true,
+        connect: { rejectUnauthorized: false }
+      })
+    }
   },
-  secure: false  // Skip SSL verification for self-signed certs
 }).listen(8443);
 ```
 
@@ -757,8 +758,8 @@ import { Agent } from "undici";
 
 const proxy = createProxyServer({
   target: "https://api.example.com",
-  fetch: {
-    dispatcher: new Agent({ allowH2: true }),
+  fetchOptions: {
+    requestOptions: {dispatcher: new Agent({ allowH2: true })},
     // Called before making the fetch request
     onBeforeRequest: async (requestOptions, req, res, options) => {
       // Modify the outgoing request

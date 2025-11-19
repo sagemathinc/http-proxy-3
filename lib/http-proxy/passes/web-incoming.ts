@@ -86,7 +86,7 @@ export function stream(
   // And we begin!
   server.emit("start", req, res, options.target || options.forward!);
 
-  if (options.fetchOptions || process.env.FORCE_FETCH_PATH === "true") {
+  if (options.fetch ||options.fetchOptions || process.env.FORCE_FETCH_PATH === "true") {
     return stream2(req, res, options, _, server, cb);
   }
 

@@ -48,8 +48,7 @@ describe("Basic example of proxying over HTTP2 to a target HTTP2 with custom Fet
       .createServer({
         target: `https://localhost:${ports.http2}`,
         ssl,
-        customFetch: customFetch,
-        fetchOptions: true,
+        fetch: customFetch,
       })
       .listen(ports.proxy);
   });
