@@ -226,9 +226,9 @@ async function stream2(
     handleError(err);
   });
 
-  const customFetch = options.customFetch || fetch;
+  const customFetch = options.fetch || fetch;
 
-  const fetchOptions = (options.fetchOptions === true ? {} : options.fetchOptions) as FetchOptions;
+  const fetchOptions = options.fetchOptions ?? {} as FetchOptions;
 
 
   if (options.forward) {
