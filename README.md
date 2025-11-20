@@ -23,6 +23,7 @@ Contributors:
 - [William](https://wstein.org/) [Stein](https://github.com/williamstein) -- lead dev; started this fork and did the initial Typescript rewrite, etc.
 - [sapphi-red](https://green.sapphi.red/about) -- greatly improved Typescript support to prepare http-proxy-3 for use in [Vite](https://vite.dev/)
 - [ImranR-TI](https://github.com/ImranR-TI) -- very helpful bug reports
+- [Corvince](https://github.com/corvince) -- HTTP/2 Support
 - Everybody who ever contributed to [http-proxy](https://www.npmjs.com/package/http-proxy)
 
 **Status:**
