@@ -69,7 +69,7 @@ export function XHeaders(req: Request, _res: Response, options: ServerOptions) {
       (req.headers["x-forwarded-" + header] || "") + (req.headers["x-forwarded-" + header] ? "," : "") + values[header];
   }
 
-  req.headers["x-forwarded-host"] = req.headers["x-forwarded-host"] || req.headers["host"] || "";
+  req.headers["x-forwarded-host"] = req.headers["x-forwarded-host"] || req.headers["host"] || req.headers[":authority"] || "";
 }
 
 // Does the actual proxying. If `forward` is enabled fires up
@@ -208,6 +208,12 @@ async function stream2(
 ) {
   // Helper function to handle errors consistently throughout the fetch path
   const handleError = (err: Error, target?: ProxyTargetUrl) => {
+    const e = err as any;
+    // Copy code from cause if available and missing on err
+    if (e.code === undefined && e.cause?.code) {
+      e.code = e.cause.code;
+    }
+
     if (cb) {
       cb(err, req, res, target);
     } else {
@@ -229,9 +235,27 @@ async function stream2(
   const customFetch = options.fetch || fetch;
   const fetchOptions = options.fetchOptions ?? {} as FetchOptions;
 
+  const controller = new AbortController();
+  const { signal } = controller;
+
+  if (options.proxyTimeout) {
+    setTimeout(() => {
+      controller.abort();
+    }, options.proxyTimeout);
+  }
+
+  // Ensure we abort proxy if request is aborted
+  res.on("close", () => {
+    const aborted = !res.writableFinished;
+    if (aborted) {
+      controller.abort();
+    }
+  });
+
   const prepareRequest = (outgoing: common.Outgoing) => {
     const requestOptions: RequestInit = {
       method: outgoing.method,
+      signal,
       ...fetchOptions.requestOptions,
     };
 
@@ -294,6 +318,16 @@ async function stream2(
         }
       }
     } catch (err) {
+      if ((err as Error).name === "AbortError") {
+        // Handle aborts (timeout or client disconnect)
+        if (options.proxyTimeout && signal.aborted) {
+          const proxyTimeoutErr = new Error("Proxy timeout");
+          (proxyTimeoutErr as any).code = "ECONNRESET";
+          handleError(proxyTimeoutErr, options.forward);
+        }
+        // If aborted by client (res.close), we might not want to emit an error or maybe just log it
+        return;
+      }
       handleError(err as Error, options.forward);
     }
 
@@ -385,6 +419,14 @@ async function stream2(
       server?.emit("end", req, res, fakeProxyRes);
     }
   } catch (err) {
+    if ((err as Error).name === "AbortError") {
+      if (options.proxyTimeout && signal.aborted) {
+        const proxyTimeoutErr = new Error("Proxy timeout");
+        (proxyTimeoutErr as any).code = "ECONNRESET";
+        handleError(proxyTimeoutErr, options.target);
+      }
+      return;
+    }
     handleError(err as Error, options.target);
   }
 }

@@ -119,7 +119,11 @@ describe("#createProxyServer.web() using own http server", () => {
       const source = http.createServer((req, res) => {
         res.end();
         expect(req.method).toEqual("GET");
-        expect(req.headers.host?.split(":")[1]).toEqual(`${ports["8081"]}`);
+        if (process.env.FORCE_FETCH_PATH === "true") {
+          expect(req.headers.host?.split(":")[1]).toEqual(`${ports["8080"]}`);
+        } else {
+          expect(req.headers.host?.split(":")[1]).toEqual(`${ports["8081"]}`);
+        }
       });
 
       proxyServer.listen(ports["8081"]);
