@@ -294,6 +294,10 @@ async function stream2(
   if (options.forward) {
     const outgoingOptions = common.setupOutgoing(options.ssl || {}, options, req, "forward");
     const requestOptions = prepareRequest(outgoingOptions);
+    let targetUrl = new URL(outgoingOptions.url).origin + outgoingOptions.path;
+    if (targetUrl.startsWith("ws")) {
+      targetUrl = targetUrl.replace("ws", "http");
+    }
 
     // Call onBeforeRequest callback before making the forward request
     if (fetchOptions.onBeforeRequest) {
@@ -306,7 +310,7 @@ async function stream2(
     }
 
     try {
-      const result = await customFetch(new URL(outgoingOptions.url).origin + outgoingOptions.path, requestOptions);
+      const result = await customFetch(targetUrl, requestOptions);
 
       // Call onAfterResponse callback for forward requests (though they typically don't expect responses)
       if (fetchOptions.onAfterResponse) {
@@ -338,6 +342,10 @@ async function stream2(
 
   const outgoingOptions = common.setupOutgoing(options.ssl || {}, options, req);
   const requestOptions = prepareRequest(outgoingOptions);
+  let targetUrl = new URL(outgoingOptions.url).origin + outgoingOptions.path;
+  if (targetUrl.startsWith("ws")) {
+    targetUrl = targetUrl.replace("ws", "http");
+  }
 
   // Call onBeforeRequest callback before making the request
   if (fetchOptions.onBeforeRequest) {
@@ -350,7 +358,7 @@ async function stream2(
   }
 
   try {
-    const response = await customFetch(new URL(outgoingOptions.url).origin + outgoingOptions.path, requestOptions);
+    const response = await customFetch(targetUrl, requestOptions);
 
     // Call onAfterResponse callback after receiving the response
     if (fetchOptions.onAfterResponse) {
