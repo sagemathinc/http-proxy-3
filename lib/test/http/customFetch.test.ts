@@ -1,5 +1,5 @@
 /*
-pnpm test proxy-http2-to-http2.test.ts
+pnpm test customFetch.test.ts
 
 */
 
