@@ -641,7 +641,7 @@ const proxy = createProxyServer({
 
 - **ca**: Optionally override the trusted CA certificates. This is passed to https.request.
 
-- **fetchOptions**: Enable fetch API for HTTP/2 support. Set to `true` for defaults, or provide custom configuration:
+- **fetchOptions**: Enable fetch API for HTTP/2 support. Provide an object of type `FetchOptions` for custom configuration:
   - `requestOptions`: Additional fetch request options (e.g., undici Agent with `allowH2: true` for HTTP/2 as dispatcher)
   - `onBeforeRequest`: Async callback called before making the fetch request
   - `onAfterResponse`: Async callback called after receiving the fetch response

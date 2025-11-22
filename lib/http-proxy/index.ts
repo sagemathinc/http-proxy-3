@@ -97,9 +97,14 @@ export interface ServerOptions {
    * This is passed to https.request.
    */
   ca?: string;
-  /** Enable using fetch for proxy requests. Set to true for defaults, or provide custom configuration. */
-  fetchOptions?: FetchOptions;
-  fetch?: typeof fetch;
+  /** Optional fetch implementation to use instead of global fetch, use this to activate fetch-based proxying,
+   * for example to proxy HTTP/2 requests
+  */
+ fetch?: typeof fetch;
+  /** Optional configuration object for fetch-based proxy requests. 
+   * Use this to customize fetch request and response handling. 
+   * For custom fetch implementations, use the `fetch` property.*/
+ fetchOptions?: FetchOptions;
 }
 export interface FetchOptions {
   /** Fetch request options */
