@@ -25,7 +25,7 @@ describe("Fetch Proxy Timeout", () => {
     servers.proxy = httpProxy
       .createServer({
         target: `http://localhost:${ports.http}`,
-        fetch: fetch, // Enable fetch path
+        fetch: fetch as any, // Enable fetch path
         proxyTimeout: 500, // 500ms timeout
       })
       .listen(ports.proxy);
