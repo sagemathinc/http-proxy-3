@@ -34,8 +34,9 @@ describe("Using the connect-gzip middleware from connect with http-proxy-3", () 
     const rewrite = (_req: http.IncomingMessage, res: http.ServerResponse, next: NextFunction) => {
       const _write = res.write;
       res.write = (data) => {
+        const str = typeof data === "string" ? data : Buffer.from(data).toString();
         // @ts-expect-error write allows 2 args
-        return _write.call(res, data.toString().replace("http-party", "cocalc"))
+        return _write.call(res, str.replace("http-party", "cocalc"))
       };
       next();
     };

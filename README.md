@@ -641,7 +641,7 @@ const proxy = createProxyServer({
 
 - **ca**: Optionally override the trusted CA certificates. This is passed to https.request.
 
-- **fetchOptions**: Enable fetch API for HTTP/2 support. Set to `true` for defaults, or provide custom configuration:
+- **fetchOptions**: Enable fetch API for HTTP/2 support. Provide an object of type `FetchOptions` for custom configuration:
   - `requestOptions`: Additional fetch request options (e.g., undici Agent with `allowH2: true` for HTTP/2 as dispatcher)
   - `onBeforeRequest`: Async callback called before making the fetch request
   - `onAfterResponse`: Async callback called after receiving the fetch response
@@ -665,7 +665,7 @@ The following table shows which configuration options are compatible with differ
 |--------|-------------------|---------------|--------|
 | `target` | ✅ | ✅ | Core option, works in both paths |
 | `forward` | ✅ | ✅ | Core option, works in both paths |
-| `agent` | ✅ | ❌ | Native agents only, use `fetch.dispatcher` instead |
+| `agent` | ✅ | ❌ | Native agents only |
 | `ssl` | ✅ | ✅ | HTTPS server configuration |
 | `ws` | ✅ | ❌ | WebSocket proxying uses native path only |
 | `xfwd` | ✅ | ✅ | X-Forwarded headers |
@@ -674,8 +674,8 @@ The following table shows which configuration options are compatible with differ
 | `prependPath` | ✅ | ✅ | Path manipulation |
 | `ignorePath` | ✅ | ✅ | Path manipulation |
 | `localAddress` | ✅ | ✅ | Local interface binding |
-| `changeOrigin` | ✅ | ✅ | Host header rewriting |
-| `preserveHeaderKeyCase` | ✅ | ✅ | Header case preservation |
+| `changeOrigin` | ✅ | ❌ | Host header rewriting |
+| `preserveHeaderKeyCase` | ✅ | ❌ | Header case preservation |
 | `auth` | ✅ | ✅ | Basic authentication |
 | `hostRewrite` | ✅ | ✅ | Redirect hostname rewriting |
 | `autoRewrite` | ✅ | ✅ | Automatic redirect rewriting |
@@ -693,7 +693,7 @@ The following table shows which configuration options are compatible with differ
 | `fetch` | ❌ | ✅ | Fetch-specific configuration |
 
 **Notes:**
-- ¹ `secure` is not directly supported in the fetch path. Instead, use `fetch.dispatcher` with `{connect: {rejectUnauthorized: false}}` to disable SSL certificate verification (e.g., for self-signed certificates).
+- ¹ `secure` is not directly supported in the fetch path. Instead, use a custom dispatcher with `{rejectUnauthorized: false}` to disable SSL certificate verification (e.g., for self-signed certificates).
 
 **Code Path Selection:**
 - **Native Path**: Used by default, supports HTTP/1.1 and WebSockets

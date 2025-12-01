@@ -208,6 +208,12 @@ async function stream2(
 ) {
   // Helper function to handle errors consistently throughout the fetch path
   const handleError = (err: Error, target?: ProxyTargetUrl) => {
+    const e = err as any;
+    // Copy code from cause if available and missing on err
+    if (e.code === undefined && e.cause?.code) {
+      e.code = e.cause.code;
+    }
+
     if (cb) {
       cb(err, req, res, target);
     } else {
@@ -227,24 +233,56 @@ async function stream2(
   });
 
   const customFetch = options.fetch || fetch;
-
   const fetchOptions = options.fetchOptions ?? {} as FetchOptions;
 
-
-  if (options.forward) {
-    const outgoingOptions = common.setupOutgoing(options.ssl || {}, options, req, "forward");
-
+  const prepareRequest = (outgoing: common.Outgoing) => {
     const requestOptions: RequestInit = {
-      method: outgoingOptions.method,
+      method: outgoing.method,
+      ...fetchOptions.requestOptions,
     };
 
+    const headers = new Headers(fetchOptions.requestOptions?.headers);
 
-    // Handle request body
+    if (!fetchOptions.requestOptions?.headers && outgoing.headers) {
+      for (const [key, value] of Object.entries(outgoing.headers)) {
+        if (typeof key === "string") {
+          if (Array.isArray(value)) {
+            for (const v of value) {
+              headers.append(key, v as string);
+            }
+          } else if (value != null) {
+            headers.append(key, value as string);
+          }
+        }
+      }
+    }
+
+    if (options.auth) {
+      headers.set("authorization", `Basic ${Buffer.from(options.auth).toString("base64")}`);
+    }
+
+    if (options.proxyTimeout) {
+      requestOptions.signal = AbortSignal.timeout(options.proxyTimeout);
+    }
+
+    requestOptions.headers = headers;
+
     if (options.buffer) {
       requestOptions.body = options.buffer as Stream.Readable;
     } else if (req.method !== "GET" && req.method !== "HEAD") {
       requestOptions.body = req;
       requestOptions.duplex = "half";
+    }
+
+    return requestOptions;
+  };
+
+  if (options.forward) {
+    const outgoingOptions = common.setupOutgoing(options.ssl || {}, options, req, "forward");
+    const requestOptions = prepareRequest(outgoingOptions);
+    let targetUrl = new URL(outgoingOptions.url).origin + outgoingOptions.path;
+    if (targetUrl.startsWith("ws")) {
+      targetUrl = targetUrl.replace("ws", "http");
     }
 
     // Call onBeforeRequest callback before making the forward request
@@ -258,7 +296,7 @@ async function stream2(
     }
 
     try {
-      const result = await customFetch(new URL(outgoingOptions.url).origin + outgoingOptions.path, requestOptions);
+      const result = await customFetch(targetUrl, requestOptions);
 
       // Call onAfterResponse callback for forward requests (though they typically don't expect responses)
       if (fetchOptions.onAfterResponse) {
@@ -279,30 +317,10 @@ async function stream2(
   }
 
   const outgoingOptions = common.setupOutgoing(options.ssl || {}, options, req);
-
-  // Remove symbols from headers
-  const requestOptions: RequestInit = {
-    method: outgoingOptions.method,
-    headers: Object.fromEntries(
-      Object.entries(outgoingOptions.headers || {}).filter(([key, _value]) => {
-        return typeof key === "string";
-      }),
-    ) as RequestInit["headers"],
-    ...fetchOptions.requestOptions,
-  };
-
-  if (options.auth) {
-    requestOptions.headers = {
-      ...requestOptions.headers,
-      authorization: `Basic ${Buffer.from(options.auth).toString("base64")}`,
-    };
-  }
-
-  if (options.buffer) {
-    requestOptions.body = options.buffer as Stream.Readable;
-  } else if (req.method !== "GET" && req.method !== "HEAD") {
-    requestOptions.body = req;
-    requestOptions.duplex = "half";
+  const requestOptions = prepareRequest(outgoingOptions);
+  let targetUrl = new URL(outgoingOptions.url).origin + outgoingOptions.path;
+  if (targetUrl.startsWith("ws")) {
+    targetUrl = targetUrl.replace("ws", "http");
   }
 
   // Call onBeforeRequest callback before making the request
@@ -316,7 +334,7 @@ async function stream2(
   }
 
   try {
-    const response = await customFetch(new URL(outgoingOptions.url).origin + outgoingOptions.path, requestOptions);
+    const response = await customFetch(targetUrl, requestOptions);
 
     // Call onAfterResponse callback after receiving the response
     if (fetchOptions.onAfterResponse) {

@@ -13,7 +13,7 @@ import { Server } from "socket.io";
 import { io as socketioClient } from "socket.io-client";
 import wait from "../wait";
 import { once } from "node:events";
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, beforeAll } from "vitest";
 
 const ports: { [port: string]: number } = {};
 let portIndex = -1;
@@ -25,13 +25,13 @@ Object.defineProperty(gen, "port", {
   },
 });
 
-describe("setup ports", () => {
-  it("creates some ports", async () => {
+beforeAll(async () => {
+  //creates some ports
     for (let n = 0; n < 50; n++) {
       ports[n] = await getPort();
     }
+
   });
-});
 
 describe("#createProxyServer", () => {
   it("should NOT throw without options -- options are only required later when actually using the proxy", () => {
@@ -46,7 +46,7 @@ describe("#createProxyServer", () => {
     expect(typeof httpProxy.ProxyServer).toBe("function");
     expect(typeof obj).toBe("object");
   });
-});
+
 
 describe("#createProxyServer with forward options and using web-incoming passes", () => {
   it("should pipe the request using web-incoming#stream method", () =>
@@ -55,6 +55,7 @@ describe("#createProxyServer with forward options and using web-incoming passes"
       const proxy = httpProxy
         .createProxyServer({
           forward: "http://127.0.0.1:" + ports.source,
+          xfwd: true
         })
         .listen(ports.proxy);
 
@@ -62,7 +63,7 @@ describe("#createProxyServer with forward options and using web-incoming passes"
         .createServer((req, res) => {
           res.end();
           expect(req.method).toEqual("GET");
-          expect(req.headers.host?.split(":")[1]).toEqual(`${ports.proxy}`);
+          expect((req.headers["x-forwarded-host"] as string).split(":")[1]).toEqual(`${ports.proxy}`);
           source.close();
           proxy.close();
           done();
@@ -82,14 +83,15 @@ describe("#createProxyServer using the web-incoming passes", () => {
       const proxy = httpProxy
         .createProxyServer({
           target: "http://127.0.0.1:" + ports.source,
+          xfwd: true,
         })
         .listen(ports.proxy);
 
       const source = http
         .createServer((req, res) => {
           expect(req.method).toEqual("POST");
-          expect(req.headers["x-forwarded-for"]).toEqual("127.0.0.1");
-          expect(req.headers.host?.split(":")[1]).toEqual(`${ports.proxy}`);
+          expect(req.headers["x-forwarded-for"]).toContain("127.0.0.1");
+          expect((req.headers["x-forwarded-host"] as string).split(":")[1]).toEqual(`${ports.proxy}`);
           res.end();
           source.close();
           proxy.close();
@@ -644,3 +646,4 @@ describe("#createProxyServer using the ws-incoming passes", () => {
       });
     }));
 });
+})

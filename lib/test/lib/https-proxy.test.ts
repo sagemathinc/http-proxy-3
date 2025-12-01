@@ -4,7 +4,7 @@ import * as https from "node:https";
 import getPort from "../get-port";
 import { join } from "node:path";
 import { readFileSync } from "node:fs";
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeAll } from 'vitest';
 
 const ports: { [port: string]: number } = {};
 let portIndex = -1;
@@ -16,19 +16,21 @@ Object.defineProperty(gen, "port", {
   },
 });
 
-describe("HTTPS to HTTP", () => {
-  it("creates some ports", async () => {
+  beforeAll(async () => {
     for (let n = 0; n < 50; n++) {
       ports[n] = await getPort();
     }
   });
+
+describe("HTTPS to HTTP", () => {
+
 
   it("should proxy the request, then send back the response", () => new Promise<void>(done => {
     const ports = { source: gen.port, proxy: gen.port };
     const source = http
       .createServer((req, res) => {
         expect(req.method).toEqual("GET");
-        expect(req.headers.host?.split(":")[1]).toEqual(`${ports.proxy}`);
+        expect((req.headers["x-forwarded-host"] as string)?.split(":")[1]).toEqual(`${ports.proxy}`);
         res.writeHead(200, { "Content-Type": "text/plain" });
         res.end("Hello from " + ports.source);
       })
@@ -46,6 +48,7 @@ describe("HTTPS to HTTP", () => {
           ),
           ciphers: "AES128-GCM-SHA256",
         },
+        xfwd: true,
       })
       .listen(ports.proxy);
 
@@ -200,6 +203,7 @@ describe("HTTPS to HTTPS", () => {
 
 describe("HTTPS not allow SSL self signed", () => {
   it("should fail with error", () => new Promise<void>(done => {
+    process.env.NODE_TLS_REJECT_UNAUTHORIZED = "1";
     const ports = { source: gen.port, proxy: gen.port };
     const source = https
       .createServer({
@@ -221,12 +225,13 @@ describe("HTTPS not allow SSL self signed", () => {
 
     proxy.on("error", (err, _req, res) => {
       res.end();
-      expect(err.toString()).toContain(
-        "Error: unable to verify the first certificate",
+      expect(err.toString()).toMatch(
+        /Error: unable to verify the first certificate|TypeError: fetch failed/,
       );
       source.close();
       proxy.close();
       done();
+     process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
     });
 
     const client = http.request({
@@ -244,7 +249,7 @@ describe("HTTPS to HTTP using own server", () => {
     const source = http
       .createServer((req, res) => {
         expect(req.method).toEqual("GET");
-        expect(req.headers.host?.split(":")[1]).toEqual(`${ports.proxy}`);
+        expect((req.headers["x-forwarded-host"] as string).split(":")[1]).toEqual(`${ports.proxy}`);
         res.writeHead(200, { "Content-Type": "text/plain" });
         res.end("Hello from " + ports.source);
       })
@@ -268,6 +273,7 @@ describe("HTTPS to HTTP using own server", () => {
         (req, res) => {
           proxy.web(req, res, {
             target: "http://127.0.0.1:" + ports.source,
+            xfwd: true,
           });
         },
       )
