@@ -318,7 +318,7 @@ function getPath(url?: string): string {
 }
 
 export function toURL(
-  url: URL | urllib.Url | ProxyTargetDetailed | string | undefined,
+  url: Partial<URL> | urllib.Url | ProxyTargetDetailed | string | undefined,
 ): URL {
   if (url instanceof URL) {
     return url;

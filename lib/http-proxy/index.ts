@@ -27,7 +27,7 @@ export interface ProxyTargetDetailed {
 export type ProxyType = "ws" | "web";
 export type ProxyTarget = ProxyTargetUrl | ProxyTargetDetailed;
 export type ProxyTargetUrl =
-  | URL
+  | Partial<URL>
   | string
   | { port: number; host: string; protocol?: string };
 
