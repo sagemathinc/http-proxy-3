@@ -616,6 +616,8 @@ const proxy = createProxyServer({
 
 - **timeout**: timeout \(in millis\) for incoming requests
 
+- **connectTimeout** timeout \(in millis\) for establishing TCP connection to target
+
 - **followRedirects**: true/false, Default: false \- specify whether you want to follow redirects
 
 - **selfHandleResponse** true/false, if set to true, none of the webOutgoing passes are called and it's your responsibility to appropriately return the response by listening and acting on the `proxyRes` event
@@ -685,6 +687,7 @@ The following table shows which configuration options are compatible with differ
 | `headers` | ✅ | ✅ | Extra headers to add |
 | `proxyTimeout` | ✅ | ✅ | Outgoing request timeout |
 | `timeout` | ✅ | ✅ | Incoming request timeout |
+| `connectionTimeout` | ✅ | ❌² | TCP connection timeout |
 | `followRedirects` | ✅ | ✅ | Redirect following |
 | `selfHandleResponse` | ✅ | ✅ | Manual response handling |
 | `buffer` | ✅ | ✅ | Request body stream |
@@ -694,6 +697,7 @@ The following table shows which configuration options are compatible with differ
 
 **Notes:**
 - ¹ `secure` is not directly supported in the fetch path. Instead, use a custom dispatcher with `{rejectUnauthorized: false}` to disable SSL certificate verification (e.g., for self-signed certificates).
+- ² `connectionTimeout` is not directly supported in the fetch path. Instead. use a custom dispatcher with `connect: { timeout: <connectionTimeout> }` where `<connectionTimeout>` is the connection timeout value in ms.
 
 **Code Path Selection:**
 - **Native Path**: Used by default, supports HTTP/1.1 and WebSockets
