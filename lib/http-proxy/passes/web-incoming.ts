@@ -127,7 +127,7 @@ export function stream(
     }
 
     // Handle connection timeout - fires if TCP handshake doesn't complete in time
-    if (options.connectTimeout) {
+    if (options.connectTimeout && socket.connecting) {
       const connectTimer = setTimeout(() => {
         const err = new Error("ECONNECT_TIMEOUT") as NodeJS.ErrnoException;
         err.code = "ECONNECT_TIMEOUT";
