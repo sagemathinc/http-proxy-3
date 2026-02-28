@@ -79,6 +79,16 @@ export function setupOutgoing(
     outgoing[e] = target[e];
   }
 
+  // Fix for IPv6: the WHATWG URL spec serialises IPv6 hostnames with square
+  // brackets (e.g. new URL("http://[::1]/").hostname === "[::1]"), but
+  // Node.js dns.lookup / getaddrinfo require a bare address without brackets.
+  // Passing the bracketed form causes an ENOTFOUND error even for valid
+  // addresses.  outgoing.host is already in the correct "[addr]:port" format
+  // for HTTP Host headers and is left unchanged.
+  if (outgoing.hostname?.startsWith("[") && outgoing.hostname.endsWith("]")) {
+    outgoing.hostname = outgoing.hostname.slice(1, -1);
+  }
+
   outgoing.method = options.method || req.method;
   outgoing.headers = { ...req.headers };
   if (req.headers?.[":authority"]) {
@@ -306,7 +316,14 @@ export function rewriteCookieProperty(
 
 // Check the host and see if it potentially has a port in it (keep it simple)
 function hasPort(host: string): boolean {
-  return !!~host.indexOf(":");
+  // IPv6 addresses in bracket notation: a port is present only after ']',
+  // e.g. "[::1]:8080" has a port but "[::1]" does not.
+  // A plain indexOf(":") would incorrectly match colons inside the IPv6 address.
+  if (host.startsWith("[")) {
+    const closingBracket = host.indexOf("]");
+    return closingBracket !== -1 && host.length > closingBracket + 1;
+  }
+  return host.includes(":");
 }
 
 function getPath(url?: string): string {
