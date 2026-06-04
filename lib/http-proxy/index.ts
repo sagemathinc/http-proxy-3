@@ -30,6 +30,9 @@ export type ProxyTargetUrl =
   | URL
   | string
   | { port: number; host: string; protocol?: string };
+export type ProxyTargetFunction = (
+  req: http.IncomingMessage,
+) => ProxyTarget;
 
 export type NormalizeProxyTarget<T extends ProxyTargetUrl> =
   | Exclude<T, string>
@@ -40,8 +43,8 @@ export interface ServerOptions {
   // actually proxying is called.  However, they can be missing when creating the
   // proxy server in the first place!  E.g., you could make a proxy server P with
   // no options, then use P.web(req,res, {target:...}).
-  /** URL string to be parsed with the url module. */
-  target?: ProxyTarget;
+  /** URL string to be parsed with the url module, or a function returning a ProxyTarget. */
+  target?: ProxyTarget | ProxyTargetFunction;
   /** URL string to be parsed with the url module or a URL object. */
   forward?: ProxyTargetUrl;
   /** Object to be passed to http(s).request. */
@@ -408,6 +411,10 @@ export class ProxyServer<
 
         if (args[counter] instanceof Buffer) {
           head = args[counter];
+        }
+
+        if (typeof requestOptions.target === "function") {
+          requestOptions.target = requestOptions.target(req);
         }
 
         for (const e of ["target", "forward"] as const) {
