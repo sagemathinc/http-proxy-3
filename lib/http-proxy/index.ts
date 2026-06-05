@@ -84,6 +84,8 @@ export interface ServerOptions {
   proxyTimeout?: number;
   /** Timeout (in milliseconds) for incoming requests */
   timeout?: number;
+  /** Timeout (in milliseconds) for establishing TCP connection to target. Default: none */
+  connectTimeout?: number;
   /** Specify whether you want to follow redirects. Default: false */
   followRedirects?: boolean;
   /** If set to true, none of the webOutgoing passes are called and it's your responsibility to appropriately return the response by listening and acting on the proxyRes event */

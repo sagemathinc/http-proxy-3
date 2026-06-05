@@ -125,7 +125,20 @@ export function stream(
     if (server && !proxyReq.getHeader("expect")) {
       server.emit("proxyReq", proxyReq, req, res, options, socket);
     }
-  });
+
+    // Handle connection timeout - fires if TCP handshake doesn't complete in time
+    if (options.connectTimeout && socket.connecting) {
+      const connectTimer = setTimeout(() => {
+        const err = new Error("ECONNECT_TIMEOUT") as NodeJS.ErrnoException;
+        err.code = "ECONNECT_TIMEOUT";
+        socket.destroy(err);
+      }, options.connectTimeout);
+      
+      socket.once("connect", () => clearTimeout(connectTimer));
+      socket.once("error", () => clearTimeout(connectTimer));
+      socket.once("close", () => clearTimeout(connectTimer));
+    }
+});
 
   // allow outgoing socket to timeout so that we could
   // show an error page at the initial request
