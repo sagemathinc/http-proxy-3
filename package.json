@@ -20,7 +20,7 @@
   ],
   "dependencies": {
     "debug": "^4.4.0",
-    "follow-redirects": "^1.15.9"
+    "follow-redirects": "^1.16.0"
   },
   "devDependencies": {
     "@types/async": "^3.2.24",
@@ -35,24 +35,24 @@
     "@types/node-fetch": "^2.6.12",
     "@types/ws": "^8.18.1",
     "async": "^3.2.6",
-    "auto-changelog": "^2.5.0",
+    "auto-changelog": "^2.6.0",
     "better-sse": "^0.14.1",
-    "body-parser": "^2.2.0",
-    "compression": "^1.8.0",
+    "body-parser": "^2.2.2",
+    "compression": "^1.8.1",
     "concat-stream": "^2.0.0",
     "connect": "^3.7.0",
     "eventsource": "^3.0.7",
-    "express": "^5.1.0",
+    "express": "^5.2.1",
     "get-port": "^7.1.0",
     "https-proxy-agent": "^7.0.6",
     "node-fetch": "^2.7.0",
     "semver": "^7.7.1",
-    "socket.io": "^4.8.1",
-    "socket.io-client": "^4.8.1",
+    "socket.io": "^4.8.3",
+    "socket.io-client": "^4.8.3",
     "typescript": "^5.8.3",
-    "undici": "^7.16.0",
-    "vitest": "^4.0.9",
-    "ws": "^8.18.2"
+    "undici": "^7.24.0",
+    "vitest": "^4.1.8",
+    "ws": "^8.21.0"
   },
   "scripts": {
     "test": "NODE_TLS_REJECT_UNAUTHORIZED=0 pnpm exec vitest run",
@@ -69,6 +69,19 @@
   },
   "engines": {
     "node": ">=18"
+  },
+  "pnpm": {
+    "overrides": {
+      "path-to-regexp": "8.4.2",
+      "on-headers": "1.1.0",
+      "picomatch": "4.0.4",
+      "postcss": "8.5.15",
+      "qs": "6.15.2",
+      "rollup": "4.61.1",
+      "socket.io-parser": "4.2.6",
+      "vite": "7.3.5",
+      "ws": "8.21.0"
+    }
   },
   "license": "MIT"
 }

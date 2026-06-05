@@ -9,7 +9,7 @@ import * as httpProxy from "../..";
 import getPort from "../get-port";
 import fetch from "node-fetch";
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
-import { Agent } from "undici";
+import { Agent, fetch as undiciFetch } from "undici";
 
 
 describe("Fetch callback functions (onBeforeRequest and onAfterResponse)", () => {
@@ -18,13 +18,6 @@ describe("Fetch callback functions (onBeforeRequest and onAfterResponse)", () =>
 
     beforeAll(async () => {
         ports = { target: await getPort(), proxy: await getPort() };
-    });
-
-    afterAll(async () => {
-        Object.values(servers).map((x) => x?.close());
-    });
-
-    it("Create the target HTTP server", async () => {
         servers.target = http
             .createServer((req, res) => {
                 res.writeHead(200, {
@@ -34,8 +27,12 @@ describe("Fetch callback functions (onBeforeRequest and onAfterResponse)", () =>
                 res.write(`Request received: ${req.method} ${req.url}\n`);
                 res.write(`Headers: ${JSON.stringify(req.headers, null, 2)}\n`);
                 res.end();
-            })
-            .listen(ports.target);
+            });
+        await new Promise<void>((resolve) => servers.target.listen(ports.target, resolve));
+    });
+
+    afterAll(async () => {
+        Object.values(servers).map((x) => x?.close());
     });
 
     it("Test onBeforeRequest and onAfterResponse callbacks", async () => {
@@ -45,6 +42,7 @@ describe("Fetch callback functions (onBeforeRequest and onAfterResponse)", () =>
 
         const proxy = httpProxy.createServer({
             target: `http://localhost:${ports.target}`,
+            fetch: undiciFetch as any,
             fetchOptions: {
                 requestOptions: {
                     dispatcher: new Agent({
@@ -67,6 +65,10 @@ describe("Fetch callback functions (onBeforeRequest and onAfterResponse)", () =>
             }
         }); 
         servers.proxy = proxy.listen(ports.proxy);
+        await new Promise<void>((resolve) => {
+            const server = (servers.proxy as any)._server as http.Server;
+            server.listening ? resolve() : server.once("listening", resolve);
+        });
 
         // Make a request through the proxy
         const response = await fetch(`http://localhost:${ports.proxy}/test`);
