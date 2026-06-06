@@ -414,7 +414,12 @@ export class ProxyServer<
         }
 
         if (typeof requestOptions.target === "function") {
-          requestOptions.target = requestOptions.target(req);
+          try {
+            requestOptions.target = requestOptions.target(req);
+          } catch (err) {
+            this.emit("error", err as TError, req, res);
+            return;
+          }
         }
 
         for (const e of ["target", "forward"] as const) {

@@ -11,6 +11,7 @@ import * as httpProxy from "../..";
 import getPort from "../get-port";
 import fetch from "node-fetch";
 import { describe, it, expect, afterAll, beforeAll } from "vitest";
+import { once } from "node:events";
 
 async function setup() {
   const port1 = await getPort();
@@ -79,50 +80,6 @@ describe("dynamic target function", () => {
 });
 
 describe("dynamic target with per-request override", () => {
-  it("per-request target overrides the function target", async () => {
-    const port1 = await getPort();
-    const port2 = await getPort();
-    const proxyPort = await getPort();
-
-    const target1 = http.createServer((_req, res) => {
-      res.writeHead(200, { "Content-Type": "text/plain" });
-      res.write("target1");
-      res.end();
-    });
-    target1.listen(port1);
-
-    const target2 = http.createServer((_req, res) => {
-      res.writeHead(200, { "Content-Type": "text/plain" });
-      res.write("target2");
-      res.end();
-    });
-    target2.listen(port2);
-
-    const proxy = httpProxy
-      .createServer({
-        target: (_req: http.IncomingMessage) => `http://localhost:${port1}`,
-      })
-      .listen(proxyPort);
-    proxy.on("error", (_e) => {});
-
-    const res = await fetch(`http://localhost:${proxyPort}/something`, {
-      headers: { 
-        // The proxy.web() call in the request uses the static override.
-        // We test via the proxy server with a separate method.
-        // Instead, create an http server that uses proxy.web directly.
-      },
-    });
-
-    // This test is just using the function target.
-    // For per-request override, we need a different setup.
-    const body = await res.text();
-    expect(body).toBe("target1");
-
-    proxy.close();
-    target1.close();
-    target2.close();
-  });
-
   it("per-request static target overrides function target", async () => {
     const port1 = await getPort();
     const port2 = await getPort();
@@ -186,5 +143,37 @@ describe("dynamic target with per-request override", () => {
 
     proxy.close();
     target.close();
+  });
+});
+
+describe("dynamic target error handling", () => {
+  it("emits error when target function throws", async () => {
+    const proxyPort = await getPort();
+
+    const errorMessage = "target resolution failed";
+    const proxy = httpProxy.createServer({
+      target: () => {
+        throw new Error(errorMessage);
+      },
+    });
+
+    const errorPromise = new Promise<Error>((resolve) => {
+      proxy.on("error", (err: Error) => resolve(err));
+    });
+
+    const server = http.createServer((req, res) => {
+      proxy.web(req, res);
+    });
+    server.listen(proxyPort);
+    // Server won't send back a response (emit error + return), but we don't
+    // need the fetch to complete — only the error to fire.
+    await once(server, "listening");
+    fetch(`http://localhost:${proxyPort}/`).catch(() => {});
+
+    const err = await errorPromise;
+    expect(err.message).toBe(errorMessage);
+
+    server.close();
+    proxy.close();
   });
 });
