@@ -1,10 +1,10 @@
 {
   "name": "http-proxy-3",
-  "version": "1.23.3",
+  "version": "1.23.4",
   "packageManager": "pnpm@11.9.0",
   "repository": {
     "type": "git",
-    "url": "https://github.com/sagemathinc/http-proxy-3.git"
+    "url": "git+https://github.com/sagemathinc/http-proxy-3.git"
   },
   "description": "Modern rewrite of http-proxy",
   "author": "William Stein <wstein@sagemath.com>",
