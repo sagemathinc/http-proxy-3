@@ -2,6 +2,7 @@ import {
   type ErrorCallback,
   ProxyServer,
   type ProxyTarget,
+  type ProxyTargetFunction,
   type ProxyTargetUrl,
   type ServerOptions,
 } from './http-proxy/index';
@@ -9,6 +10,7 @@ export {
   ProxyServer,
   type ServerOptions,
   type ProxyTarget,
+  type ProxyTargetFunction,
   type ProxyTargetUrl,
   type ErrorCallback,
 };
