@@ -132,4 +132,36 @@ describe("#XHeaders", () => {
     expect(stubRequest.headers["x-forwarded-proto"]).toBe("wss");
     expect(stubRequest.headers["x-forwarded-host"]).toBe("192.168.1.3:8181");
   });
+
+  it("preserves an existing x-forwarded-host header", () => {
+    const stubRequest = {
+      connection: {
+        remoteAddress: "192.168.1.2",
+        remotePort: "8080",
+      },
+      headers: {
+        host: "origin.example:8080",
+        "x-forwarded-host": "edge.example",
+      } as Record<string, string>,
+    };
+    // @ts-ignore
+    XHeaders(stubRequest, {}, { xfwd: true });
+    expect(stubRequest.headers["x-forwarded-host"]).toBe("edge.example");
+  });
+
+  it("prefers :authority over host for x-forwarded-host", () => {
+    const stubRequest = {
+      connection: {
+        remoteAddress: "192.168.1.2",
+        remotePort: "8080",
+      },
+      headers: {
+        ":authority": "http2.example:8443",
+        host: "fallback.example:8080",
+      } as Record<string, string>,
+    };
+    // @ts-ignore
+    XHeaders(stubRequest, {}, { xfwd: true });
+    expect(stubRequest.headers["x-forwarded-host"]).toBe("http2.example:8443");
+  });
 });
