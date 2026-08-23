@@ -116,6 +116,8 @@ export function XHeaders(req: Request, _socket: Socket, options: NormalizedServe
       (req.headers["x-forwarded-" + header] ? "," : "") +
       values[header];
   }
+
+  req.headers["x-forwarded-host"] = req.headers["x-forwarded-host"] || req.headers[":authority"] || req.headers["host"] || "";
 }
 
 // Do the actual proxying. Make the request and upgrade it.
