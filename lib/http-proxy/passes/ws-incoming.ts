@@ -183,6 +183,10 @@ export function stream(
   const outgoingOptions = common.setupOutgoing(options.ssl || {}, options, req);
   const proxyReq = proto.request(outgoingOptions);
 
+  proxyReq.on("socket", (outgoingSocket: Socket) => {
+    common.setupConnectTimeout(outgoingSocket, options.connectTimeout);
+  });
+
   // Enable developers to modify the proxyReq before headers are sent
   if (server) {
     server.emit("proxyReqWs", proxyReq, req, socket, options, head);

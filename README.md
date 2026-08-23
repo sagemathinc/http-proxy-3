@@ -124,6 +124,7 @@ const proxy = createProxyServer(options); // See below
 ```
 
 http-proxy-3 supports two request processing paths:
+
 - **Native Path**: Uses Node.js native `http`/`https` modules (default)
 - **Fetch Path**: Uses fetch API for HTTP/2 support (when `fetch` option is provided)
 
@@ -451,7 +452,6 @@ proxyServer.listen(8015);
 
 http-proxy-3 supports HTTP/2 through the native fetch API. When fetch is enabled, the proxy can communicate with HTTP/2 servers. The fetch code path is runtime-agnostic and works across different JavaScript runtimes (Node.js, Deno, Bun, etc.). However, this means HTTP/2 support depends on the runtime. Deno enables HTTP/2 by default, Bun currently does not and Node.js requires to set a different dispatcher. See next section for Node.js details.
 
-
 ##### Basic HTTP/2 Setup
 
 ```js
@@ -539,8 +539,8 @@ const proxy = createProxyServer({
 }).listen(8443);
 ```
 
-
 **Important Notes:**
+
 - When `fetch` option is provided, the proxy uses the fetch API instead of Node.js native `http`/`https` modules
 - To enable HTTP/2, pass a dispatcher (e.g., from undici with `allowH2: true`) in the fetch configuration
 - The `onBeforeRequest` and `onAfterResponse` callbacks are only available in the fetch code path
@@ -619,6 +619,9 @@ const proxy = createProxyServer({
 
 - **timeout**: timeout \(in millis\) for incoming requests
 
+- **connectTimeout**: timeout \(in millis\) for establishing a native HTTP,
+  HTTPS, or WebSocket TCP connection to a target
+
 - **followRedirects**: true/false, Default: false \- specify whether you want to follow redirects
 
 - **selfHandleResponse** true/false, if set to true, none of the webOutgoing passes are called and it's your responsibility to appropriately return the response by listening and acting on the `proxyRes` event
@@ -688,6 +691,7 @@ The following table shows which configuration options are compatible with differ
 | `headers` | ✅ | ✅ | Extra headers to add |
 | `proxyTimeout` | ✅ | ✅ | Outgoing request timeout |
 | `timeout` | ✅ | ✅ | Incoming request timeout |
+| `connectTimeout` | ✅ | ❌² | TCP connection timeout |
 | `followRedirects` | ✅ | ✅ | Redirect following |
 | `selfHandleResponse` | ✅ | ✅ | Manual response handling |
 | `buffer` | ✅ | ✅ | Request body stream |
@@ -696,13 +700,17 @@ The following table shows which configuration options are compatible with differ
 | `fetch` | ❌ | ✅ | Fetch-specific configuration |
 
 **Notes:**
+
 - ¹ `secure` is not directly supported in the fetch path. Instead, use a custom dispatcher with `{rejectUnauthorized: false}` to disable SSL certificate verification (e.g., for self-signed certificates).
+- ² `connectTimeout` is not directly supported in the fetch path. Instead, use a custom dispatcher with `connect: { timeout: <connectTimeout> }` where `<connectTimeout>` is the connection timeout value in ms.
 
 **Code Path Selection:**
+
 - **Native Path**: Used by default, supports HTTP/1.1 and WebSockets
 - **Fetch Path**: Activated when `fetchOptions` option is provided, supports HTTP/2 (with appropriate dispatcher)
 
 **Event Compatibility:**
+
 - **Native Path**: Emits traditional events (`proxyReq`, `proxyRes`, `proxyReqWs`)
 - **Fetch Path**: Uses callback functions (`onBeforeRequest`, `onAfterResponse`) instead of events
 
@@ -785,8 +793,8 @@ proxy.on("close", (res, socket, head) => {
   // view disconnected websocket connections
   console.log("Client disconnected");
 });
-```
 
+```
 **[Back to top](#table-of-contents)**
 
 ### Shutdown
@@ -879,3 +887,4 @@ pnpm test
 > LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 > OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 > THE SOFTWARE.
+

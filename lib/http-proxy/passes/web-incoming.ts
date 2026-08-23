@@ -100,6 +100,10 @@ export function stream(
     const outgoingOptions = common.setupOutgoing(options.ssl || {}, options, req, "forward");
     const forwardReq = proto.request(outgoingOptions);
 
+    forwardReq.on("socket", (socket: Socket) => {
+      common.setupConnectTimeout(socket, options.connectTimeout);
+    });
+
     // error handler (e.g. ECONNRESET, ECONNREFUSED)
     // Handle errors on incoming request as well as it makes sense to
     const forwardError = createErrorHandler(forwardReq, options.forward);
@@ -125,6 +129,8 @@ export function stream(
     if (server && !proxyReq.getHeader("expect")) {
       server.emit("proxyReq", proxyReq, req, res, options, socket);
     }
+
+    common.setupConnectTimeout(socket, options.connectTimeout);
   });
 
   // allow outgoing socket to timeout so that we could
