@@ -1,63 +1,111 @@
-import { describe, it, expect } from "vitest";
+import { EventEmitter, once } from "node:events";
+import * as http from "node:http";
+import type { Socket } from "node:net";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { createProxyServer } from "../..";
-import * as http from "http";
+import { setupConnectTimeout } from "../../http-proxy/common";
 
-describe("connectTimeout option", () => {
-  it("should timeout when target is unreachable (filtered port)", async () => {
-    const proxy = createProxyServer({
-      target: "http://10.255.255.1:12345", // Non-routable IP - will hang
-      connectTimeout: 1000, // 1 second timeout
-    });
+function createSocket(connecting: boolean) {
+  const socket = new EventEmitter() as unknown as Socket;
+  Object.defineProperty(socket, "connecting", { value: connecting });
+  const destroy = vi.fn();
+  socket.destroy = destroy as unknown as Socket["destroy"];
+  return { socket, destroy };
+}
 
-    const server = http.createServer((req, res) => {
-      proxy.web(req, res);
-    });
+afterEach(() => {
+  vi.useRealTimers();
+});
 
-    await new Promise<void>((resolve) => server.listen(0, resolve));
-    const port = (server.address() as any).port;
+describe("setupConnectTimeout", () => {
+  it("destroys a connecting socket after the configured delay", async () => {
+    vi.useFakeTimers();
+    const { socket, destroy } = createSocket(true);
 
-    const errorPromise = new Promise<Error>((resolve) => {
-      proxy.on("error", (err: Error) => resolve(err));
-    });
+    setupConnectTimeout(socket, 1_000);
+    await vi.advanceTimersByTimeAsync(999);
+    expect(destroy).not.toHaveBeenCalled();
 
-    // Make a request
-    http.get(`http://localhost:${port}/`).on("error", () => {});
-
-    const error = await errorPromise;
-    
+    await vi.advanceTimersByTimeAsync(1);
+    expect(destroy).toHaveBeenCalledOnce();
+    const error = destroy.mock.calls[0][0] as NodeJS.ErrnoException;
     expect(error.message).toBe("ECONNECT_TIMEOUT");
-    expect((error as NodeJS.ErrnoException).code).toBe("ECONNECT_TIMEOUT");
-
-    server.close();
+    expect(error.code).toBe("ECONNECT_TIMEOUT");
+    expect(socket.listenerCount("connect")).toBe(0);
+    expect(socket.listenerCount("error")).toBe(0);
+    expect(socket.listenerCount("close")).toBe(0);
   });
 
-  it("should not timeout when connection is fast", async () => {
-    // Create a target server
-    const targetServer = http.createServer((_req, res) => {
-      res.writeHead(200);
-      res.end("OK");
-    });
-    await new Promise<void>((resolve) => targetServer.listen(0, resolve));
-    const targetPort = (targetServer.address() as any).port;
+  it("cancels the timeout when the socket connects", async () => {
+    vi.useFakeTimers();
+    const { socket, destroy } = createSocket(true);
 
-    const proxy = createProxyServer({
-      target: `http://localhost:${targetPort}`,
-      connectTimeout: 5000, // 5 seconds - plenty of time
-    });
+    setupConnectTimeout(socket, 1_000);
+    socket.emit("connect");
+    await vi.advanceTimersByTimeAsync(1_000);
 
-    const server = http.createServer((req, res) => {
-      proxy.web(req, res);
-    });
-    await new Promise<void>((resolve) => server.listen(0, resolve));
-    const port = (server.address() as any).port;
+    expect(destroy).not.toHaveBeenCalled();
+    expect(socket.listenerCount("connect")).toBe(0);
+    expect(socket.listenerCount("error")).toBe(0);
+    expect(socket.listenerCount("close")).toBe(0);
+  });
 
-    const response = await new Promise<http.IncomingMessage>((resolve) => {
-      http.get(`http://localhost:${port}/`, resolve);
-    });
+  it("does not arm a timeout for an already-connected socket", async () => {
+    vi.useFakeTimers();
+    const { socket, destroy } = createSocket(false);
 
-    expect(response.statusCode).toBe(200);
+    setupConnectTimeout(socket, 1_000);
+    await vi.advanceTimersByTimeAsync(1_000);
 
-    server.close();
-    targetServer.close();
+    expect(destroy).not.toHaveBeenCalled();
+    expect(socket.eventNames()).toEqual([]);
   });
 });
+
+describe.skipIf(process.env.FORCE_FETCH_PATH === "true")(
+  "connectTimeout native integration",
+  () => {
+    it("does not disrupt a fast connection", async () => {
+      const targetServer = http.createServer((_req, res) => {
+        res.writeHead(200);
+        res.end("OK");
+      });
+      await new Promise<void>((resolve) => targetServer.listen(0, resolve));
+      const targetAddress = targetServer.address();
+      if (!targetAddress || typeof targetAddress === "string") {
+        throw new Error("Target server did not bind to a TCP port");
+      }
+
+      const proxy = createProxyServer({
+        target: `http://localhost:${targetAddress.port}`,
+        connectTimeout: 5_000,
+      });
+
+      const server = http.createServer((req, res) => {
+        proxy.web(req, res);
+      });
+      await new Promise<void>((resolve) => server.listen(0, resolve));
+      const address = server.address();
+      if (!address || typeof address === "string") {
+        throw new Error("Proxy server did not bind to a TCP port");
+      }
+
+      const response = await new Promise<http.IncomingMessage>((resolve) => {
+        http.get(`http://localhost:${address.port}/`, resolve);
+      });
+
+      expect(response.statusCode).toBe(200);
+      response.resume();
+      await once(response, "end");
+
+      await Promise.all([
+        new Promise<void>((resolve, reject) =>
+          server.close((error) => (error ? reject(error) : resolve())),
+        ),
+        new Promise<void>((resolve, reject) =>
+          targetServer.close((error) => (error ? reject(error) : resolve())),
+        ),
+      ]);
+    });
+  },
+);

@@ -100,6 +100,10 @@ export function stream(
     const outgoingOptions = common.setupOutgoing(options.ssl || {}, options, req, "forward");
     const forwardReq = proto.request(outgoingOptions);
 
+    forwardReq.on("socket", (socket: Socket) => {
+      common.setupConnectTimeout(socket, options.connectTimeout);
+    });
+
     // error handler (e.g. ECONNRESET, ECONNREFUSED)
     // Handle errors on incoming request as well as it makes sense to
     const forwardError = createErrorHandler(forwardReq, options.forward);
@@ -126,19 +130,8 @@ export function stream(
       server.emit("proxyReq", proxyReq, req, res, options, socket);
     }
 
-    // Handle connection timeout - fires if TCP handshake doesn't complete in time
-    if (options.connectTimeout && socket.connecting) {
-      const connectTimer = setTimeout(() => {
-        const err = new Error("ECONNECT_TIMEOUT") as NodeJS.ErrnoException;
-        err.code = "ECONNECT_TIMEOUT";
-        socket.destroy(err);
-      }, options.connectTimeout);
-      
-      socket.once("connect", () => clearTimeout(connectTimer));
-      socket.once("error", () => clearTimeout(connectTimer));
-      socket.once("close", () => clearTimeout(connectTimer));
-    }
-});
+    common.setupConnectTimeout(socket, options.connectTimeout);
+  });
 
   // allow outgoing socket to timeout so that we could
   // show an error page at the initial request

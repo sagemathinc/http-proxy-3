@@ -186,6 +186,40 @@ export function setupSocket(socket: Socket): Socket {
   return socket;
 }
 
+// Arm a timeout only while a new target connection is being established.
+// Reused agent sockets are already connected and must not be timed out here.
+export function setupConnectTimeout(
+  socket: Socket,
+  connectTimeout: number | undefined,
+): void {
+  if (!connectTimeout || !socket.connecting) {
+    return;
+  }
+
+  let timer: NodeJS.Timeout | undefined;
+  const cleanup = () => {
+    if (timer !== undefined) {
+      clearTimeout(timer);
+      timer = undefined;
+    }
+    socket.off("connect", cleanup);
+    socket.off("error", cleanup);
+    socket.off("close", cleanup);
+  };
+
+  timer = setTimeout(() => {
+    cleanup();
+    const error = new Error("ECONNECT_TIMEOUT") as NodeJS.ErrnoException;
+    error.code = "ECONNECT_TIMEOUT";
+    socket.destroy(error);
+  }, connectTimeout);
+  timer.unref();
+
+  socket.once("connect", cleanup);
+  socket.once("error", cleanup);
+  socket.once("close", cleanup);
+}
+
 // Get the port number from the host. Or guess it based on the connection type.
 export function getPort(
   // Incoming HTTP request.
