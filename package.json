@@ -1,6 +1,6 @@
 {
   "name": "http-proxy-3",
-  "version": "1.23.4",
+  "version": "2.0.0",
   "packageManager": "pnpm@11.9.0",
   "repository": {
     "type": "git",
