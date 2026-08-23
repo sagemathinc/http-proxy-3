@@ -54,12 +54,12 @@ I've been adding load tests to the unit tests in various places. Generally speak
 
 We run GitHUB CI on the following:
 
-- nodejs versions 20, 22, and 24
+- Node.js versions 22, 24, and 26
 
 **Development:**
 
-Development uses pnpm 11 and requires Node.js 22.13 or newer. The published
-library remains tested separately against all supported Node.js runtimes.
+Development uses pnpm 11 and requires Node.js 22 or newer. Node.js 20 and
+odd-numbered releases, including Node.js 25, are not supported.
 
 ```sh
 git clone https://github.com/sagemathinc/http-proxy-3.git
@@ -887,4 +887,3 @@ pnpm test
 > LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 > OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 > THE SOFTWARE.
-

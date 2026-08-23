@@ -61,7 +61,7 @@
     "test-dual-path": "pnpm test-native && pnpm test-fetch",
     "test-native": "echo '🔧 Testing native HTTP code path...' && NODE_TLS_REJECT_UNAUTHORIZED=0 vitest run",
     "test-fetch": "echo '🚀 Testing fetch code path...' && NODE_TLS_REJECT_UNAUTHORIZED=0 FORCE_FETCH_PATH=true vitest run",
-    "test-versions": "bash -c '. \"$NVM_DIR/nvm.sh\" && nvm use 20 && pnpm test && nvm use 22 && pnpm test && nvm use 24 && pnpm test && nvm use 25 && pnpm test'",
+    "test-versions": "bash -c '. \"$NVM_DIR/nvm.sh\" && nvm use 22 && pnpm test && nvm use 24 && pnpm test && nvm use 26 && pnpm test'",
     "clean": "rm -rf dist node_modules",
     "build": "tsc --build",
     "make": "pnpm clean && pnpm install && pnpm build && pnpm test",
@@ -69,7 +69,7 @@
     "prepublishOnly": "pnpm test-all && rm -f dist/*.tsbuildinfo dist/.tsconfig-bootstrap* && rm -rf dist/test"
   },
   "engines": {
-    "node": ">=18"
+    "node": ">=22"
   },
   "license": "MIT"
 }
