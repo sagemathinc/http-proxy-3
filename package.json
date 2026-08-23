@@ -1,6 +1,7 @@
 {
   "name": "http-proxy-3",
   "version": "1.23.3",
+  "packageManager": "pnpm@11.9.0",
   "repository": {
     "type": "git",
     "url": "https://github.com/sagemathinc/http-proxy-3.git"
@@ -19,40 +20,40 @@
     "dist/lib/index.d.ts"
   ],
   "dependencies": {
-    "debug": "^4.4.0",
+    "debug": "^4.4.3",
     "follow-redirects": "^1.16.0"
   },
   "devDependencies": {
-    "@types/async": "^3.2.24",
+    "@types/async": "^3.2.25",
     "@types/body-parser": "^1.19.6",
     "@types/compression": "^1.8.1",
     "@types/concat-stream": "^2.0.3",
     "@types/connect": "^3.4.38",
-    "@types/debug": "^4.1.12",
-    "@types/express": "^5.0.3",
+    "@types/debug": "^4.1.13",
+    "@types/express": "^5.0.6",
     "@types/follow-redirects": "^1.14.4",
-    "@types/node": "^22.15.12",
-    "@types/node-fetch": "^2.6.12",
+    "@types/node": "^22.20.1",
+    "@types/node-fetch": "^2.6.13",
     "@types/ws": "^8.18.1",
     "async": "^3.2.6",
     "auto-changelog": "^2.6.0",
     "better-sse": "^0.14.1",
-    "body-parser": "^2.2.2",
+    "body-parser": "^2.3.0",
     "compression": "^1.8.1",
     "concat-stream": "^2.0.0",
     "connect": "^3.7.0",
     "eventsource": "^3.0.7",
     "express": "^5.2.1",
-    "get-port": "^7.1.0",
+    "get-port": "^7.2.0",
     "https-proxy-agent": "^7.0.6",
     "node-fetch": "^2.7.0",
-    "semver": "^7.7.1",
+    "semver": "^7.8.5",
     "socket.io": "^4.8.3",
     "socket.io-client": "^4.8.3",
-    "typescript": "^5.8.3",
-    "undici": "^7.24.0",
-    "vitest": "^4.1.8",
-    "ws": "^8.21.0"
+    "typescript": "^5.9.3",
+    "undici": "^7.29.0",
+    "vitest": "^4.1.11",
+    "ws": "^8.21.3"
   },
   "scripts": {
     "test": "NODE_TLS_REJECT_UNAUTHORIZED=0 pnpm exec vitest run",
@@ -69,19 +70,6 @@
   },
   "engines": {
     "node": ">=18"
-  },
-  "pnpm": {
-    "overrides": {
-      "path-to-regexp": "8.4.2",
-      "on-headers": "1.1.0",
-      "picomatch": "4.0.4",
-      "postcss": "8.5.15",
-      "qs": "6.15.2",
-      "rollup": "4.61.1",
-      "socket.io-parser": "4.2.6",
-      "vite": "7.3.5",
-      "ws": "8.21.0"
-    }
   },
   "license": "MIT"
 }
