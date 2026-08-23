@@ -417,7 +417,12 @@ export class ProxyServer<
           try {
             requestOptions.target = requestOptions.target(req);
           } catch (err) {
-            this.emit("error", err as TError, req, res);
+            const error = err as TError;
+            if (cb) {
+              cb(error, req, res);
+            } else {
+              this.emit("error", error, req, res);
+            }
             return;
           }
         }

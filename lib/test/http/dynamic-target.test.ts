@@ -147,6 +147,31 @@ describe("dynamic target with per-request override", () => {
 });
 
 describe("dynamic target error handling", () => {
+  it("passes a target function error to the per-request callback", () => {
+    const expected = new Error("target resolution failed");
+    const proxy = httpProxy.createServer({
+      target: () => {
+        throw expected;
+      },
+    });
+    let emittedError: Error | undefined;
+    let callbackError: Error | undefined;
+    proxy.on("error", (error: Error) => {
+      emittedError = error;
+    });
+
+    proxy.web(
+      {} as http.IncomingMessage,
+      {} as http.ServerResponse,
+      (error: Error) => {
+        callbackError = error;
+      },
+    );
+
+    expect(callbackError).toBe(expected);
+    expect(emittedError).toBeUndefined();
+  });
+
   it("emits error when target function throws", async () => {
     const proxyPort = await getPort();
 
