@@ -109,6 +109,7 @@ describe("#XHeaders", () => {
     expect(stubRequest.headers["x-forwarded-for"]).toBe("192.168.1.2");
     expect(stubRequest.headers["x-forwarded-port"]).toBe("8080");
     expect(stubRequest.headers["x-forwarded-proto"]).toBe("ws");
+    expect(stubRequest.headers["x-forwarded-host"]).toBe("192.168.1.2:8080");
   });
 
   it("set the correct x-forwarded-* headers from req.socket", () => {
@@ -129,5 +130,6 @@ describe("#XHeaders", () => {
     expect(stubRequest.headers["x-forwarded-for"]).toBe("192.168.1.3");
     expect(stubRequest.headers["x-forwarded-port"]).toBe("8181");
     expect(stubRequest.headers["x-forwarded-proto"]).toBe("wss");
+    expect(stubRequest.headers["x-forwarded-host"]).toBe("192.168.1.3:8181");
   });
 });
