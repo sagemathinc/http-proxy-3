@@ -33,16 +33,21 @@ jobs:
           - "24"
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - name: Node.js ${{ matrix.node-version }}
-        uses: actions/setup-node@v4
+      - name: pnpm toolchain Node.js
+        uses: actions/setup-node@v7
         with:
-          node-version: ${{ matrix.node-version }}
+          node-version: "24"
       - run: npm install -g pnpm@11.9.0
       - run: pnpm install --frozen-lockfile
-      - run: pnpm build
+
+      - name: Test runtime Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v7
+        with:
+          node-version: ${{ matrix.node-version }}
+      - run: npm run build
       - name: Test native HTTP code path
-        run: pnpm test-native
+        run: npm run test-native
       - name: Test fetch HTTP code path
-        run: pnpm test-fetch
+        run: npm run test-fetch

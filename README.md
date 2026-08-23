@@ -58,6 +58,9 @@ We run GitHUB CI on the following:
 
 **Development:**
 
+Development uses pnpm 11 and requires Node.js 22.13 or newer. The published
+library remains tested separately against all supported Node.js runtimes.
+
 ```sh
 git clone https://github.com/sagemathinc/http-proxy-3.git
 cd http-proxy-3
