@@ -55,6 +55,8 @@ export interface ServerOptions {
   ws?: boolean;
   /** Adds x- forward headers. */
   xfwd?: boolean;
+  /** Uses http/https instead of ws/wss for X-Forwarded-Proto on WebSocket requests. Default: false. */
+  xfwdWsProtoAsHttp?: boolean;
   /** Verify SSL certificate. */
   secure?: boolean;
   /** Explicitly specify if we are proxying to another proxy. */

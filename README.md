@@ -565,6 +565,8 @@ const proxy = createProxyServer({
 
 - **xfwd**: true/false, adds x\-forward headers
 
+- **xfwdWsProtoAsHttp**: true/false, Default: false \- uses `http`/`https` instead of `ws`/`wss` for `X-Forwarded-Proto` on WebSocket requests. Only applies when **xfwd** is enabled.
+
 - **secure**: true/false, if you want to verify the SSL Certs. Set this to false if you're proxying another server that has a self-signed cert, e.g., [test/examples/http/proxy-https-to-https.test.ts](lib/test/http/proxy-https-to-https.test.ts).
 
 - **toProxy**: true/false, passes the absolute URL as the `path` \(useful for proxying to proxies\)
@@ -675,6 +677,7 @@ The following table shows which configuration options are compatible with differ
 | `ssl` | ✅ | ✅ | HTTPS server configuration |
 | `ws` | ✅ | ❌ | WebSocket proxying uses native path only |
 | `xfwd` | ✅ | ✅ | X-Forwarded headers |
+| `xfwdWsProtoAsHttp` | ✅ | ❌ | WebSocket X-Forwarded-Proto scheme |
 | `secure` | ✅ | ❌¹ | SSL certificate verification |
 | `toProxy` | ✅ | ✅ | Proxy-to-proxy configuration |
 | `prependPath` | ✅ | ✅ | Path manipulation |

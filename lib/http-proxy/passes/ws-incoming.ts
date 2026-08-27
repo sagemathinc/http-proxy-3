@@ -104,10 +104,15 @@ export function XHeaders(req: Request, _socket: Socket, options: NormalizedServe
   if (!options.xfwd) return;
   log("websocket: XHeaders");
 
+  const encrypted = common.hasEncryptedConnection(req);
+  let proto = encrypted ? "wss" : "ws";
+  if (options.xfwdWsProtoAsHttp) {
+    proto = encrypted ? "https" : "http";
+  }
   const values = {
     for: req.connection.remoteAddress || req.socket.remoteAddress,
     port: common.getPort(req),
-    proto: common.hasEncryptedConnection(req) ? "wss" : "ws",
+    proto,
   };
 
   for (const header of ["for", "port", "proto"] as const) {

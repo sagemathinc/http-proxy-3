@@ -133,6 +133,39 @@ describe("#XHeaders", () => {
     expect(stubRequest.headers["x-forwarded-host"]).toBe("192.168.1.3:8181");
   });
 
+  it("uses http for x-forwarded-proto when configured", () => {
+    const stubRequest = {
+      connection: {
+        remoteAddress: "192.168.1.2",
+        remotePort: "8080",
+      },
+      headers: {
+        host: "192.168.1.2:8080",
+      } as Record<string, string>,
+    };
+    // @ts-ignore
+    XHeaders(stubRequest, {}, { xfwd: true, xfwdWsProtoAsHttp: true });
+    expect(stubRequest.headers["x-forwarded-proto"]).toBe("http");
+  });
+
+  it("uses https for x-forwarded-proto on encrypted connections when configured", () => {
+    const stubRequest = {
+      socket: {
+        remoteAddress: "192.168.1.3",
+        remotePort: "8181",
+      },
+      connection: {
+        pair: true,
+      },
+      headers: {
+        host: "192.168.1.3:8181",
+      } as Record<string, string>,
+    };
+    // @ts-ignore
+    XHeaders(stubRequest, {}, { xfwd: true, xfwdWsProtoAsHttp: true });
+    expect(stubRequest.headers["x-forwarded-proto"]).toBe("https");
+  });
+
   it("preserves an existing x-forwarded-host header", () => {
     const stubRequest = {
       connection: {
