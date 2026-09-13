@@ -204,6 +204,30 @@ export function stream(
   });
 }
 
+// Headers.prototype.getSetCookie() is the spec-blessed way to recover
+// every Set-Cookie value, but the `fetch` proxy option explicitly accepts
+// custom fetch implementations (see the customFetch test), and some -
+// notably node-fetch 2.x, which this package itself still depends on for
+// testing - predate getSetCookie(). Those implementations instead expose
+// a non-standard .raw() method that preserves original casing and keeps
+// repeated headers as an array, so fall back to that (looked up
+// case-insensitively) rather than throwing on `Headers` objects that
+// don't implement the current spec.
+function getAllSetCookieValues(headers: globalThis.Headers): string[] {
+  if (typeof headers.getSetCookie === "function") {
+    return headers.getSetCookie();
+  }
+  const raw = (headers as unknown as { raw?: () => Record<string, string[]> }).raw?.();
+  if (raw) {
+    const key = Object.keys(raw).find((k) => k.toLowerCase() === "set-cookie");
+    if (key) {
+      return raw[key];
+    }
+  }
+  const value = headers.get("set-cookie");
+  return value != null ? [value] : [];
+}
+
 async function stream2(
   req: Request,
   res: Response,
@@ -355,11 +379,27 @@ async function stream2(
     // ProxyRes is used in the outgoing passes
     // But since only certain properties are used, we can fake it here
     // to avoid having to refactor everything.
+    //
+    // A fetch Headers object can hold multiple values for the same
+    // header name (most notably several Set-Cookie headers). Building
+    // `headers` with Object.fromEntries(response.headers.entries())
+    // collapses those down to the last value, since a plain object can
+    // only hold one value per key. Collect any header with more than one
+    // value into an array instead, matching the string | string[] type
+    // that the outgoing passes (and res.setHeader) already support.
+    const headers: { [key: string]: string | string[] } = {};
+    for (const key of response.headers.keys()) {
+      const values =
+        key === "set-cookie"
+          ? getAllSetCookieValues(response.headers)
+          : [response.headers.get(key) as string];
+      headers[key] = values.length > 1 ? values : values[0];
+    }
     const fakeProxyRes = {
       statusCode: response.status,
       statusMessage: response.statusText,
-      headers: Object.fromEntries(response.headers.entries()),
-      rawHeaders: Object.entries(response.headers).flatMap(([key, value]) => {
+      headers,
+      rawHeaders: Object.entries(headers).flatMap(([key, value]) => {
         if (Array.isArray(value)) {
           return value.flatMap((v) => (v != null ? [key, v] : []));
         }
