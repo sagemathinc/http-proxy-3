@@ -352,14 +352,23 @@ async function stream2(
       }
     }
 
+    const headers: Record<string, string | string[]> = Object.fromEntries(response.headers.entries());
+
+    // there can be multiple set-cookie headers in the same response
+    // therefore set-cookie headers are stored as an array
+    const setCookies = response.headers.getSetCookie?.() || [];
+    if (setCookies.length > 0) {
+      headers["set-cookie"] = setCookies;
+    }
+
     // ProxyRes is used in the outgoing passes
     // But since only certain properties are used, we can fake it here
     // to avoid having to refactor everything.
     const fakeProxyRes = {
       statusCode: response.status,
       statusMessage: response.statusText,
-      headers: Object.fromEntries(response.headers.entries()),
-      rawHeaders: Object.entries(response.headers).flatMap(([key, value]) => {
+      headers,
+      rawHeaders: Object.entries(headers).flatMap(([key, value]) => {
         if (Array.isArray(value)) {
           return value.flatMap((v) => (v != null ? [key, v] : []));
         }

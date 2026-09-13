@@ -101,6 +101,70 @@ describe("#XHeaders", () => {
   });
 });
 
+describe('Mulitple Set-Cookie headers in response', () => {
+  it('should allow multiple set-cookie as array', async () => {
+    const port = await getPort();
+    const proxy = httpProxy.createProxyServer({
+      target: `http://example.com`,
+      fetch() {
+        return Promise.resolve(new Response("ok\n", {
+          status: 200,
+          headers: [
+            ["set-cookie", "a=b"],
+            ["set-cookie", "c=d"],
+          ]
+        }));
+      }
+    });
+    proxy.listen(port);
+
+    const response = await fetch(`http://127.0.0.1:${port}`);
+    expect(response.headers.getSetCookie()).toEqual(["a=b", "c=d"]);
+    proxy.close();
+  });
+
+  it('should allow multiple set-cookie as Headers', async () => {
+    const port = await getPort();
+    const proxy = httpProxy.createProxyServer({
+      target: `http://example.com`,
+      fetch() {
+        const headers = new Headers();
+        headers.append('set-cookie', 'a=b');
+        headers.append('set-cookie', 'c=d');
+        return Promise.resolve(new Response("ok\n", {
+          status: 200,
+          headers
+        }));
+      }
+    });
+    proxy.listen(port);
+
+    const response = await fetch(`http://127.0.0.1:${port}`);
+    expect(response.headers.getSetCookie()).toEqual(["a=b", "c=d"]);
+    proxy.close();
+  });
+
+  it('should allow multiple set-cookie as Record', async () => {
+    const port = await getPort();
+    const proxy = httpProxy.createProxyServer({
+      target: `http://example.com`,
+      fetch() {
+        return Promise.resolve(new Response("ok\n", {
+          status: 200,
+          headers: {
+            'set-cookie': 'a=b'
+          }
+        }));
+      }
+    });
+    proxy.listen(port);
+
+    const response = await fetch(`http://127.0.0.1:${port}`);
+    expect(response.headers.getSetCookie()).toEqual(["a=b"]);
+    proxy.close();
+  });
+});
+
 const ports: { [port: string]: number } = {};
 function address(p: number | string) {
   return `http://127.0.0.1:${port(p)}`;
