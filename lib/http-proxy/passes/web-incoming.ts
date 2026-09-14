@@ -204,6 +204,23 @@ export function stream(
   });
 }
 
+// getSetCookie() is the spec-blessed way to recover multiple Set-Cookie values;
+// fall back to raw() for older Headers implementations (e.g. node-fetch v2),
+// looking up the key case-insensitively since raw() preserves original casing.
+function getSetCookieHeaders(headers: globalThis.Headers): string[] {
+  if (typeof headers.getSetCookie === "function") {
+    return headers.getSetCookie();
+  }
+  const raw = (headers as unknown as { raw?: () => Record<string, string[]> }).raw?.();
+  if (raw) {
+    const key = Object.keys(raw).find((k) => k.toLowerCase() === "set-cookie");
+    if (key) {
+      return raw[key];
+    }
+  }
+  return [];
+}
+
 async function stream2(
   req: Request,
   res: Response,
@@ -355,10 +372,15 @@ async function stream2(
     // ProxyRes is used in the outgoing passes
     // But since only certain properties are used, we can fake it here
     // to avoid having to refactor everything.
+    const headers: Record<string, string | string[]> = Object.fromEntries(response.headers.entries());
+    const setCookie = getSetCookieHeaders(response.headers);
+    if (setCookie.length > 0) {
+      headers["set-cookie"] = setCookie;
+    }
     const fakeProxyRes = {
       statusCode: response.status,
       statusMessage: response.statusText,
-      headers: Object.fromEntries(response.headers.entries()),
+      headers: headers,
       rawHeaders: Object.entries(response.headers).flatMap(([key, value]) => {
         if (Array.isArray(value)) {
           return value.flatMap((v) => (v != null ? [key, v] : []));
