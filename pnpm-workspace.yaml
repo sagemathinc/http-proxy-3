@@ -6,11 +6,15 @@ overrides:
   on-headers: 1.1.0
   picomatch: 4.0.4
   postcss: 8.5.23
-  qs: 6.15.2
+  qs: 6.16.0
   rollup: 4.61.1
   socket.io-parser: 4.2.7
   vite: 7.3.5
   ws: 8.21.3
   esbuild: 0.28.1
+  handlebars: 4.7.10
+  proxy-addr: 2.0.8
+  engine.io: 6.6.10
+  source-map-js: 1.2.2
 
 shellEmulator: true
