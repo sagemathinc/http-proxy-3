@@ -58,7 +58,7 @@ jobs:
         run: |
           mkdir release
           npm pack --ignore-scripts --pack-destination release
-          npm publish release/*.tgz --dry-run --ignore-scripts --access public
+          npm publish ./release/*.tgz --dry-run --ignore-scripts --access public
       - uses: actions/upload-artifact@v7
         if: matrix.node-version == '24'
         with:
@@ -89,4 +89,4 @@ jobs:
       # Publish exactly the validated tarball. Do not install dependencies or
       # execute package lifecycle hooks in the job with OIDC permission.
       - name: Publish with npm trusted publishing
-        run: npm publish release/*.tgz --ignore-scripts --access public --provenance --registry=https://registry.npmjs.org
+        run: npm publish ./release/*.tgz --ignore-scripts --access public --provenance --registry=https://registry.npmjs.org
