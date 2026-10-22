@@ -1,0 +1,92 @@
+name: Publish npm package
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Expected package.json version (for example 2.0.2)"
+        type: string
+        required: true
+      dry_run:
+        description: "Build and inspect the tarball without publishing"
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: npm-publish
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    if: github.repository == 'sagemathinc/http-proxy-3' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        node-version: ["22", "24", "26"]
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ matrix.node-version }}
+          package-manager-cache: false
+      - name: Verify release identity
+        env:
+          EXPECTED_VERSION: ${{ inputs.version }}
+        run: |
+          node --input-type=module <<'NODE'
+          import assert from 'node:assert/strict';
+          import { readFileSync } from 'node:fs';
+          const pkg = JSON.parse(readFileSync('package.json', 'utf8'));
+          assert.equal(pkg.name, 'http-proxy-3');
+          assert.match(process.env.EXPECTED_VERSION, /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/);
+          assert.equal(pkg.version, process.env.EXPECTED_VERSION);
+          NODE
+      - run: npm install --global npm@11.20.0 pnpm@11.9.0
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm audit
+      - run: pnpm build
+      - run: pnpm test-dual-path
+      - name: Pack tested output
+        if: matrix.node-version == '24'
+        run: |
+          mkdir release
+          npm pack --ignore-scripts --pack-destination release
+          npm publish release/*.tgz --dry-run --ignore-scripts --access public
+      - uses: actions/upload-artifact@v7
+        if: matrix.node-version == '24'
+        with:
+          name: npm-package
+          path: release/*.tgz
+          if-no-files-found: error
+          retention-days: 7
+
+  publish:
+    needs: validate
+    if: ${{ !inputs.dry_run }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    environment: npm
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "24"
+          package-manager-cache: false
+      - run: npm install --global npm@11.20.0
+      - uses: actions/download-artifact@v8
+        with:
+          name: npm-package
+          path: release
+      # Publish exactly the validated tarball. Do not install dependencies or
+      # execute package lifecycle hooks in the job with OIDC permission.
+      - name: Publish with npm trusted publishing
+        run: npm publish release/*.tgz --ignore-scripts --access public --provenance --registry=https://registry.npmjs.org
