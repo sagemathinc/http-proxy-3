@@ -21,7 +21,7 @@
   ],
   "dependencies": {
     "debug": "^4.4.3",
-    "follow-redirects": "^1.16.1"
+    "follow-redirects": "^1.16.2"
   },
   "devDependencies": {
     "@types/async": "^3.2.25",
@@ -38,12 +38,12 @@
     "async": "^3.2.6",
     "auto-changelog": "^2.6.0",
     "better-sse": "^0.14.1",
-    "body-parser": "^2.3.0",
+    "body-parser": "^2.4.0",
     "compression": "^1.8.2",
     "concat-stream": "^2.0.0",
     "connect": "^3.7.0",
     "eventsource": "^3.0.7",
-    "express": "^5.2.1",
+    "express": "^5.3.0",
     "get-port": "^7.2.0",
     "https-proxy-agent": "^7.0.6",
     "node-fetch": "^2.7.0",
