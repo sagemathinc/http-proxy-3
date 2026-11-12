@@ -147,6 +147,11 @@ export function writeHeaders(
       // don't send connection header to http2 client
       continue;
     }
+    if (key.toLowerCase() === "trailer") {
+      // Trailers are not forwarded, so don't announce them. Node also throws
+      // ERR_HTTP_TRAILER_INVALID for Trailer together with Content-Length.
+      continue;
+    }
     const header = proxyRes.headers[key];
     if (preserveHeaderKeyCase && rawHeaderKeyMap) {
       key = rawHeaderKeyMap[key] ?? key;
