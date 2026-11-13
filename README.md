@@ -583,11 +583,11 @@ const proxy = createProxyServer({
 
 - **auth**: Basic authentication i.e. 'user:password' to compute an Authorization header.
 
-- **hostRewrite**: rewrites the location hostname on \(201/301/302/307/308\) redirects.
+- **hostRewrite**: rewrites the location hostname on \(201/301/302/303/307/308\) redirects.
 
-- **autoRewrite**: rewrites the location host/port on \(201/301/302/307/308\) redirects based on requested host/port. Default: false.
+- **autoRewrite**: rewrites the location host/port on \(201/301/302/303/307/308\) redirects based on requested host/port. Default: false.
 
-- **protocolRewrite**: rewrites the location protocol on \(201/301/302/307/308\) redirects to 'http' or 'https'. Default: null.
+- **protocolRewrite**: rewrites the location protocol on \(201/301/302/303/307/308\) redirects to 'http' or 'https'. Default: null.
 
 - **cookieDomainRewrite**: rewrites domain of `set-cookie` headers. Possible values:
   - `false` \(default\): disable cookie rewriting
