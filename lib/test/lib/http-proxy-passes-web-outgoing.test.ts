@@ -46,7 +46,7 @@ describe.each( ["http://backend.com", url.parse("http://backend.com")])("#setRed
       beforeEach(() => {
         state.options.hostRewrite = "ext-manual.com";
       });
-      [201, 301, 302, 307, 308].forEach(function (code) {
+      [201, 301, 302, 303, 307, 308].forEach(function (code) {
         it("on " + code, () => {
           state.proxyRes.statusCode = code;
           setRedirectHostRewrite(state.req, {}, state.proxyRes, state.options);
@@ -58,6 +58,12 @@ describe.each( ["http://backend.com", url.parse("http://backend.com")])("#setRed
 
       it("not on 200", () => {
         state.proxyRes.statusCode = 200;
+        setRedirectHostRewrite(state.req, {}, state.proxyRes, state.options);
+        expect(state.proxyRes.headers.location).toEqual("http://backend.com/");
+      });
+
+      it("not on 304", () => {
+        state.proxyRes.statusCode = 304;
         setRedirectHostRewrite(state.req, {}, state.proxyRes, state.options);
         expect(state.proxyRes.headers.location).toEqual("http://backend.com/");
       });
@@ -97,7 +103,7 @@ describe.each( ["http://backend.com", url.parse("http://backend.com")])("#setRed
       beforeEach(() => {
         state.options.autoRewrite = true;
       });
-      [201, 301, 302, 307, 308].forEach(function (code) {
+      [201, 301, 302, 303, 307, 308].forEach(function (code) {
         it("on " + code, () => {
           state.proxyRes.statusCode = code;
           setRedirectHostRewrite(state.req, {}, state.proxyRes, state.options);
@@ -150,7 +156,7 @@ describe.each( ["http://backend.com", url.parse("http://backend.com")])("#setRed
       beforeEach(() => {
         state.options.protocolRewrite = "https";
       });
-      [201, 301, 302, 307, 308].forEach(function (code) {
+      [201, 301, 302, 303, 307, 308].forEach(function (code) {
         it("on " + code, () => {
           state.proxyRes.statusCode = code;
           setRedirectHostRewrite(state.req, {}, state.proxyRes, state.options);

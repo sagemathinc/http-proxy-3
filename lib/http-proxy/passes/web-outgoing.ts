@@ -13,7 +13,7 @@ import type { NormalizedServerOptions, NormalizeProxyTarget, ProxyTarget } from 
 import * as common from "../common";
 import type { Request, ProxyResponse } from "./web-incoming";
 
-const redirectRegex = /^201|30(1|2|7|8)$/;
+const redirectRegex = /^(201|30[12378])$/;
 
 // interface for subset of Response that's actually used here
 // needed for running outgoing passes on MockResponse in ws-incoming
