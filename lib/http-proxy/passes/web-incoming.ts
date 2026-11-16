@@ -196,6 +196,12 @@ export function stream(
       });
       // We pipe to the response unless its expected to be handled by the user
       if (!options.selfHandleResponse) {
+        // pipe() ignores a target that dies mid-response: end the client side too
+        proxyRes.on("close", () => {
+          if (proxyRes.errored && !res.destroyed) {
+            res.destroy(proxyRes.errored);
+          }
+        });
         proxyRes.pipe(res);
       }
     } else {
@@ -430,6 +436,10 @@ async function stream2(
       if (nodeStream) {
         nodeStream.on("error", (err) => {
           handleError(err, options.target);
+          // As in the native path, once the response is under way: end the client side too
+          if (res.headersSent && !options.selfHandleResponse && !res.writableEnded && !res.destroyed) {
+            res.destroy(err);
+          }
         });
 
         nodeStream.on("end", () => {
