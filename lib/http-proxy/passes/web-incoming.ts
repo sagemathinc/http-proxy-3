@@ -152,7 +152,12 @@ export function stream(
   // handle errors in proxy and incoming request, just like for forward proxy
   const proxyError = createErrorHandler(proxyReq, options.target!);
   req.on("error", proxyError);
-  proxyReq.on("error", proxyError);
+  // A target failure reported before the client response started is the error handler's to answer
+  let errorBeforeResponse = false;
+  proxyReq.on("error", (err: Error) => {
+    errorBeforeResponse ||= !res.headersSent;
+    proxyError(err);
+  });
 
   function createErrorHandler(proxyReq: http.ClientRequest, url: NormalizeProxyTarget<ProxyTargetUrl>) {
     return (err: Error) => {
@@ -198,7 +203,7 @@ export function stream(
       if (!options.selfHandleResponse) {
         // pipe() ignores a target that dies mid-response: end the client side too
         proxyRes.on("close", () => {
-          if (proxyRes.errored && !res.destroyed) {
+          if (proxyRes.errored && !errorBeforeResponse && !res.destroyed) {
             res.destroy(proxyRes.errored);
           }
         });
@@ -435,9 +440,11 @@ async function stream2(
 
       if (nodeStream) {
         nodeStream.on("error", (err) => {
+          // Before the client response started, the error handler owns it, as for every other error
+          const started = res.headersSent;
           handleError(err, options.target);
           // As in the native path, once the response is under way: end the client side too
-          if (res.headersSent && !options.selfHandleResponse && !res.writableEnded && !res.destroyed) {
+          if (started && !options.selfHandleResponse && !res.writableEnded && !res.destroyed) {
             res.destroy(err);
           }
         });

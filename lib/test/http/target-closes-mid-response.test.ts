@@ -21,7 +21,7 @@ function listen(server: http.Server): Promise<number> {
 // Requests path through the proxy and resolves once the client response closes,
 // or with closed: false if it is still open after timeout ms.
 function request(port: number, path: string, timeout = 2000) {
-  return new Promise<{ closed: boolean; complete: boolean; body: string }>((resolve, reject) => {
+  return new Promise<{ status?: number; closed: boolean; complete: boolean; body: string }>((resolve, reject) => {
     const req = http.get({ host: "127.0.0.1", port, path }, (res) => {
       let body = "";
       res.setEncoding("utf8");
@@ -31,11 +31,11 @@ function request(port: number, path: string, timeout = 2000) {
       res.on("error", () => {});
       const timer = setTimeout(() => {
         req.destroy();
-        resolve({ closed: false, complete: res.complete, body });
+        resolve({ status: res.statusCode, closed: false, complete: res.complete, body });
       }, timeout);
       res.on("close", () => {
         clearTimeout(timer);
-        resolve({ closed: true, complete: res.complete, body });
+        resolve({ status: res.statusCode, closed: true, complete: res.complete, body });
       });
     });
     req.on("error", reject);
@@ -63,20 +63,23 @@ describe.each([
 
   async function setup() {
     const target = http.createServer((req, res) => {
-      if (req.url === "/no-body") {
-        // Headers, then the target dies before the first byte of the body
+      if (req.url === "/finite") {
         res.writeHead(200, { "content-type": "text/event-stream" });
-        res.flushHeaders();
-        setTimeout(() => res.socket?.destroy(), 50);
+        res.write("data: 0\n\n");
+        setTimeout(() => res.end("data: 1\n\n"), 50);
         return;
       }
-      res.writeHead(200, { "content-type": "text/event-stream", "cache-control": "no-cache" });
-      res.write("data: 0\n\n");
-      if (req.url === "/finite") {
-        setTimeout(() => res.end("data: 1\n\n"), 50);
-      } else {
+      // A Content-Length longer than the body makes the truncation unambiguous: some fetch
+      // implementations treat a chunked body closed at a chunk boundary as complete
+      res.writeHead(200, { "content-type": "text/event-stream", "content-length": "1000" });
+      if (req.url === "/events") {
         // The target process dies after the first event
+        res.write("data: 0\n\n");
         setTimeout(() => res.socket?.destroy(), 50);
+      } else {
+        // The target resets the connection after the headers, before the first byte of the body
+        res.flushHeaders();
+        setTimeout(() => res.socket?.resetAndDestroy(), 50);
       }
     });
     const targetPort = await listen(target);
@@ -84,11 +87,17 @@ describe.each([
 
     const errors: Error[] = [];
     const proxy = httpProxy.createProxyServer({ target: `http://127.0.0.1:${targetPort}`, ...extraOptions });
-    proxy.on("error", (err, _req, res) => {
+    proxy.on("error", (err, req, res) => {
       errors.push(err);
-      // An error handler which answers asynchronously, while the client has not received anything yet
-      if (res instanceof http.ServerResponse && !res.headersSent) {
+      if (!(res instanceof http.ServerResponse) || res.headersSent) {
+        return;
+      }
+      // Error handlers which answer the client asynchronously, or start the answer right away
+      if (req.url === "/no-body-async") {
         setTimeout(() => res.writeHead(502).end("bad gateway"), 10);
+      } else if (req.url === "/no-body-sync") {
+        res.writeHead(502);
+        setTimeout(() => res.end("bad gateway"), 10);
       }
     });
     const proxyServer = http.createServer((req, res) => proxy.web(req, res));
@@ -99,20 +108,11 @@ describe.each([
   }
 
   it("ends the client response when the target closes its socket", async () => {
-    const { proxyPort } = await setup();
+    const { proxyPort, errors } = await setup();
 
     const result = await request(proxyPort, "/events");
 
-    expect(result.closed).toBe(true);
-    expect(result.complete).toBe(false);
-    expect(result.body).toBe("data: 0\n\n");
-  });
-
-  it("reports the failure as before", async () => {
-    const { proxyPort, errors } = await setup();
-
-    await request(proxyPort, "/events");
-
+    expect(result).toMatchObject({ closed: true, complete: false, body: "data: 0\n\n" });
     // The fetch path reports the broken body stream; the native path ends the client response without an event
     expect(errors.length > 0).toBe(emitsError);
   });
@@ -122,22 +122,20 @@ describe.each([
 
     const result = await request(proxyPort, "/finite");
 
-    expect(result).toEqual({ closed: true, complete: true, body: "data: 0\n\ndata: 1\n\n" });
+    expect(result).toEqual({ status: 200, closed: true, complete: true, body: "data: 0\n\ndata: 1\n\n" });
     expect(errors).toEqual([]);
   });
 
-  it.skipIf(!emitsError)("leaves the response to an error handler which answers before anything was sent", async () => {
-    const { proxyPort } = await setup();
+  it.each(["/no-body-async", "/no-body-sync"])(
+    "leaves the response to an error handler when the target fails before anything was sent (%s)",
+    async (path) => {
+      const { proxyPort, errors } = await setup();
 
-    const status = await new Promise<number | undefined>((resolve, reject) => {
-      http
-        .get({ host: "127.0.0.1", port: proxyPort, path: "/no-body" }, (res) => {
-          res.resume();
-          resolve(res.statusCode);
-        })
-        .on("error", reject);
-    });
+      const result = await request(proxyPort, path);
 
-    expect(status).toBe(502);
-  });
+      expect(errors).toHaveLength(1);
+      // (complete stays false: the target's Content-Length was already copied to the response, as on main)
+      expect(result).toMatchObject({ status: 502, closed: true, body: "bad gateway" });
+    },
+  );
 });
